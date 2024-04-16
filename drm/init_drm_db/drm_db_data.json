@@ -1,0 +1,185 @@
+{
+	"dictionaries": [
+		{
+			"connection_types": [
+				{
+					"id": "1",
+					"name": "Microsoft SQL Server"
+				},
+				{
+					"id": "2",
+					"name": "Oracle"
+				},
+				{
+					"id": "3",
+					"name": "PostgreSQL"
+				},
+				{
+					"id": "4",
+					"name": "MySql"
+				},
+				{
+					"id": "5",
+					"name": "Google BigQuery"
+				}
+			]
+		},
+		{
+			"solution_types": [
+				{
+					"id": "1",
+					"name": "Microsoft SQL Server"
+				},
+				{
+					"id": "2",
+					"name": "Liquibase"
+				}
+			]
+		},
+		{
+			"target_types": [
+				{
+					"id": "1",
+					"name": "Databases list"
+				},
+				{
+					"id": "2",
+					"name": "SQL query"
+				}
+			]
+		},
+		{
+			"deployment_types": [
+				{
+					"id": "1",
+					"name": "Dry run"
+				},
+				{
+					"id": "2",
+					"name": "Publish"
+				}
+			]
+		},
+		{
+			"deployment_statuses": [
+				{
+					"id": "0",
+					"name": "Pending"
+				},
+				{
+					"id": "1",
+					"name": "In progress"
+				},
+				{
+					"id": "2",
+					"name": "Finished successfully"
+				},
+				{
+					"id": "3",
+					"name": "Canceled"
+				},
+				{
+					"id": "4",
+					"name": "Failed"
+				}
+			]
+		},
+		{
+			"script_types": [
+				{
+					"id": "1",
+					"name": "Init"
+				},
+				{
+					"id": "2",
+					"name": "Query"
+				}
+			]
+		}
+	],
+	"releases": [
+		{
+			"id": 1,
+			"name": "Demo release: Deploy mssql solution",
+			"max_retries": 3,
+			"is_active": true,
+			"solutions": [
+				{
+					"name": "MSSQL solution",
+					"solution_type_id": 1,
+					"connections": [
+						{
+							"name": "dev",
+							"connection_type_id": 1,
+							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
+						},
+						{
+							"name": "test",
+							"connection_type_id": 1,
+							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
+						},
+						{
+							"name": "prod-USA",
+							"connection_type_id": 1,
+							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
+						},
+						{
+							"name": "prod-EUR",
+							"connection_type_id": 1,
+							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
+						},
+						{
+							"name": "prod-ASIA",
+							"connection_type_id": 1,
+							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
+						}
+					],
+					"sql_scripts_variables": [
+						{
+							"name": "var1",
+							"value": "value1"
+						},
+						{
+							"name": "var2",
+							"value": "value2"
+						},
+						{
+							"name": "var3",
+							"value": "value3"
+						}
+					],
+					"path": "D:\\TFS\\MSSQL\\Solution.sln",
+					"projects": [
+						{
+							"name": "Project_A",
+							"targets_compare_db": "DB_A",
+							"targets_type_id": 1,
+							"targets_list": "{\"DB_A\"}",
+							"fail_on_error": false
+						},
+						{
+							"name": "Project_B",
+							"targets_compare_db": "DB_B1",
+							"targets_type_id": 1,
+							"targets_list": "{\"DB_B2\",\"DB_B3\",\"DB_B4\",\"DB_B1\"}",
+							"max_degree_in_parallel": 2,
+							"timeout_in_min": 10,
+							"sleep_time_in_sec": 2,
+							"fail_on_error": true
+						},
+						{
+							"name": "Project_C",
+							"targets_compare_db": "DB_C1",
+							"targets_type_id": 2,
+							"targets_sql_text": "select name from sys.databases where name like 'DB_C%' order by name",
+							"max_degree_in_parallel": 5,
+							"timeout_in_min": 30,
+							"sleep_time_in_sec": 2,
+							"fail_on_error": true
+						}
+					]
+				}
+			]
+		}
+	]
+}
