@@ -1,0 +1,34 @@
+from base64 import b64encode, b64decode
+
+class Crypto:
+    def __init__(self, password = ""):
+        self.password = password
+
+    def xor_encrypt_decrypt(data: str, password: str) -> str:
+        # Convert the data and password into byte arrays
+        data_bytes = data.encode()
+        password_bytes = password.encode()
+        
+        # Perform XOR operation with the data and password (repeated if necessary)
+        encrypted_decrypted_bytes = bytearray()
+        for i in range(len(data_bytes)):
+            encrypted_decrypted_bytes.append(data_bytes[i] ^ password_bytes[i % len(password_bytes)])
+        
+        # Convert the resulting bytes back to a string
+        encrypted_decrypted_str = encrypted_decrypted_bytes.decode()
+        
+        return encrypted_decrypted_str
+
+    def encrypt_string(self, plaintext: str) -> str:
+        # Perform XOR encryption and then encode the result in base64
+        encrypted = Crypto.xor_encrypt_decrypt(plaintext, self.password)
+        encrypted_base64 = b64encode(encrypted.encode()).decode()
+        
+        return encrypted_base64
+
+    def decrypt_string(self, encrypted_data: str) -> str:
+        # Decode the base64 encoded data and then perform XOR decryption
+        encrypted = b64decode(encrypted_data).decode()
+        decrypted = Crypto.xor_encrypt_decrypt(encrypted, self.password)
+        
+        return decrypted

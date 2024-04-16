@@ -3,8 +3,8 @@ import sys
 import argparse
 import json
 from getpass import getpass
-from lib.drm_db import Release
-from lib import crypto
+from modules.drm_db import Release
+from modules import crypto
 
 DRYRUN_MODE = "DryRun"
 DEPLOY_MODE = "Deploy"

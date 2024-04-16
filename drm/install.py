@@ -6,8 +6,8 @@ import sqlite3
 import datetime
 import json
 import shutil
-from lib import init_db
-from lib import crypto
+from modules import init_db
+from modules import crypto
 
 DRM_VERSION = "1.0.0.0"
 DRM_CONFIG_FILE_NAME = "drm.config"
