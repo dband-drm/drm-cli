@@ -1,5 +1,5 @@
 import sys
-from lib import sqlite
+from modules import sqlite
 
 class Db:
     def __init__(self, db_name = ""):   

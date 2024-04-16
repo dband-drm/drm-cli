@@ -1,5 +1,5 @@
 import json
-from lib import sqlite
+from modules import sqlite
 
 class ParserJsonSqlite:
 	def __init__(self) -> None:

@@ -1,6 +1,6 @@
 import json
-from lib import sqlite
-from lib import parser_json_sqlite
+from modules import sqlite
+from modules import parser_json_sqlite
 
 INIT_SCHEMA_JSON = "init_drm_db/drm_db_schema.json"
 INIT_DATA_JSON = "init_drm_db/drm_db_data.json"
