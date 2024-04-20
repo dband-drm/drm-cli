@@ -69,8 +69,8 @@ class Build:
                     if solution['is_active'] == 1:
                         release_js['solutions'].append(solution)
 
-        else:
-            raise Exception ("Release ID not found." )
+            else:
+                raise Exception ("Release ID not found." )
 
         #=======================
         # Create build JSON file
