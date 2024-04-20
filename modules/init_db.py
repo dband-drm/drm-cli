@@ -1,5 +1,4 @@
 import json
-import uuid
 from modules import sqlite
 from modules import parser_json_sqlite
 
@@ -70,52 +69,111 @@ class InitDB:
 		#==================
 		# Load Demo release
 		#==================
+		solution_id = 1
+		connection_id = 1
+		sql_scripts_variables_id = 1
+		project_id = 1
+		sql_script_id = 1
+
 		# For each release
 		table_name = "releases"
-		for row in js[table_name]:
+		for release_row in js[table_name]:
 
 			#===============
 			# Insert release
 			#===============
-			row_without_sons = {key: value for key, value in row.items() if key != "solutions"}
-			columns = list(row_without_sons.keys())
-			values = list(row_without_sons.values())
+			release_row_without_sons = {key: value for key, value in release_row.items() if key != "solutions"}
+			columns = list(release_row_without_sons.keys())
+			values = list(release_row_without_sons.values())
 			sql_command = parser.insert_row(table_name, columns, values)
 			sqlite.execute_command(conn, sql_command)
 
-			release_id = list(row_without_sons.values())[0]
+			id_row = {key: value for key, value in release_row.items() if key == "id"}
+			release_id = list(id_row.values())[0]
 			
 			# For each solution
 			table_name = "solutions"
-			for row in row[table_name]:
+			for solution_row in release_row[table_name]:
+
 				#================
 				# Insert solution
 				#================
-				row_without_sons = {key: value for key, value in row.items() if key not in ("projects", "sql_scripts_variables", "connections")}
-				columns = list(row_without_sons.keys())
-				values = list(row_without_sons.values())
+				solution_row_without_sons = {key: value for key, value in solution_row.items() if key not in ("projects", "sql_scripts_variables", "connections")}
+				columns = list(solution_row_without_sons.keys())
+				values = list(solution_row_without_sons.values())
+				columns.append("id")
+				values.append(solution_id)
+				columns.append("ordinal")
+				values.append(solution_id)
 				columns.append("release_id")
 				values.append(release_id)
 				sql_command = parser.insert_row(table_name, columns, values)
 				sqlite.execute_command(conn, sql_command)
 
-				solution_id = list(row_without_sons.values())[0]
-
 				# For each connection
 				table_name = "connections"
-				for row in row[table_name]:
+				for connection_row in solution_row[table_name]:
 					#===================
 					# Insert connections
 					#===================
-					columns = list(row.keys())
-					values = list(row.values())
+					columns = list(connection_row.keys())
+					values = list(connection_row.values())
 					columns.append("id")
-					values.append(uuid.uuid4())
+					values.append(connection_id)
 					columns.append("solution_id")
 					values.append(solution_id)
 					sql_command = parser.insert_row(table_name, columns, values)
-					print(sql_command)
 					sqlite.execute_command(conn, sql_command)
+
+					connection_id += 1
+
+				# For each sql_scripts_variables
+				table_name = "sql_scripts_variables"
+				for sql_scripts_variable_row in solution_row[table_name]:
+					#=============================
+					# Insert sql_scripts_variables
+					#=============================
+					columns = list(sql_scripts_variable_row.keys())
+					values = list(sql_scripts_variable_row.values())
+					columns.append("id")
+					values.append(sql_scripts_variables_id)
+					columns.append("solution_id")
+					values.append(solution_id)
+					sql_command = parser.insert_row(table_name, columns, values)
+					sqlite.execute_command(conn, sql_command)
+
+					sql_scripts_variables_id += 1
+
+				# For each sql_scripts_variables
+				table_name = "projects"
+				for project_row in solution_row[table_name]:
+					#=============================
+					# Insert sql_scripts_variables
+					#=============================
+					project_row_without_sons = {key: value for key, value in project_row.items() if key not in ("targets_sql_text")}
+					columns = list(project_row_without_sons.keys())
+					values = list(project_row_without_sons.values())
+					columns.append("id")
+					values.append(project_id)
+					columns.append("solution_id")
+					values.append(solution_id)
+
+					#==================
+					# Insert sql_script
+					#==================
+					sql_script_row = {key: value for key, value in project_row.items() if key in ("targets_sql_text")}
+					
+					#if (list(sql_script_row.keys())[0] != None):
+					#	print("Yes")
+					#else:
+					#	print("No")
+					
+					sql_command = parser.insert_row(table_name, columns, values)
+					sqlite.execute_command(conn, sql_command)
+
+					project_id += 1
+
+			solution_id += 1
 
 		f.close()
 
