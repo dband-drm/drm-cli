@@ -1,4 +1,5 @@
 import json
+import uuid
 from modules import sqlite
 from modules import parser_json_sqlite
 
@@ -80,10 +81,41 @@ class InitDB:
 			columns = list(row_without_sons.keys())
 			values = list(row_without_sons.values())
 			sql_command = parser.insert_row(table_name, columns, values)
-			print(sql_command)
 			sqlite.execute_command(conn, sql_command)
 
+			release_id = list(row_without_sons.values())[0]
+			
+			# For each solution
+			table_name = "solutions"
+			for row in row[table_name]:
+				#================
+				# Insert solution
+				#================
+				row_without_sons = {key: value for key, value in row.items() if key not in ("projects", "sql_scripts_variables", "connections")}
+				columns = list(row_without_sons.keys())
+				values = list(row_without_sons.values())
+				columns.append("release_id")
+				values.append(release_id)
+				sql_command = parser.insert_row(table_name, columns, values)
+				sqlite.execute_command(conn, sql_command)
 
+				solution_id = list(row_without_sons.values())[0]
+
+				# For each connection
+				table_name = "connections"
+				for row in row[table_name]:
+					#===================
+					# Insert connections
+					#===================
+					columns = list(row.keys())
+					values = list(row.values())
+					columns.append("id")
+					values.append(uuid.uuid4())
+					columns.append("solution_id")
+					values.append(solution_id)
+					sql_command = parser.insert_row(table_name, columns, values)
+					print(sql_command)
+					sqlite.execute_command(conn, sql_command)
 
 		f.close()
 

@@ -182,6 +182,11 @@
 			"name": "solutions",
 			"columns": [
 				{
+					"name": "release_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
 					"name": "id",
 					"data_type": "integer",
 					"is_nullable": false
@@ -190,11 +195,6 @@
 					"name": "name",
 					"data_type": "string",
 					"length": 100,
-					"is_nullable": false
-				},
-				{
-					"name": "release_id",
-					"data_type": "integer",
 					"is_nullable": false
 				},
 				{
@@ -224,7 +224,7 @@
 				{
 					"name": "pk_solutions",
 					"type": "PK",
-					"columns": "id"
+					"columns": "release_id, id"
 				},
 				{
 					"name": "uq_solutions__name",
@@ -256,19 +256,19 @@
 			"name": "connections",
 			"columns": [
 				{
+					"name": "solution_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
 					"name": "id",
-					"data_type": "guid",
+					"data_type": "integer",
 					"is_nullable": false
 				},
 				{
 					"name": "name",
 					"data_type": "string",
 					"length": 100,
-					"is_nullable": false
-				},
-				{
-					"name": "solution_id",
-					"data_type": "integer",
 					"is_nullable": false
 				},
 				{
@@ -293,7 +293,7 @@
 				{
 					"name": "pk_connections",
 					"type": "PK",
-					"columns": "id"
+					"columns": "solution_id, id"
 				},
 				{
 					"name": "uq_connections__name",
@@ -320,6 +320,11 @@
 			"name": "sql_scripts_variables",
 			"columns": [
 				{
+					"name": "solution_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
 					"name": "id",
 					"data_type": "ineteger",
 					"is_nullable": false
@@ -328,11 +333,6 @@
 					"name": "name",
 					"data_type": "string",
 					"length": 100,
-					"is_nullable": false
-				},
-				{
-					"name": "solution_id",
-					"data_type": "integer",
 					"is_nullable": false
 				},
 				{
@@ -346,7 +346,7 @@
 				{
 					"name": "pk_sql_scripts_variables",
 					"type": "PK",
-					"columns": "id"
+					"columns": "solution_id, id"
 				},
 				{
 					"name": "uq_sql_scripts_variables",
@@ -366,6 +366,11 @@
 			"name": "projects",
 			"columns": [
 				{
+					"name": "solution_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
 					"name": "id",
 					"data_type": "integer",
 					"is_nullable": false
@@ -374,11 +379,6 @@
 					"name": "name",
 					"data_type": "string",
 					"length": 100,
-					"is_nullable": false
-				},
-				{
-					"name": "solution_id",
-					"data_type": "integer",
 					"is_nullable": false
 				},
 				{
@@ -441,7 +441,7 @@
 				{
 					"name": "pk_projects",
 					"type": "PK",
-					"columns": "id"
+					"columns": "solution_id, id"
 				},
 				{
 					"name": "uq_projects__name",
@@ -480,6 +480,11 @@
 			"name": "sql_scripts",
 			"columns": [
 				{
+					"name": "solution_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
 					"name": "id",
 					"data_type": "ineteger",
 					"is_nullable": false
@@ -488,11 +493,6 @@
 					"name": "name",
 					"data_type": "string",
 					"length": 100,
-					"is_nullable": false
-				},
-				{
-					"name": "solution_id",
-					"data_type": "integer",
 					"is_nullable": false
 				},
 				{
@@ -511,7 +511,7 @@
 				{
 					"name": "pk_sql_scripts",
 					"type": "PK",
-					"columns": "id"
+					"columns": "solution_id, id"
 				},
 				{
 					"name": "uq_sql_scripts__name",

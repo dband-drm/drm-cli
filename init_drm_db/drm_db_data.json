@@ -105,30 +105,36 @@
 			"is_active": true,
 			"solutions": [
 				{
+					"id": 1,
 					"name": "MSSQL solution",
 					"solution_type_id": 1,
 					"connections": [
 						{
+							"id": 1,
 							"name": "dev",
 							"connection_type_id": 1,
 							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
 						},
 						{
+							"id": 2,
 							"name": "test",
 							"connection_type_id": 1,
 							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
 						},
 						{
+							"id": 3,
 							"name": "prod-USA",
 							"connection_type_id": 1,
 							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
 						},
 						{
+							"id": 4,
 							"name": "prod-EUR",
 							"connection_type_id": 1,
 							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
 						},
 						{
+							"id": 5,
 							"name": "prod-ASIA",
 							"connection_type_id": 1,
 							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
@@ -136,14 +142,17 @@
 					],
 					"sql_scripts_variables": [
 						{
+							"id": 1,
 							"name": "var1",
 							"value": "value1"
 						},
 						{
+							"id": 2,
 							"name": "var2",
 							"value": "value2"
 						},
 						{
+							"id": 3,
 							"name": "var3",
 							"value": "value3"
 						}
@@ -151,6 +160,7 @@
 					"path": "D:\\TFS\\MSSQL\\Solution.sln",
 					"projects": [
 						{
+							"id": 1,
 							"name": "Project_A",
 							"targets_compare_db": "DB_A",
 							"targets_type_id": 1,
@@ -158,6 +168,7 @@
 							"fail_on_error": false
 						},
 						{
+							"id": 2,
 							"name": "Project_B",
 							"targets_compare_db": "DB_B1",
 							"targets_type_id": 1,
@@ -168,6 +179,7 @@
 							"fail_on_error": true
 						},
 						{
+							"id": 3,
 							"name": "Project_C",
 							"targets_compare_db": "DB_C1",
 							"targets_type_id": 2,
