@@ -161,12 +161,17 @@ class InitDB:
 					#==================
 					# Insert sql_script
 					#==================
+					script_name_name = "sql_scripts"
 					sql_script_row = {key: value for key, value in project_row.items() if key in ("targets_sql_text")}
-					
-					#if (list(sql_script_row.keys())[0] != None):
-					#	print("Yes")
-					#else:
-					#	print("No")
+					if (len(list(sql_script_row.keys())) > 0):
+						sql_text = list(sql_script_row.values())[0].replace("'", "''")
+						script_columns = ["id", "name", "solution_id", "sql_text"]
+						script_values = [sql_script_id, sql_script_id, solution_id, sql_text]
+						sql_command = parser.insert_row(script_name_name, script_columns, script_values)
+						sqlite.execute_command(conn, sql_command)
+						columns.append("targets_sql_script_id")
+						values.append(sql_script_id)
+						sql_script_id += 1		
 					
 					sql_command = parser.insert_row(table_name, columns, values)
 					sqlite.execute_command(conn, sql_command)
