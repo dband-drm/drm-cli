@@ -54,13 +54,36 @@ class InitDB:
 
 		f = open(INIT_DATA_JSON)
 		js = json.load(f)
+
+		#==================
+		# Load dictionaries
+		#==================
 		for js_dictionary in js['dictionaries']:
-			for js_table in js_dictionary.keys():
-				table_name = js_table
-			for rows in js_dictionary.values():
-				for row in rows:
-					sql_command = sql_command = parser.insert_row(table_name, row.keys(), row.values())
-					sqlite.execute_command(conn, sql_command)
+			table_name = list(js_dictionary.keys())[0]
+			for row in js_dictionary[table_name]:
+				columns = list(row.keys())
+				values = list(row.values())
+				sql_command = parser.insert_row(table_name, row.keys(), row.values())
+				sqlite.execute_command(conn, sql_command)
+
+		#==================
+		# Load Demo release
+		#==================
+		# For each release
+		table_name = "releases"
+		for row in js[table_name]:
+
+			#===============
+			# Insert release
+			#===============
+			row_without_sons = {key: value for key, value in row.items() if key != "solutions"}
+			columns = list(row_without_sons.keys())
+			values = list(row_without_sons.values())
+			sql_command = parser.insert_row(table_name, columns, values)
+			print(sql_command)
+			sqlite.execute_command(conn, sql_command)
+
+
 
 		f.close()
 

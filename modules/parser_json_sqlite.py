@@ -85,25 +85,10 @@ class ParserJsonSqlite:
 		return sql_command
 
 
-	def insert_row (self, table_name, js_columns_names, js_columns_values):
-		first_column = True
-		sql_command = "insert into {table_name} (".format(table_name = table_name)
+	def insert_row (self, table_name, columns_names, columns_values):
 
-		for column_name in js_columns_names:
-			if (first_column):
-				first_column = False
-			else:
-				sql_command += ", "
-			sql_command += 	column_name
-		sql_command += 	") values ("
-
-		first_column = True
-		for column_value in js_columns_values:
-			if (first_column):
-				first_column = False
-			else:
-				sql_command += ", "
-			sql_command += 	"'" + column_value + "'"
-		sql_command += 	");"
-
+		columns_names_list = ", ".join(columns_names)
+		columns_values_list = ", ".join([f"'{value}'" if isinstance(value, str) else str(value) for value in columns_values])
+		
+		sql_command = "insert into {table_name} ({columns_names}) values ({columns_values})".format(table_name = table_name, columns_names = columns_names_list, columns_values = columns_values_list)
 		return sql_command
