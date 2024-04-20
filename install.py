@@ -113,6 +113,8 @@ def copy_drm_content(drm_path):
 	:param drm_path: DRM full path directory
 	'''
 	try:
+		print("Copying DRM content...")
+
 		drm_config_file = os.path.join(drm_path, DRM_CONFIG_FILE_NAME)
 		if (os.path.exists(drm_config_file)):
 			raise Exception ("DRM already installed in given path. Please select another path or unsinatall before reinstall")
