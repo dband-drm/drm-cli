@@ -8,6 +8,7 @@ from modules import crypto
 
 DRYRUN_MODE = "DryRun"
 DEPLOY_MODE = "Deploy"
+DRM_CONFIG_FILE_NAME = "drm_deploy.config"
 
 class style():
     BLACK = '\033[30m'
@@ -53,7 +54,7 @@ try:
         raise Exception ("Encryption key not provided!!!")
 
     current_working_directory = os.getcwd()
-    drm_config_file = os.path.join(current_working_directory, "drm.config")
+    drm_config_file = os.path.join(current_working_directory, DRM_CONFIG_FILE_NAME)
     f = open(drm_config_file)
     js = json.load(f)
     installation_type = js['installation_type']
