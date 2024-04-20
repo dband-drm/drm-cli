@@ -44,5 +44,4 @@ def execute_command(conn, command):
     """
     cur = conn.cursor()
     cur.execute(command)
-    conn.commit()
 
