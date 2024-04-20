@@ -56,7 +56,7 @@ class Build:
             #====================
             release_obj = Release(release_id)
             release_parser = json.loads(parser_sqlite_json.Releases.get_release_by_id(release_id, release_obj))           
-            if (release_parser['is_active'] != 0):
+            if (release_parser['is_active'] == 1):
                 release_js.update(release_parser)
                 
                 #==========================

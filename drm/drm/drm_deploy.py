@@ -32,7 +32,7 @@ description = "This is a RDM CLI, developed by d-band that deploys releases conf
 copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
  
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
-parser.add_argument("-e", "--environment", help = "Environment name", required = True)
+parser.add_argument("-c", "--connection", help = "Connection name", required = True)
 parser.add_argument("-r", "--release", help = "Release ID", required = True)
 parser.add_argument("--password", action='store_true', default=False, required = False)
 parser.add_argument("--dryrun", action='store_true', default=False, required = False)
@@ -79,7 +79,7 @@ try:
     # Get release name from DB
     #=========================
     build = Build(installation_type)
-    build.generate_release_full_details(1)
+    build.generate_release_full_details(args.release)
 
 except Exception as e:
 	print(style.RED + "Error: " + str(e) + style.RESET)
