@@ -10,7 +10,7 @@ from modules import init_db
 from modules import crypto
 
 DRM_VERSION = "1.0.0.0"
-DRM_CONFIG_FILE_NAME = "drm.config"
+DRM_CONFIG_FILE_NAME = "drm_deploy.config"
 DRM_DB_JSON_PATH = "init_drm_db"
 DRM_DB_JSON_FILE_NAME = "drm_db_data.json"
 DRM_DB_FOLDER = "db"
