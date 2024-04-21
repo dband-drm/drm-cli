@@ -79,12 +79,17 @@ try:
     #=========================
     # Get release name from DB
     #=========================
-    print("Building release...")
+    print('Starting DRM deployment (Release ID: "{release_id}, Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
+    print("")
     
+    print("Building release...")   
     build = Build(drm_version, installation_type)
-    build.generate_release_full_details(args.release, args.connection)
-    
-    print(style.GREEN + "Release build finished successfully!!!" + style.RESET)
+    build.generate_release_full_details(args.release, args.connection)    
+    print("Build finished successfully!!!")
+    print("")
+
+    print(style.GREEN + "DRM deployment finished successfully!!!" + style.RESET)
+    print("==================================")
     print("")
     
 except Exception as e:
