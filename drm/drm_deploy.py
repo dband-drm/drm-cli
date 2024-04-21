@@ -57,6 +57,7 @@ try:
     drm_config_file = os.path.join(current_working_directory, DRM_CONFIG_FILE_NAME)
     f = open(drm_config_file)
     js = json.load(f)
+    drm_version = js['drm_version']
     installation_type = js['installation_type']
     encrypted_security_text = js['security_text']
     crpt = crypto.Crypto(encryption_key)
@@ -78,11 +79,16 @@ try:
     #=========================
     # Get release name from DB
     #=========================
-    build = Build(installation_type)
+    print("Building release...")
+    
+    build = Build(drm_version, installation_type)
     build.generate_release_full_details(args.release, args.connection)
-
+    
+    print(style.GREEN + "Release build finished successfully!!!" + style.RESET)
+    print("")
+    
 except Exception as e:
 	print(style.RED + "Error: " + str(e) + style.RESET)
 	print("")
-	print(style.RED + "DRM release failed!!!" + style.RESET)
+	print(style.RED + "DRM deployment failed!!!" + style.RESET)
 	print("==================================")

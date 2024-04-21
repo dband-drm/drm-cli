@@ -24,9 +24,32 @@ class Db:
 
 
 class Releases:
+    def check_release_by_id_and_connection_name(id, connection_name):
+        """ Checks if active release & connection name exist in the system
+        :param id: Release ID
+        :param connection_name: Connection name
+        :return: JSON
+        """
+        drm_db = Db(DRM_DB_NAME)
+        sql_command = "select releases.id as release_id, connections.id as connection_id from releases left join solutions on solutions.release_id = releases.id and solutions.is_active = 1 left join connections on connections.solution_id = solutions.id and connections.name = '{conn_name}' and connections.is_active = 1 where releases.id = {rel_id} and releases.is_active = 1;".format(rel_id = id, conn_name = connection_name)
+        rows = drm_db.select_query(sql_command)
+        if(len(rows) > 0):
+            for row in rows:
+                verified_release_id = row[0]
+                verified_connection_id = row[1] 
+                if (verified_connection_id    == None):
+                    verified_connection_id = "null"
+        else:
+            verified_release_id = "null"
+            verified_connection_id = "null"
+            
+        js_text = '{"release_id": ' + str(verified_release_id) + ', "connection_id": ' + str(verified_connection_id) + '}'
+        js = json.loads(js_text)
+        return json.dumps(js)
+
     def get_release_by_id(id, release_obj):
         """ Return release details by release_id
-        :param release_id: Release ID
+        :param id: Release ID
         :param release_obj: Release object
         :return: JSON
         """

@@ -68,12 +68,13 @@ class Project:
         self.is_active = fail_on_error      
 
 class Build:
-    def __init__(self, installation_type = "json"):   
+    def __init__(self, drm_version, installation_type = "json"):   
         """ Constructor
         :param installation_type: Installation type (json/sqlite)
         :return:
         """
         self.installation_type = installation_type
+        self.drm_version = drm_version
 
     def generate_release_full_details(self, release_id, connection_name):
         """ Generates full details of a release as JSON by id
@@ -82,6 +83,16 @@ class Build:
         """
         if (self.installation_type == "sqlite"):
             
+            #===========================================
+            # Check if active release & connection exist
+            #===========================================
+            check_parser = json.loads(parser_sqlite_json.Releases.check_release_by_id_and_connection_name(release_id, connection_name))           
+            if (check_parser['release_id'] == None):
+                raise Exception ('Release ID "' + str(release_id) + '" not found.' )
+            elif (check_parser['connection_id'] == None):
+                raise Exception (('No active connection "{connection_name}" is associated with release ID "' + str(release_id) + '".' ).format(connection_name = connection_name))
+            
+
             #=============================
             # Create build (bin) directory
             #=============================
@@ -160,7 +171,7 @@ class Build:
                         release_js.update(solutions_js)
 
             else:
-                raise Exception ("Release ID not found." )
+                raise Exception ('Release ID "' + str(release_id) + '" not found.' )
 
         #=======================
         # Create build JSON file
