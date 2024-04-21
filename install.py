@@ -6,10 +6,11 @@ import sqlite3
 import datetime
 import json
 import shutil
+from pathlib import Path
 from modules import init_db
 from modules import crypto
 
-DRM_VERSION = "1.0.0.0"
+INSTALL_CONFIG_FILE_NAME = "install.config"
 DRM_CONFIG_FILE_NAME = "drm_deploy.config"
 DRM_DB_JSON_PATH = "init_drm_db"
 DRM_DB_JSON_FILE_NAME = "drm_db_data.json"
@@ -27,6 +28,13 @@ class style():
     WHITE = '\033[37m'
     UNDERLINE = '\033[4m'
     RESET = '\033[0m'
+
+class Config:
+	def __init__(self):
+		f = open(INSTALL_CONFIG_FILE_NAME)
+		js = json.load(f)
+		self.drm_version = js['drm_version']      
+		f.close()  
 
 #=======
 # Helper
@@ -97,12 +105,12 @@ def get_drm_path():
 	This function returns the installation path entered by the user
 	"""
 	try:
-		current_working_directory = os.getcwd()
+		home = os.path.join(str(Path.home()), "drm")
 		drm_path = ""
 		while drm_path == "":
-			drm_path = input("Enter path to install the DRM on (Default: current directory, " + current_working_directory + "): ")
+			drm_path = input("Enter path to install the DRM on (Default: " + home + "): ")
 			if(drm_path == ""):
-				drm_path = current_working_directory
+				drm_path = home
 		return drm_path
 	except Exception as e:
                 raise Exception ("failed to get installation path, " + str(e))
@@ -155,10 +163,12 @@ def create_drm_config(drm_path, install_type, encryption_key):
 		crpt = crypto.Crypto(encryption_key)
 		security_text = crpt.encrypt_string("This drm cli was developed by d-band and it is amazing!!!")
 
+		install_config = Config()
+		
 		content = {
+			"drm_version": install_config.drm_version,
 			"installed_by": installer_user,
 			"installation_time": install_timestamp,
-			"drm_version": DRM_VERSION,
 			"installation_type": install_type,
 			"security_text": security_text
 		}
