@@ -79,7 +79,7 @@ try:
     # Get release name from DB
     #=========================
     build = Build(installation_type)
-    build.generate_release_full_details(args.release)
+    build.generate_release_full_details(args.release, args.connection)
 
 except Exception as e:
 	print(style.RED + "Error: " + str(e) + style.RESET)

@@ -24,6 +24,30 @@ class Solution:
         self.path = path       
         self.is_active = is_active       
 
+class Connection:
+    def __init__(self, solution_id, id = None, name = None, connection_type_id = None, connection_string = None, is_active = None): 
+        self.id = id       
+        self.name = name       
+        self.solution_id = solution_id       
+        self.connection_type_id = connection_type_id       
+        self.connection_string = connection_string       
+        self.is_active = is_active       
+
+class Sql_Scripts_Variable:
+    def __init__(self, solution_id, id = None, name = None, value = None): 
+        self.id = id       
+        self.name = name       
+        self.solution_id = solution_id       
+        self.value = value      
+
+class Project:
+    def __init__(self, solution_id, id = None, name = None, ordinal = None, targets_compare_db = None): 
+        self.id = id       
+        self.name = name       
+        self.solution_id = solution_id       
+        self.ordinal = ordinal      
+        self.targets_compare_db = targets_compare_db      
+
 class Build:
     def __init__(self, installation_type = "json"):   
         """ Constructor
@@ -32,7 +56,7 @@ class Build:
         """
         self.installation_type = installation_type
 
-    def generate_release_full_details(self, release_id):
+    def generate_release_full_details(self, release_id, connection_name):
         """ Generates full details of a release as JSON by id
         :param id: Release ID
         :return:
@@ -52,22 +76,49 @@ class Build:
             release_js = {}
             
             #====================
-            # Get release details
+            # Get Release details
             #====================
             release_obj = Release(release_id)
             release_parser = json.loads(parser_sqlite_json.Releases.get_release_by_id(release_id, release_obj))           
             if (release_parser['is_active'] == 1):
                 release_js.update(release_parser)
-                
+ 
                 #==========================
                 # Get all Release Solutions
                 #==========================
-                release_js.update(json.loads('{"solutions":[]}'))
+                solutions_js = {"solutions":[]}
                 solution_obj = Solution(release_parser['id'])
                 solutions_parser = json.loads(parser_sqlite_json.Solutions.get_solutions_by_release_id(release_parser['id'], solution_obj))           
                 for solution in solutions_parser['solutions']:
                     if solution['is_active'] == 1:
-                        release_js['solutions'].append(solution)
+                        solution_js = {}
+                        solution_js.update(solution)
+
+                        #=============================
+                        # Get all Solution Connections
+                        #=============================
+                        connections_js = {"connections":[]}
+                        connection_obj = Connection(solution['id'])
+                        connections_parser = json.loads(parser_sqlite_json.Connections.get_connection_by_solution_id_and_name(solution['id'], connection_name, connection_obj))           
+                        for connection in connections_parser['connections']:
+                            if connection['is_active'] == 1:
+                                connections_js['connections'].append(connection)
+                                solution_js.update(connections_js)                                
+
+                        #======================================
+                        # Get all Solution Sql_Script_Variables
+                        #======================================
+                        sql_scripts_variables_js = {"sql_scripts_variables":[]}
+                        sql_scripts_variable_obj = Sql_Scripts_Variable(solution['id'])
+                        sql_scripts_variables_parser = json.loads(parser_sqlite_json.SqlScriptsVariables.get_sql_scripts_variables_by_solution_id(solution['id'], sql_scripts_variable_obj))           
+                        for sql_scripts_variable in sql_scripts_variables_parser['sql_scripts_variables']:
+                            sql_scripts_variables_js['sql_scripts_variables'].append(sql_scripts_variable)
+                            solution_js.update(sql_scripts_variables_js)
+
+                        solutions_js['solutions'].append(solution_js)
+                        
+                        
+                        release_js.update(solutions_js)
 
             else:
                 raise Exception ("Release ID not found." )

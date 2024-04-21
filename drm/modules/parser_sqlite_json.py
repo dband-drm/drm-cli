@@ -64,3 +64,46 @@ class Solutions:
             js['solutions'].append(solution_js)
         return json.dumps(js)
 
+class Connections:
+    def get_connection_by_solution_id_and_name(solution_id, name, connection_obj):
+        """ Return solution connection details by solution_id and name
+        :param solution_id: Solution ID
+        :param name: Connection name
+        :param connection_obj: Connection object
+        :return: JSON
+        """
+        js = json.loads('{"connections":[]}')
+        drm_db = Db(DRM_DB_NAME)
+        sql_command = "select id, name, solution_id, connection_type_id, connection_string, is_active from connections where solution_id = {sol_id} and name = '{name}';".format(sol_id = solution_id, name = name)
+        rows = drm_db.select_query(sql_command)
+        for row in rows:
+            connection_obj.id = row[0]    
+            connection_obj.name = row[1]    
+            connection_obj.solution_id = row[2]    
+            connection_obj.connection_type_id = row[3]    
+            connection_obj.connection_string = row[4]    
+            connection_obj.is_active = row[5] 
+            connection_js = json.loads(json.dumps(connection_obj.__dict__))
+            js['connections'].append(connection_js)
+        return json.dumps(js)
+
+class SqlScriptsVariables:
+    def get_sql_scripts_variables_by_solution_id(solution_id, sql_script_variable_obj):
+        """ Return solution sql_scripts_variables details by solution_id
+        :param solution_id: Solution ID
+        :param sql_script_variable_obj: Sql_Scripts_Variable object
+        :return: JSON
+        """
+        js = json.loads('{"sql_scripts_variables":[]}')
+        drm_db = Db(DRM_DB_NAME)
+        sql_command = "select id, name, solution_id, value from sql_scripts_variables where solution_id = {sol_id} order by id;".format(sol_id = solution_id)
+        rows = drm_db.select_query(sql_command)
+        for row in rows:
+            sql_script_variable_obj.id = row[0]    
+            sql_script_variable_obj.name = row[1]    
+            sql_script_variable_obj.solution_id = row[2]    
+            sql_script_variable_obj.value = row[3]    
+            sql_script_variable_js = json.loads(json.dumps(sql_script_variable_obj.__dict__))
+            js['sql_scripts_variables'].append(sql_script_variable_js)
+        return json.dumps(js)
+
