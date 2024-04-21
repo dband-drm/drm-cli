@@ -50,7 +50,7 @@ class Solutions:
         """
         js = json.loads('{"solutions":[]}')
         drm_db = Db(DRM_DB_NAME)
-        sql_command = "select id, name, release_id, ordinal, solution_type_id, path, is_active from solutions where release_id = {rel_id} order by ordinal;".format(rel_id = release_id)
+        sql_command = "select id, name, release_id, ordinal, solution_type_id, path, is_active from solutions where release_id = {rel_id} order by ordinal, id;".format(rel_id = release_id)
         rows = drm_db.select_query(sql_command)
         for row in rows:
             solution_obj.id = row[0]    

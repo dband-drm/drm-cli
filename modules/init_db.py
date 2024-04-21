@@ -155,6 +155,8 @@ class InitDB:
 					values = list(project_row_without_sons.values())
 					columns.append("id")
 					values.append(project_id)
+					columns.append("ordinal")
+					values.append(project_id)
 					columns.append("solution_id")
 					values.append(solution_id)
 

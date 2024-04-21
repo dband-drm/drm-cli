@@ -2,10 +2,13 @@ import sys
 import os
 import json
 import shutil
+import io
+import zipfile
 from modules import parser_sqlite_json
 
 BUILD_FOLDER_NAME = "bin"
 BUILD_FILE_NAME = "deploy.json"
+PACK_FILE_NAME = "deploy.drmpac"
 
 class Release:
     def __init__(self, id, name = None, max_retries = None, is_active = None): 
@@ -166,5 +169,13 @@ class Build:
         with open(build_file_name, 'w') as f:
             json.dump(release_js, f)
         f.close() 
-
-
+        
+        #===============
+        # Zip build file
+        #===============
+        pack_file_name = os.path.join(build_dir, PACK_FILE_NAME)
+        with zipfile.ZipFile(pack_file_name, 'w', zipfile.ZIP_DEFLATED) as myzip:
+            myzip.write(build_file_name, BUILD_FILE_NAME)
+            
+        if os.path.exists(build_file_name):
+            os.remove(build_file_name)
