@@ -107,3 +107,53 @@ class SqlScriptsVariables:
             js['sql_scripts_variables'].append(sql_script_variable_js)
         return json.dumps(js)
 
+class SqlScripts:
+    def get_sql_scripts_by_solution_id(solution_id, sql_script_obj):
+        """ Return solution sql_scripts details by solution_id
+        :param solution_id: Solution ID
+        :param sql_script_obj: Sql_Script object
+        :return: JSON
+        """
+        js = json.loads('{"sql_scripts":[]}')
+        drm_db = Db(DRM_DB_NAME)
+        sql_command = "select id, name, solution_id, sql_text from sql_scripts where solution_id = {sol_id} order by id;".format(sol_id = solution_id)
+        rows = drm_db.select_query(sql_command)
+        for row in rows:
+            sql_script_obj.id = row[0]    
+            sql_script_obj.name = row[1]    
+            sql_script_obj.solution_id = row[2]    
+            sql_script_obj.sql_text = row[3]    
+            sql_script_js = json.loads(json.dumps(sql_script_obj.__dict__))
+            js['sql_scripts'].append(sql_script_js)
+        return json.dumps(js)
+
+class Projects:
+    def get_projects_by_solution_id(solution_id, project_obj):
+        """ Return solution projects details by solution_id
+        :param solution_id: Solution ID
+        :param project_obj: Project object
+        :return: JSON
+        """
+        js = json.loads('{"projects":[]}')
+        drm_db = Db(DRM_DB_NAME)
+        sql_command = "select projects.id, projects.name, projects.solution_id, projects.ordinal, targets_compare_db, targets_type_id, targets_list, targets_sql_script_id, sql_scripts.sql_text as targets_sql_text, max_degree_in_parallel, timeout_in_min, sleep_time_in_sec, fail_on_error, is_active from projects left join sql_scripts on projects.solution_id = sql_scripts.solution_id and projects.targets_sql_script_id = sql_scripts.id where projects.solution_id = {sol_id} order by projects.ordinal, projects.id;".format(sol_id = solution_id)
+        rows = drm_db.select_query(sql_command)
+        for row in rows:
+            project_obj.id = row[0]    
+            project_obj.name = row[1]    
+            project_obj.solution_id = row[2]    
+            project_obj.ordinal = row[3]    
+            project_obj.targets_compare_db = row[4]    
+            project_obj.targets_type_id = row[5]    
+            project_obj.targets_list = row[6]    
+            project_obj.targets_sql_script_id = row[7]    
+            project_obj.targets_sql_text = row[8]    
+            project_obj.max_degree_in_parallel = row[9]    
+            project_obj.timeout_in_min = row[10]    
+            project_obj.sleep_time_in_sec = row[11]    
+            project_obj.fail_on_error = row[12]    
+            project_obj.is_active = row[13]    
+            project_js = json.loads(json.dumps(project_obj.__dict__))
+            js['projects'].append(project_js)
+        return json.dumps(js)
+

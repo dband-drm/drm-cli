@@ -40,13 +40,29 @@ class Sql_Scripts_Variable:
         self.solution_id = solution_id       
         self.value = value      
 
+class Sql_Script:
+    def __init__(self, solution_id, id = None, name = None, sql_text = None): 
+        self.id = id       
+        self.name = name       
+        self.solution_id = solution_id       
+        self.sql_text = sql_text      
+
 class Project:
-    def __init__(self, solution_id, id = None, name = None, ordinal = None, targets_compare_db = None): 
+    def __init__(self, solution_id, id = None, name = None, ordinal = None, targets_compare_db = None, targets_type_id = None, targets_list = None, targets_sql_script_id = None, targets_sql_text = None, max_degree_in_parallel = None, timeout_in_min = None, sleep_time_in_sec = None, fail_on_error = None, is_active = None): 
         self.id = id       
         self.name = name       
         self.solution_id = solution_id       
         self.ordinal = ordinal      
         self.targets_compare_db = targets_compare_db      
+        self.targets_type_id = targets_type_id      
+        self.targets_list = targets_list      
+        self.targets_sql_script_id = targets_sql_script_id      
+        self.targets_sql_text = targets_sql_text      
+        self.max_degree_in_parallel = max_degree_in_parallel      
+        self.timeout_in_min = timeout_in_min      
+        self.sleep_time_in_sec = sleep_time_in_sec      
+        self.fail_on_error = fail_on_error      
+        self.is_active = fail_on_error      
 
 class Build:
     def __init__(self, installation_type = "json"):   
@@ -114,6 +130,26 @@ class Build:
                         for sql_scripts_variable in sql_scripts_variables_parser['sql_scripts_variables']:
                             sql_scripts_variables_js['sql_scripts_variables'].append(sql_scripts_variable)
                             solution_js.update(sql_scripts_variables_js)
+
+                        #=============================
+                        # Get all Solution Sql_Scripts
+                        #=============================
+                        sql_scripts_js = {"sql_scripts":[]}
+                        sql_script_obj = Sql_Script(solution['id'])
+                        sql_scripts_parser = json.loads(parser_sqlite_json.SqlScripts.get_sql_scripts_by_solution_id(solution['id'], sql_script_obj))           
+                        for sql_script in sql_scripts_parser['sql_scripts']:
+                            sql_scripts_js['sql_scripts'].append(sql_script)
+                            solution_js.update(sql_scripts_js)
+
+                        #==========================
+                        # Get all Solution projects
+                        #==========================
+                        projects_js = {"projects":[]}
+                        project_obj = Project(solution['id'])
+                        projects_parser = json.loads(parser_sqlite_json.Projects.get_projects_by_solution_id(solution['id'], project_obj))           
+                        for project in projects_parser['projects']:
+                            projects_js['projects'].append(project)
+                            solution_js.update(projects_js)
 
                         solutions_js['solutions'].append(solution_js)
                         
