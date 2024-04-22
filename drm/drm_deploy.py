@@ -79,7 +79,7 @@ try:
     #=========================
     # Get release name from DB
     #=========================
-    print('Starting DRM deployment (Release ID: "{release_id}, Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
+    print('Starting DRM deployment (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
     print("")
     
     print("Building release...")   

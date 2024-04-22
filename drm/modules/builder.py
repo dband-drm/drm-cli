@@ -5,6 +5,7 @@ import shutil
 import io
 import zipfile
 from modules import parser_sqlite_json
+from modules import parser_json_json
 
 BUILD_FOLDER_NAME = "bin"
 CONFIG_FILE_NAME = "drm_deploy.config"
@@ -84,96 +85,99 @@ class Build:
         """
         
         if (self.installation_type == "sqlite"):
-            
-            #===========================================
-            # Check if active release & connection exist
-            #===========================================
-            check_parser = json.loads(parser_sqlite_json.Releases.check_release_by_id_and_connection_name(release_id, connection_name))           
-            if (check_parser['release_id'] == None):
-                raise Exception ('Release ID "' + str(release_id) + '" not found.' )
-            elif (check_parser['connection_id'] == None):
-                raise Exception (('No active connection "{connection_name}" is associated with release ID "' + str(release_id) + '".' ).format(connection_name = connection_name))
-            
+            parser = parser_sqlite_json
+        else:
+            parser = parser_json_json
 
-            #=============================
-            # Create build (bin) directory
-            #=============================
-            current_working_directory = os.getcwd()
-            build_dir = os.path.join(current_working_directory, BUILD_FOLDER_NAME)
-            if (os.path.exists(build_dir)):
-                shutil.rmtree(build_dir)
-            if not(os.path.exists(build_dir)):
-                os.mkdir(build_dir)
-            
-            release_js = {}
-            
-            #====================
-            # Get Release details
-            #====================
-            release_obj = Release(release_id)
-            release_parser = json.loads(parser_sqlite_json.Releases.get_release_by_id(release_id, release_obj))           
-            if (release_parser['is_active'] == 1):
-                release_js.update(release_parser)
- 
-                #==========================
-                # Get all Release Solutions
-                #==========================
-                solutions_js = {"solutions":[]}
-                solution_obj = Solution(release_parser['id'])
-                solutions_parser = json.loads(parser_sqlite_json.Solutions.get_solutions_by_release_id(release_parser['id'], solution_obj))           
-                for solution in solutions_parser['solutions']:
-                    if solution['is_active'] == 1:
-                        solution_js = {}
-                        solution_js.update(solution)
+        #===========================================
+        # Check if active release & connection exist
+        #===========================================
+        check_parser = json.loads(parser.Releases.check_release_by_id_and_connection_name(release_id, connection_name))           
+        if (check_parser['release_id'] == None):
+            raise Exception ('Release ID "' + str(release_id) + '" not found.' )
+        elif (check_parser['connection_id'] == None):
+            raise Exception (('No active connection "{connection_name}" is associated with release ID "' + str(release_id) + '".' ).format(connection_name = connection_name))
+        
 
-                        #=============================
-                        # Get all Solution Connections
-                        #=============================
-                        connections_js = {"connections":[]}
-                        connection_obj = Connection(solution['id'])
-                        connections_parser = json.loads(parser_sqlite_json.Connections.get_connection_by_solution_id_and_name(solution['id'], connection_name, connection_obj))           
-                        for connection in connections_parser['connections']:
-                            if connection['is_active'] == 1:
-                                connections_js['connections'].append(connection)
-                                solution_js.update(connections_js)                                
+        #=============================
+        # Create build (bin) directory
+        #=============================
+        current_working_directory = os.getcwd()
+        build_dir = os.path.join(current_working_directory, BUILD_FOLDER_NAME)
+        if (os.path.exists(build_dir)):
+            shutil.rmtree(build_dir)
+        if not(os.path.exists(build_dir)):
+            os.mkdir(build_dir)
+        
+        release_js = {}
+        
+        #====================
+        # Get Release details
+        #====================
+        release_obj = Release(release_id)
+        release_parser = json.loads(parser.Releases.get_release_by_id(release_id, release_obj))           
+        if (release_parser['is_active'] == 1):
+            release_js.update(release_parser)
 
-                        #======================================
-                        # Get all Solution Sql_Script_Variables
-                        #======================================
-                        sql_scripts_variables_js = {"sql_scripts_variables":[]}
-                        sql_scripts_variable_obj = Sql_Scripts_Variable(solution['id'])
-                        sql_scripts_variables_parser = json.loads(parser_sqlite_json.SqlScriptsVariables.get_sql_scripts_variables_by_solution_id(solution['id'], sql_scripts_variable_obj))           
-                        for sql_scripts_variable in sql_scripts_variables_parser['sql_scripts_variables']:
-                            sql_scripts_variables_js['sql_scripts_variables'].append(sql_scripts_variable)
-                            solution_js.update(sql_scripts_variables_js)
+            #==========================
+            # Get all Release Solutions
+            #==========================
+            solutions_js = {"solutions":[]}
+            solution_obj = Solution(release_parser['id'])
+            solutions_parser = json.loads(parser.Solutions.get_solutions_by_release_id(release_parser['id'], solution_obj))           
+            for solution in solutions_parser['solutions']:
+                if solution['is_active'] == 1:
+                    solution_js = {}
+                    solution_js.update(solution)
 
-                        #=============================
-                        # Get all Solution Sql_Scripts
-                        #=============================
-                        sql_scripts_js = {"sql_scripts":[]}
-                        sql_script_obj = Sql_Script(solution['id'])
-                        sql_scripts_parser = json.loads(parser_sqlite_json.SqlScripts.get_sql_scripts_by_solution_id(solution['id'], sql_script_obj))           
-                        for sql_script in sql_scripts_parser['sql_scripts']:
-                            sql_scripts_js['sql_scripts'].append(sql_script)
-                            solution_js.update(sql_scripts_js)
+                    #=============================
+                    # Get all Solution Connections
+                    #=============================
+                    connections_js = {"connections":[]}
+                    connection_obj = Connection(solution['id'])
+                    connections_parser = json.loads(parser.Connections.get_connection_by_solution_id_and_name(solution['id'], connection_name, connection_obj))           
+                    for connection in connections_parser['connections']:
+                        if connection['is_active'] == 1:
+                            connections_js['connections'].append(connection)
+                            solution_js.update(connections_js)                                
 
-                        #==========================
-                        # Get all Solution projects
-                        #==========================
-                        projects_js = {"projects":[]}
-                        project_obj = Project(solution['id'])
-                        projects_parser = json.loads(parser_sqlite_json.Projects.get_projects_by_solution_id(solution['id'], project_obj))           
-                        for project in projects_parser['projects']:
-                            projects_js['projects'].append(project)
-                            solution_js.update(projects_js)
+                    #======================================
+                    # Get all Solution Sql_Script_Variables
+                    #======================================
+                    sql_scripts_variables_js = {"sql_scripts_variables":[]}
+                    sql_scripts_variable_obj = Sql_Scripts_Variable(solution['id'])
+                    sql_scripts_variables_parser = json.loads(parser.SqlScriptsVariables.get_sql_scripts_variables_by_solution_id(solution['id'], sql_scripts_variable_obj))           
+                    for sql_scripts_variable in sql_scripts_variables_parser['sql_scripts_variables']:
+                        sql_scripts_variables_js['sql_scripts_variables'].append(sql_scripts_variable)
+                        solution_js.update(sql_scripts_variables_js)
 
-                        solutions_js['solutions'].append(solution_js)
-                        
-                        
-                        release_js.update(solutions_js)
+                    #=============================
+                    # Get all Solution Sql_Scripts
+                    #=============================
+                    sql_scripts_js = {"sql_scripts":[]}
+                    sql_script_obj = Sql_Script(solution['id'])
+                    sql_scripts_parser = json.loads(parser.SqlScripts.get_sql_scripts_by_solution_id(solution['id'], sql_script_obj))           
+                    for sql_script in sql_scripts_parser['sql_scripts']:
+                        sql_scripts_js['sql_scripts'].append(sql_script)
+                        solution_js.update(sql_scripts_js)
 
-            else:
-                raise Exception ('Release ID "' + str(release_id) + '" not found.' )
+                    #==========================
+                    # Get all Solution projects
+                    #==========================
+                    projects_js = {"projects":[]}
+                    project_obj = Project(solution['id'])
+                    projects_parser = json.loads(parser.Projects.get_projects_by_solution_id(solution['id'], project_obj))           
+                    for project in projects_parser['projects']:
+                        projects_js['projects'].append(project)
+                        solution_js.update(projects_js)
+
+                    solutions_js['solutions'].append(solution_js)
+                    
+                    
+                    release_js.update(solutions_js)
+
+        else:
+            raise Exception ('Release ID "' + str(release_id) + '" not found.' )
 
         #=======================================
         # generate deployment configuration file
