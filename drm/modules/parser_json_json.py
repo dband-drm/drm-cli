@@ -78,26 +78,21 @@ class Solutions:
                 if ("solutions" in release):
                     for solution in release['solutions']:
                         _solution_id += 1
-                        if ("is_active" in solution):
-                            is_active = solution['is_active']
+                        solution_obj.id = _solution_id    
+                        solution_obj.name = solution['name']    
+                        solution_obj.release_id = release_id 
+                        if  ("ordinal" in solution):
+                            solution_obj.ordinal = solution['ordinal'] 
                         else:
-                            is_active = True
-                        if(is_active):
-                            solution_obj.id = _solution_id    
-                            solution_obj.name = solution['name']    
-                            solution_obj.release_id = release_id 
-                            if  ("ordinal" in solution):
-                                solution_obj.ordinal = solution['ordinal'] 
-                            else:
-                                solution_obj.ordinal = _solution_id
-                            solution_obj.solution_type_id = solution['solution_type_id']    
-                            solution_obj.path = solution['path']   
-                            if  ("is_active" in solution):
-                                solution_obj.is_active = solution['is_active'] 
-                            else:
-                                solution_obj.is_active = True
-                            solution_js = json.loads(json.dumps(solution_obj.__dict__))
-                            js['solutions'].append(solution_js)
+                            solution_obj.ordinal = _solution_id
+                        solution_obj.solution_type_id = solution['solution_type_id']    
+                        solution_obj.path = solution['path']   
+                        if  ("is_active" in solution):
+                            solution_obj.is_active = solution['is_active'] 
+                        else:
+                            solution_obj.is_active = True
+                        solution_js = json.loads(json.dumps(solution_obj.__dict__))
+                        js['solutions'].append(solution_js)
         return json.dumps(js)
 
 class Connections:
@@ -175,17 +170,27 @@ class SqlScripts:
         :param sql_script_obj: Sql_Script object
         :return: JSON
         """
+        _solution_id = 0
+        _sql_script_id = 0
         js = json.loads('{"sql_scripts":[]}')
-        drm_db = Db(DRM_DB_NAME)
-        sql_command = "select id, name, solution_id, sql_text from sql_scripts where solution_id = {sol_id} order by id;".format(sol_id = solution_id)
-        rows = drm_db.select_query(sql_command)
-        for row in rows:
-            sql_script_obj.id = row[0]    
-            sql_script_obj.name = row[1]    
-            sql_script_obj.solution_id = row[2]    
-            sql_script_obj.sql_text = row[3]    
-            sql_script_js = json.loads(json.dumps(sql_script_obj.__dict__))
-            js['sql_scripts'].append(sql_script_js)
+        drm_db = json.loads(open(DRM_DB_NAME).read())
+        for release in drm_db['releases']:
+            if (release['id'] == int(release_id)):
+                verified_release_id = release['id']
+                if ("solutions" in release):
+                    for solution in release['solutions']:
+                        _solution_id += 1
+                        if (int(solution_id) == _solution_id):
+                            if ("projects" in solution):
+                                for project in solution['projects']:
+                                    if ("targets_sql_text" in project):
+                                        _sql_script_id += 1
+                                        sql_script_obj.id = _sql_script_id   
+                                        sql_script_obj.name = _sql_script_id    
+                                        sql_script_obj.solution_id = solution_id    
+                                        sql_script_obj.sql_text = project['targets_sql_text']    
+                                        sql_script_js = json.loads(json.dumps(sql_script_obj.__dict__))
+                                        js['sql_scripts'].append(sql_script_js)
         return json.dumps(js)
 
 class Projects:
@@ -196,26 +201,62 @@ class Projects:
         :param project_obj: Project object
         :return: JSON
         """
+        _solution_id = 0
+        _sql_script_id = 0
+        _project_id = 0
         js = json.loads('{"projects":[]}')
-        drm_db = Db(DRM_DB_NAME)
-        sql_command = "select projects.id, projects.name, projects.solution_id, projects.ordinal, targets_compare_db, targets_type_id, targets_list, targets_sql_script_id, sql_scripts.sql_text as targets_sql_text, max_degree_in_parallel, timeout_in_min, sleep_time_in_sec, fail_on_error, is_active from projects left join sql_scripts on projects.solution_id = sql_scripts.solution_id and projects.targets_sql_script_id = sql_scripts.id where projects.solution_id = {sol_id} order by projects.ordinal, projects.id;".format(sol_id = solution_id)
-        rows = drm_db.select_query(sql_command)
-        for row in rows:
-            project_obj.id = row[0]    
-            project_obj.name = row[1]    
-            project_obj.solution_id = row[2]    
-            project_obj.ordinal = row[3]    
-            project_obj.targets_compare_db = row[4]    
-            project_obj.targets_type_id = row[5]    
-            project_obj.targets_list = row[6]    
-            project_obj.targets_sql_script_id = row[7]    
-            project_obj.targets_sql_text = row[8]    
-            project_obj.max_degree_in_parallel = row[9]    
-            project_obj.timeout_in_min = row[10]    
-            project_obj.sleep_time_in_sec = row[11]    
-            project_obj.fail_on_error = row[12]    
-            project_obj.is_active = row[13]    
-            project_js = json.loads(json.dumps(project_obj.__dict__))
-            js['projects'].append(project_js)
+        drm_db = json.loads(open(DRM_DB_NAME).read())
+        for release in drm_db['releases']:
+            if (release['id'] == int(release_id)):
+                verified_release_id = release['id']
+                if ("solutions" in release):
+                    for solution in release['solutions']:
+                        _solution_id += 1
+                        if (int(solution_id) == _solution_id):
+                            if ("projects" in solution):
+                                for project in solution['projects']:
+                                    _project_id += _project_id
+                                    project_obj.id = _project_id    
+                                    project_obj.name = project['name']     
+                                    project_obj.solution_id = solution_id
+                                    if ("ordinal" in project):    
+                                        project_obj.ordinal = project['ordinal'] 
+                                    else:
+                                        project_obj.ordinal = _project_id
+                                    project_obj.targets_compare_db = project['targets_compare_db']     
+                                    project_obj.targets_type_id = project['targets_type_id']     
+                                    if ("targets_list" in project):    
+                                        project_obj.targets_list = project['targets_list'] 
+                                    else:
+                                        project_obj.targets_list = None
+                                    if ("targets_sql_text" in project):
+                                        _sql_script_id += 1
+                                        project_obj.targets_sql_script_id = _sql_script_id    
+                                        project_obj.targets_sql_text = project['targets_sql_text']    
+                                    else:
+                                        project_obj.targets_sql_script_id = None
+                                        project_obj.targets_sql_text = None
+                                    if ("max_degree_in_parallel" in project):   
+                                        project_obj.max_degree_in_parallel = project['max_degree_in_parallel']
+                                    else:
+                                         project_obj.max_degree_in_parallel = None   
+                                    if ("timeout_in_min" in project):   
+                                        project_obj.timeout_in_min = project['timeout_in_min']
+                                    else:
+                                         project_obj.timeout_in_min = None   
+                                    if ("sleep_time_in_sec" in project):   
+                                        project_obj.sleep_time_in_sec = project['sleep_time_in_sec']
+                                    else:
+                                         project_obj.sleep_time_in_sec = None   
+                                    if ("fail_on_error" in project):   
+                                        project_obj.fail_on_error = project['fail_on_error']
+                                    else:
+                                         project_obj.fail_on_error = True   
+                                    if ("is_active" in project):   
+                                        project_obj.is_active = project['is_active']
+                                    else:
+                                         project_obj.is_active = True   
+                                    project_js = json.loads(json.dumps(project_obj.__dict__))
+                                    js['projects'].append(project_js)
         return json.dumps(js)
 
