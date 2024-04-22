@@ -204,7 +204,7 @@ class Build:
             myzip.write(build_file_name, BUILD_FILE_NAME)
             myzip.write(config_file_name, CONFIG_FILE_NAME)
             
-#        if os.path.exists(build_file_name):
-#            os.remove(build_file_name)
-#        if os.path.exists(config_file_name):
-#            os.remove(config_file_name)
+        if os.path.exists(build_file_name):
+            os.remove(build_file_name)
+        if os.path.exists(config_file_name):
+            os.remove(config_file_name)
