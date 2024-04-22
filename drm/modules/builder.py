@@ -7,7 +7,8 @@ import zipfile
 from modules import parser_sqlite_json
 
 BUILD_FOLDER_NAME = "bin"
-BUILD_FILE_NAME = "deploy.json"
+CONFIG_FILE_NAME = "drm_deploy.config"
+BUILD_FILE_NAME = "drm_deploy.json"
 PACK_FILE_NAME = "deploy.drmpac"
 
 class Release:
@@ -81,6 +82,7 @@ class Build:
         :param id: Release ID
         :return:
         """
+        
         if (self.installation_type == "sqlite"):
             
             #===========================================
@@ -173,6 +175,15 @@ class Build:
             else:
                 raise Exception ('Release ID "' + str(release_id) + '" not found.' )
 
+        #=======================================
+        # generate deployment configuration file
+        #=======================================
+        version_js = {"drm_vrsion": self.drm_version}
+        config_file_name = os.path.join(build_dir, CONFIG_FILE_NAME)
+        with open(config_file_name, 'w') as f:
+            json.dump(version_js, f)
+        f.close() 
+
         #=======================
         # Create build JSON file
         #=======================
@@ -187,6 +198,9 @@ class Build:
         pack_file_name = os.path.join(build_dir, PACK_FILE_NAME)
         with zipfile.ZipFile(pack_file_name, 'w', zipfile.ZIP_DEFLATED) as myzip:
             myzip.write(build_file_name, BUILD_FILE_NAME)
+            myzip.write(config_file_name, CONFIG_FILE_NAME)
             
         if os.path.exists(build_file_name):
             os.remove(build_file_name)
+        if os.path.exists(config_file_name):
+            os.remove(config_file_name)
