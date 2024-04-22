@@ -135,7 +135,7 @@ class Build:
                     #=============================
                     connections_js = {"connections":[]}
                     connection_obj = Connection(solution['id'])
-                    connections_parser = json.loads(parser.Connections.get_connection_by_solution_id_and_name(solution['id'], connection_name, connection_obj))           
+                    connections_parser = json.loads(parser.Connections.get_connection_by_solution_id_and_name(release_id, solution['id'], connection_name, connection_obj))           
                     for connection in connections_parser['connections']:
                         if connection['is_active'] == 1:
                             connections_js['connections'].append(connection)
@@ -146,7 +146,7 @@ class Build:
                     #======================================
                     sql_scripts_variables_js = {"sql_scripts_variables":[]}
                     sql_scripts_variable_obj = Sql_Scripts_Variable(solution['id'])
-                    sql_scripts_variables_parser = json.loads(parser.SqlScriptsVariables.get_sql_scripts_variables_by_solution_id(solution['id'], sql_scripts_variable_obj))           
+                    sql_scripts_variables_parser = json.loads(parser.SqlScriptsVariables.get_sql_scripts_variables_by_solution_id(release_id, solution['id'], sql_scripts_variable_obj))           
                     for sql_scripts_variable in sql_scripts_variables_parser['sql_scripts_variables']:
                         sql_scripts_variables_js['sql_scripts_variables'].append(sql_scripts_variable)
                         solution_js.update(sql_scripts_variables_js)
@@ -156,7 +156,7 @@ class Build:
                     #=============================
                     sql_scripts_js = {"sql_scripts":[]}
                     sql_script_obj = Sql_Script(solution['id'])
-                    sql_scripts_parser = json.loads(parser.SqlScripts.get_sql_scripts_by_solution_id(solution['id'], sql_script_obj))           
+                    sql_scripts_parser = json.loads(parser.SqlScripts.get_sql_scripts_by_solution_id(release_id, solution['id'], sql_script_obj))           
                     for sql_script in sql_scripts_parser['sql_scripts']:
                         sql_scripts_js['sql_scripts'].append(sql_script)
                         solution_js.update(sql_scripts_js)
@@ -166,7 +166,7 @@ class Build:
                     #==========================
                     projects_js = {"projects":[]}
                     project_obj = Project(solution['id'])
-                    projects_parser = json.loads(parser.Projects.get_projects_by_solution_id(solution['id'], project_obj))           
+                    projects_parser = json.loads(parser.Projects.get_projects_by_solution_id(release_id, solution['id'], project_obj))           
                     for project in projects_parser['projects']:
                         projects_js['projects'].append(project)
                         solution_js.update(projects_js)

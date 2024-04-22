@@ -12,7 +12,7 @@ class Releases:
         """
         verified_release_id = "null"
         verified_connection_id = "null"
-        connection_id = 0
+        _connection_id = 0
 
         drm_db = json.loads(open(DRM_DB_NAME).read())
         for release in drm_db['releases']:
@@ -22,20 +22,22 @@ class Releases:
                 is_active = True
             if (is_active and release['id'] == int(id)):
                 verified_release_id = release['id']
-                for solution in release['solutions']:
-                    if ("is_active" in solution):
-                        is_active = solution['is_active']
-                    else:
-                        is_active = True
-                    if(is_active):
-                        for connection in solution['connections']:
-                            connection_id += 1
-                            if ("is_active" in connection):
-                                is_active = connection['is_active']
-                            else:
-                                is_active = True
-                            if (is_active and connection['name'] == connection_name):
-                                verified_connection_id = connection_id
+                if ('solutions' in release):
+                    for solution in release['solutions']:
+                        if ("is_active" in solution):
+                            is_active = solution['is_active']
+                        else:
+                            is_active = True
+                        if(is_active):
+                            if ('connections' in solution):
+                                for connection in solution['connections']:
+                                    _connection_id += 1
+                                    if ("is_active" in connection):
+                                        is_active = connection['is_active']
+                                    else:
+                                        is_active = True
+                                    if (is_active and connection['name'] == connection_name):
+                                        verified_connection_id = _connection_id
 
         js_text = '{"release_id": ' + str(verified_release_id) + ', "connection_id": ' + str(verified_connection_id) + '}'
         js = json.loads(js_text)
@@ -48,17 +50,17 @@ class Releases:
         :return: JSON
         """
         drm_db = json.loads(open(DRM_DB_NAME).read())
-        print("1")
-        print(Db.get_object_json("Release"))
-#        sql_command = "select id, name, max_retries, is_active from releases where id = {rel_id};".format(rel_id = id)
-#        rows = drm_db.select_query(sql_command)
-#        for row in rows:
-#            release_obj.id = row[0]    
-#            release_obj.name = row[1]    
-#            release_obj.max_retries = row[2]    
-#            release_obj.is_active = row[3] 
-#        js = json.loads(json.dumps(release_obj.__dict__))
-#        return json.dumps(js)
+        for release in drm_db['releases']:
+            if (release['id'] == int(id)):
+                release_obj.id = release['id']    
+                release_obj.name = release['name']    
+                release_obj.max_retries = release['max_retries']
+                if  ("is_active" in release):   
+                    release_obj.is_active = release['is_active'] 
+                else:
+                    release_obj.is_active = True
+        js = json.loads(json.dumps(release_obj.__dict__))
+        return json.dumps(js)
 
 class Solutions:
     def get_solutions_by_release_id(release_id, solution_obj):
@@ -67,68 +69,108 @@ class Solutions:
         :param solution_obj: Solution object
         :return: JSON
         """
+        _solution_id = 0
         js = json.loads('{"solutions":[]}')
-        drm_db = Db(DRM_DB_NAME)
-        sql_command = "select id, name, release_id, ordinal, solution_type_id, path, is_active from solutions where release_id = {rel_id} order by ordinal, id;".format(rel_id = release_id)
-        rows = drm_db.select_query(sql_command)
-        for row in rows:
-            solution_obj.id = row[0]    
-            solution_obj.name = row[1]    
-            solution_obj.release_id = row[2]    
-            solution_obj.ordinal = row[3]    
-            solution_obj.solution_type_id = row[4]    
-            solution_obj.path = row[5]    
-            solution_obj.is_active = row[6] 
-            solution_js = json.loads(json.dumps(solution_obj.__dict__))
-            js['solutions'].append(solution_js)
+        drm_db = json.loads(open(DRM_DB_NAME).read())
+        for release in drm_db['releases']:
+            if (release['id'] == release_id):
+                verified_release_id = release['id']
+                if ("solutions" in release):
+                    for solution in release['solutions']:
+                        _solution_id += 1
+                        if ("is_active" in solution):
+                            is_active = solution['is_active']
+                        else:
+                            is_active = True
+                        if(is_active):
+                            solution_obj.id = _solution_id    
+                            solution_obj.name = solution['name']    
+                            solution_obj.release_id = release_id 
+                            if  ("ordinal" in solution):
+                                solution_obj.ordinal = solution['ordinal'] 
+                            else:
+                                solution_obj.ordinal = _solution_id
+                            solution_obj.solution_type_id = solution['solution_type_id']    
+                            solution_obj.path = solution['path']   
+                            if  ("is_active" in solution):
+                                solution_obj.is_active = solution['is_active'] 
+                            else:
+                                solution_obj.is_active = True
+                            solution_js = json.loads(json.dumps(solution_obj.__dict__))
+                            js['solutions'].append(solution_js)
         return json.dumps(js)
 
 class Connections:
-    def get_connection_by_solution_id_and_name(solution_id, name, connection_obj):
+    def get_connection_by_solution_id_and_name(release_id, solution_id, name, connection_obj):
         """ Return solution connection details by solution_id and name
+        :param release_id: Release ID
         :param solution_id: Solution ID
         :param name: Connection name
         :param connection_obj: Connection object
         :return: JSON
         """
+        _solution_id = 0
+        _connection_id = 0
         js = json.loads('{"connections":[]}')
-        drm_db = Db(DRM_DB_NAME)
-        sql_command = "select id, name, solution_id, connection_type_id, connection_string, is_active from connections where solution_id = {sol_id} and name = '{name}';".format(sol_id = solution_id, name = name)
-        rows = drm_db.select_query(sql_command)
-        for row in rows:
-            connection_obj.id = row[0]    
-            connection_obj.name = row[1]    
-            connection_obj.solution_id = row[2]    
-            connection_obj.connection_type_id = row[3]    
-            connection_obj.connection_string = row[4]    
-            connection_obj.is_active = row[5] 
-            connection_js = json.loads(json.dumps(connection_obj.__dict__))
-            js['connections'].append(connection_js)
+        drm_db = json.loads(open(DRM_DB_NAME).read())
+        for release in drm_db['releases']:
+            if (release['id'] == int(release_id)):
+                verified_release_id = release['id']
+                if ("solutions" in release):
+                    for solution in release['solutions']:
+                        _solution_id += 1
+                        if (int(solution_id) == _solution_id):
+                            if ("connections" in solution):
+                                for connection in solution['connections']:
+                                    _connection_id += 1
+                                    if(connection['name'] == name):
+                                        connection_obj.id = _connection_id    
+                                        connection_obj.name = connection['name']    
+                                        connection_obj.solution_id = solution_id    
+                                        connection_obj.connection_type_id = connection['connection_type_id']    
+                                        connection_obj.connection_string = connection['connection_string']
+                                        if ("is_active" in connection):   
+                                            connection_obj.is_active = connection['is_active'] 
+                                        else:
+                                            connection_obj.is_active = True
+                                        connection_js = json.loads(json.dumps(connection_obj.__dict__))
+                                        js['connections'].append(connection_js)
         return json.dumps(js)
 
 class SqlScriptsVariables:
-    def get_sql_scripts_variables_by_solution_id(solution_id, sql_script_variable_obj):
+    def get_sql_scripts_variables_by_solution_id(release_id, solution_id, sql_script_variable_obj):
         """ Return solution sql_scripts_variables details by solution_id
+        :param release_id: Release ID
         :param solution_id: Solution ID
         :param sql_script_variable_obj: Sql_Scripts_Variable object
         :return: JSON
         """
+        _solution_id = 0
+        _sql_script_variable_id = 0
         js = json.loads('{"sql_scripts_variables":[]}')
-        drm_db = Db(DRM_DB_NAME)
-        sql_command = "select id, name, solution_id, value from sql_scripts_variables where solution_id = {sol_id} order by id;".format(sol_id = solution_id)
-        rows = drm_db.select_query(sql_command)
-        for row in rows:
-            sql_script_variable_obj.id = row[0]    
-            sql_script_variable_obj.name = row[1]    
-            sql_script_variable_obj.solution_id = row[2]    
-            sql_script_variable_obj.value = row[3]    
-            sql_script_variable_js = json.loads(json.dumps(sql_script_variable_obj.__dict__))
-            js['sql_scripts_variables'].append(sql_script_variable_js)
+        drm_db = json.loads(open(DRM_DB_NAME).read())
+        for release in drm_db['releases']:
+            if (release['id'] == int(release_id)):
+                verified_release_id = release['id']
+                if ("solutions" in release):
+                    for solution in release['solutions']:
+                        _solution_id += 1
+                        if (int(solution_id) == _solution_id):
+                            if ("sql_scripts_variables" in solution):
+                                for sql_script_variable in solution['sql_scripts_variables']:
+                                    _sql_script_variable_id += 1
+                                    sql_script_variable_obj.id = _sql_script_variable_id    
+                                    sql_script_variable_obj.name = sql_script_variable['name']    
+                                    sql_script_variable_obj.solution_id = solution_id    
+                                    sql_script_variable_obj.value = sql_script_variable['value']    
+                                    sql_script_variable_js = json.loads(json.dumps(sql_script_variable_obj.__dict__))
+                                    js['sql_scripts_variables'].append(sql_script_variable_js)
         return json.dumps(js)
 
 class SqlScripts:
-    def get_sql_scripts_by_solution_id(solution_id, sql_script_obj):
+    def get_sql_scripts_by_solution_id(release_id, solution_id, sql_script_obj):
         """ Return solution sql_scripts details by solution_id
+        :param release_id: Release ID
         :param solution_id: Solution ID
         :param sql_script_obj: Sql_Script object
         :return: JSON
@@ -147,8 +189,9 @@ class SqlScripts:
         return json.dumps(js)
 
 class Projects:
-    def get_projects_by_solution_id(solution_id, project_obj):
+    def get_projects_by_solution_id(release_id, solution_id, project_obj):
         """ Return solution projects details by solution_id
+        :param release_id: Release ID
         :param solution_id: Solution ID
         :param project_obj: Project object
         :return: JSON

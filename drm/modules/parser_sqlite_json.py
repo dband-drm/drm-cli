@@ -88,8 +88,9 @@ class Solutions:
         return json.dumps(js)
 
 class Connections:
-    def get_connection_by_solution_id_and_name(solution_id, name, connection_obj):
+    def get_connection_by_solution_id_and_name(release_id, solution_id, name, connection_obj):
         """ Return solution connection details by solution_id and name
+        :param release_id: Release ID
         :param solution_id: Solution ID
         :param name: Connection name
         :param connection_obj: Connection object
@@ -111,8 +112,9 @@ class Connections:
         return json.dumps(js)
 
 class SqlScriptsVariables:
-    def get_sql_scripts_variables_by_solution_id(solution_id, sql_script_variable_obj):
+    def get_sql_scripts_variables_by_solution_id(release_id, solution_id, sql_script_variable_obj):
         """ Return solution sql_scripts_variables details by solution_id
+        :param release_id: Release ID
         :param solution_id: Solution ID
         :param sql_script_variable_obj: Sql_Scripts_Variable object
         :return: JSON
@@ -131,8 +133,9 @@ class SqlScriptsVariables:
         return json.dumps(js)
 
 class SqlScripts:
-    def get_sql_scripts_by_solution_id(solution_id, sql_script_obj):
+    def get_sql_scripts_by_solution_id(release_id, solution_id, sql_script_obj):
         """ Return solution sql_scripts details by solution_id
+        :param release_id: Release ID
         :param solution_id: Solution ID
         :param sql_script_obj: Sql_Script object
         :return: JSON
@@ -151,8 +154,9 @@ class SqlScripts:
         return json.dumps(js)
 
 class Projects:
-    def get_projects_by_solution_id(solution_id, project_obj):
+    def get_projects_by_solution_id(release_id, solution_id, project_obj):
         """ Return solution projects details by solution_id
+        :param release_id: Release ID
         :param solution_id: Solution ID
         :param project_obj: Project object
         :return: JSON
