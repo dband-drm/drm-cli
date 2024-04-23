@@ -82,14 +82,22 @@ def get_encryption_key():
 	try:
 		flag = -1
 		while flag == -1:
-			encryption_key = input("Enter encryption key or enter '?' to see encryption key policy (" + style.YELLOW + "Make sure you save this key protected!!!" + style.RESET + "): ")
-			if (encryption_key == "?"):
+			validate_policy = True
+			encryption_key = input("Enter encryption key or enter '?' to see encryption key policy (Default, empty is not encrypted): ")
+			if (encryption_key == "" or encryption_key == None):
+				user_choice = input(style.YELLOW + "Are you sure you want to keep sensitive Data as clear text? Enter [Y]/N to keep unsecured Data: " + style.RESET)
+				if (user_choice.lower() == "y"):
+					flag = 0
+				else:
+					validate_policy = False
+					flag = -1
+			elif (encryption_key == "?"):
 				flag = -1
 				print("1. Minimum 8 characters.")
 				print("2. The alphabet must be between [a-z]")
 				print("3. At least one alphabet should be of Upper Case [A-Z]")
 				print("4. At least 1 number or digit between [0-9].")
-				print("5. At least 1 character from [ _ or @ or $ ].")
+				print("5. At least 1 special character suc as !@#...")
 			elif (len(encryption_key)<=8):
 				flag = -1
 			elif not re.search("[a-z]", encryption_key):
@@ -98,14 +106,12 @@ def get_encryption_key():
 				flag = -1
 			elif not re.search("[0-9]", encryption_key):
 				flag = -1
-			elif not re.search("[_@$]" , encryption_key):
+			elif not re.search("[~`!@#$%^&*()-_=+,<.>/?;:]" , encryption_key):
 				flag = -1
-			#elif re.search("\s" , encryption_key):
-		    #    	flag = -1
 			else:
 				flag = 0
 			
-			if flag == -1 and encryption_key != "?":
+			if flag == -1 and encryption_key != "?" and validate_policy:
 				print(style.RED + "The encryption key does not meet with validation policy!" + style.RESET)
 		return encryption_key
 	except Exception as e:
@@ -147,7 +153,7 @@ def copy_drm_content(drm_path):
 		except Exception as e:
 			if (e.errno == 17):
 				user_choice = input(style.YELLOW + "Content already exists in given directory. Enter [Y]/N to overwrite content: " + style.RESET)
-				if (user_choice == "Y"):
+				if (user_choice.lower() == "y"):
 					if (drm_source_path != drm_path):
 						shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=True)
 				else:
@@ -172,8 +178,12 @@ def create_drm_config(drm_path, install_type, encryption_key):
 		#installer_user = os.environ.get("USER")
 		installer_user = os.getlogin()
 		install_timestamp = str(datetime.datetime.now())
-		crpt = crypto.Crypto(encryption_key)
-		security_text = crpt.encrypt_string("This drm cli was developed by d-band and it is amazing!!!")
+		security_text = "This drm cli was developed by d-band and it is amazing!!!"
+		encrypted = False
+		if (encryption_key != ""):
+			crpt = crypto.Crypto(encryption_key)
+			security_text = crpt.encrypt_string(security_text)
+			encrypted = True
 
 		content = {
 			"drm_version": DRM_VERSION,
@@ -182,6 +192,7 @@ def create_drm_config(drm_path, install_type, encryption_key):
 				"installed_by": installer_user,
 				"installation_time": install_timestamp,
 				"installation_type": install_type,
+				"db_secured": encrypted,
 				"security_text": security_text
 			},
 			"config":
@@ -203,11 +214,12 @@ def create_drm_config(drm_path, install_type, encryption_key):
 	except Exception as e:
                 raise Exception ("failed to create drm.config, " + str(e))
 
-def create_drm_db(drm_path, install_type):
+def create_drm_db(drm_path, install_type, encryption_key):
 	'''
 	This function creates the DRM Database & DB objects
 	:param drm_path: The directory to install the DRM in
 	:param install_type: Installation type
+	:param encryption_key: Encryption key
 	'''
 	if (install_type == "sqlite"):
 		try:
@@ -219,7 +231,9 @@ def create_drm_db(drm_path, install_type):
 				os.mkdir(db_directory)
 			sqlite_db_file_name = DB_FILE_NAME + "." + SQLITE_FILE_EXT
 			db_name = os.path.join(db_directory, sqlite_db_file_name)
-			drm_db = init_db.InitDB(db_name)
+			if(encryption_key == ""):
+				encryption_key = None
+			drm_db = init_db.InitDB(db_name, encryption_key)
 			# Create Database & load system Data
 			drm_db.create_drm_db()
 
@@ -239,6 +253,11 @@ def create_drm_db(drm_path, install_type):
 			src_drm_db_json = os.path.join(DRM_DB_JSON_PATH, DRM_DB_JSON_FILE_NAME)
 			shutil.copy(src_drm_db_json, db_directory)
 			old_drm_db_json = os.path.join(db_directory, DRM_DB_JSON_FILE_NAME)
+			if(encryption_key != "" and encryption_key != None):
+				drm_db = init_db.InitDB(old_drm_db_json, encryption_key)
+				js = drm_db.encrypt_drm_json_db()
+				with open(old_drm_db_json, "w") as file:
+					json.dump(js, file, indent=4)
 			db_json_file_name = DB_FILE_NAME + "." + DATA_FILE_EXT
 			new_drm_db_json = os.path.join(db_directory, db_json_file_name)
 			shutil.move(old_drm_db_json, new_drm_db_json)
@@ -268,7 +287,7 @@ def install_drm(drm_path, install_type, encryption_key):
 		#==============
 		# Create DRM DB
 		#==============
-		create_drm_db(drm_path, install_type)
+		create_drm_db(drm_path, install_type, encryption_key)
 
 		#==================
 		# Create drm.config

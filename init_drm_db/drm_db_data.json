@@ -100,27 +100,27 @@
 						{
 							"name": "dev",
 							"connection_type_id": 1,
-							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
+							"connection_string": "Server=drmSrv-Lab\\Dev;Trusted_Connection=True;"
 						},
 						{
 							"name": "test",
 							"connection_type_id": 1,
-							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
+							"connection_string": "Server=drmSrv-Lab\\Test;Trusted_Connection=True;"
 						},
 						{
 							"name": "prod-USA",
 							"connection_type_id": 1,
-							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
+							"connection_string": "Server=drmSrv-USA;User Id=myUsername;Password=myPassword;"
 						},
 						{
 							"name": "prod-EUR",
 							"connection_type_id": 1,
-							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
+							"connection_string": "Server=drmSrv-EUR;User Id=myUsername;Password=myPassword;"
 						},
 						{
 							"name": "prod-ASIA",
 							"connection_type_id": 1,
-							"connection_string": "MQQAIEgLGgxUUl5aYBINGnMMCh4EGF5CViRFDhBzCQEMQR1FElozRQ0EMhIGBgZVEBM="
+							"connection_string": "Server=drmSrv-ASIA;User Id=myUsername;Password=myPassword;"
 						}
 					],
 					"sql_scripts_variables": [

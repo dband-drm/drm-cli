@@ -31,6 +31,7 @@ class Config():
         
         installation_info_js = js['installation_info']
         self.installation_type = installation_info_js['installation_type']
+        self.db_secured = installation_info_js['db_secured']
         self.security_text = installation_info_js['security_text']
         
         config_js = js['config']
@@ -67,6 +68,7 @@ try:
     deploy_config = Config()
     DRM_VERSION = deploy_config.drm_version
     INSTALLATION_TYPE = deploy_config.installation_type
+    DB_SECURED= deploy_config.db_secured
     SECURITY_TEXT = deploy_config.security_text
     BUILD_FOLDER_NAME = deploy_config.build_folder_name
     DB_FOLDER_NAME = deploy_config.db_folder_name
@@ -86,10 +88,12 @@ try:
     if encryption_key is None:
         raise Exception ("Encryption key not provided!!!")
 
-    crpt = crypto.Crypto(encryption_key)
-    encrypted_text = crpt.encrypt_string("This drm cli was developed by d-band and it is amazing!!!")
-    if (encrypted_text != SECURITY_TEXT):
-        raise Exception ("Wrong encryption key!!!")
+    security_text = "This drm cli was developed by d-band and it is amazing!!!"
+    if (DB_SECURED):
+        crpt = crypto.Crypto(encryption_key)
+        encrypted_text = crpt.encrypt_string(security_text)
+        if (encrypted_text != SECURITY_TEXT):
+            raise Exception ("Wrong encryption key!!!")
 
     #=========================
     # Determine execution mode

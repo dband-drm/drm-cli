@@ -1,4 +1,5 @@
 import json
+from modules import crypto
 from modules import sqlite
 from modules import parser_json_sqlite
 
@@ -6,13 +7,14 @@ INIT_SCHEMA_JSON = "init_drm_db/drm_db_schema.json"
 INIT_DATA_JSON = "init_drm_db/drm_db_data.json"
 
 class InitDB:
-	def __init__(self, db_name = ""):
+	def __init__(self, db_name = "", encryption_key = None):
 		"""
 		Constructor
 		:param db_name: SQLite databae name
 		:return:
 		"""
 		self.db_name = db_name
+		self.encryption_key = encryption_key
 
 	def create_tables(conn):
 		"""
@@ -44,7 +46,7 @@ class InitDB:
 		f.close()
 
 
-	def load_data(conn):
+	def load_data(conn, encryption_key):
 		"""
 		Load init (syste) Data
 		:param conn: Connectionstring
@@ -116,8 +118,20 @@ class InitDB:
 					#===================
 					# Insert connections
 					#===================
-					columns = list(connection_row.keys())
-					values = list(connection_row.values())
+					if (encryption_key != "" and encryption_key != None):
+						columns = []
+						values = []
+						crpt = crypto.Crypto(encryption_key)
+						for key,value in connection_row.items():
+							columns.append(key)
+							if(key == "connection_string"):
+								encrypted_text = crpt.encrypt_string(value)
+								values.append(encrypted_text)
+							else:
+								values.append(value)
+					else:
+						columns = list(connection_row.keys())
+						values = list(connection_row.values())    
 					columns.append("id")
 					values.append(connection_id)
 					columns.append("solution_id")
@@ -202,9 +216,46 @@ class InitDB:
 		#=================
 		# Insert init Data
 		#=================
-		InitDB.load_data(conn)
+		InitDB.load_data(conn, self.encryption_key)
 
 		#==========================
 		# Close database connection
 		#==========================
 		sqlite.close_connection(conn)
+
+
+	def encrypt_value_by_key(json_obj, key_to_encrype, encryption_key):
+		"""
+		Replace value in json by key
+		param json_obj: JSON
+		param key_to_encrype: key to encrypt in the JSON
+		param encryption_key: Encryption key
+		return: JSON
+		"""
+		if isinstance(json_obj, dict):
+			for key, value in json_obj.items():
+				if key == key_to_encrype:
+					crpt = crypto.Crypto(encryption_key)
+					encrypted_text = crpt.encrypt_string(value)						
+					json_obj[key] = encrypted_text
+				else:
+					InitDB.encrypt_value_by_key(value, key_to_encrype, encryption_key)
+		elif isinstance(json_obj, list):
+			for item in json_obj:
+				InitDB.encrypt_value_by_key(item, key_to_encrype, encryption_key)
+		return json_obj
+
+
+	def encrypt_drm_json_db(self):
+		"""
+		Creates DRM database with system Data
+		"""
+		f = open(self.db_name)
+		js = json.load(f)
+
+		if(self.encryption_key != "" and self.encryption_key != None):
+			js = InitDB.encrypt_value_by_key(js, "connection_string", self.encryption_key)
+
+		f.close()
+		
+		return js
