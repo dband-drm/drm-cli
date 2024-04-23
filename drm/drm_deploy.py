@@ -8,7 +8,7 @@ from modules import crypto
 
 DRYRUN_MODE = "DryRun"
 DEPLOY_MODE = "Deploy"
-DRM_CONFIG_FILE_NAME = "drm_deploy.config"
+DEPLOY_CONFIG_FILE_NAME = "drm_deploy.config"
 
 class style():
     BLACK = '\033[30m'
@@ -22,6 +22,26 @@ class style():
     UNDERLINE = '\033[4m'
     RESET = '\033[0m'
     
+class Config():
+    def __init__(self):
+        f = open(DEPLOY_CONFIG_FILE_NAME)
+        js = json.load(f)
+        
+        self.drm_version = js['drm_version']
+        
+        installation_info_js = js['installation_info']
+        self.installation_type = installation_info_js['installation_type']
+        self.security_text = installation_info_js['security_text']
+        
+        config_js = js['config']
+        self.build_folder_name = config_js['build_folder_name']
+        self.db_folder_name = config_js['db_folder_name']
+        self.db_file_name = config_js['db_file_name']
+        self.data_file_ext = config_js['data_file_ext']
+        self.sqlite_file_ext = config_js['sqlite_file_ext']
+        
+        f.close()
+
 os.system('')
 
 #=======
@@ -41,6 +61,19 @@ args = parser.parse_args()
 
 try:
 
+	#==================================
+	# Create constants by configuration 
+	#==================================
+    deploy_config = Config()
+    DRM_VERSION = deploy_config.drm_version
+    INSTALLATION_TYPE = deploy_config.installation_type
+    SECURITY_TEXT = deploy_config.security_text
+    BUILD_FOLDER_NAME = deploy_config.build_folder_name
+    DB_FOLDER_NAME = deploy_config.db_folder_name
+    DB_FILE_NAME = deploy_config.db_file_name
+    DATA_FILE_EXT = deploy_config.data_file_ext
+    SQLITE_FILE_EXT = deploy_config.sqlite_file_ext
+
     #======================
     # Verify encryption key
     #======================
@@ -53,16 +86,9 @@ try:
     if encryption_key is None:
         raise Exception ("Encryption key not provided!!!")
 
-    current_working_directory = os.getcwd()
-    drm_config_file = os.path.join(current_working_directory, DRM_CONFIG_FILE_NAME)
-    f = open(drm_config_file)
-    js = json.load(f)
-    drm_version = js['drm_version']
-    installation_type = js['installation_type']
-    encrypted_security_text = js['security_text']
     crpt = crypto.Crypto(encryption_key)
-    security_text = crpt.encrypt_string("This drm cli was developed by d-band and it is amazing!!!")
-    if (security_text != encrypted_security_text):
+    encrypted_text = crpt.encrypt_string("This drm cli was developed by d-band and it is amazing!!!")
+    if (encrypted_text != SECURITY_TEXT):
         raise Exception ("Wrong encryption key!!!")
 
     #=========================
@@ -83,7 +109,7 @@ try:
     print("")
     
     print("Building release...")   
-    build = Build(drm_version, installation_type)
+    build = Build(deploy_config)
     build.generate_release_full_details(args.release, args.connection)    
     print("Build finished successfully!!!")
     print("")

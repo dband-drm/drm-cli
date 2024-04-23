@@ -70,13 +70,12 @@ class Project:
         self.is_active = fail_on_error      
 
 class Build:
-    def __init__(self, drm_version, installation_type = "json"):   
+    def __init__(self, deploy_config):   
         """ Constructor
         :param installation_type: Installation type (json/sqlite)
         :return:
         """
-        self.installation_type = installation_type
-        self.drm_version = drm_version
+        self.deploy_config = deploy_config
 
     def generate_release_full_details(self, release_id, connection_name):
         """ Generates full details of a release as JSON by id
@@ -84,15 +83,19 @@ class Build:
         :return:
         """
         
-        if (self.installation_type == "sqlite"):
+        current_working_directory = os.getcwd()
+        if (self.deploy_config.installation_type == "sqlite"):
             parser = parser_sqlite_json
+            db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.sqlite_file_ext)
         else:
             parser = parser_json_json
+            db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.data_file_ext)
+
 
         #===========================================
         # Check if active release & connection exist
         #===========================================
-        check_parser = json.loads(parser.Releases.check_release_by_id_and_connection_name(release_id, connection_name))           
+        check_parser = json.loads(parser.Releases.check_release_by_id_and_connection_name(db_file_name, release_id, connection_name))           
         if (check_parser['release_id'] == None):
             raise Exception ('Release ID "' + str(release_id) + '" not found.' )
         elif (check_parser['connection_id'] == None):
@@ -102,7 +105,6 @@ class Build:
         #=============================
         # Create build (bin) directory
         #=============================
-        current_working_directory = os.getcwd()
         build_dir = os.path.join(current_working_directory, BUILD_FOLDER_NAME)
         if (os.path.exists(build_dir)):
             shutil.rmtree(build_dir)
@@ -115,7 +117,7 @@ class Build:
         # Get Release details
         #====================
         release_obj = Release(release_id)
-        release_parser = json.loads(parser.Releases.get_release_by_id(release_id, release_obj))           
+        release_parser = json.loads(parser.Releases.get_release_by_id(db_file_name, release_id, release_obj))           
         if (release_parser['is_active'] == 1):
             release_js.update(release_parser)
 
@@ -124,7 +126,7 @@ class Build:
             #==========================
             solutions_js = {"solutions":[]}
             solution_obj = Solution(release_parser['id'])
-            solutions_parser = json.loads(parser.Solutions.get_solutions_by_release_id(release_parser['id'], solution_obj))           
+            solutions_parser = json.loads(parser.Solutions.get_solutions_by_release_id(db_file_name, release_parser['id'], solution_obj))           
             for solution in solutions_parser['solutions']:
                 if solution['is_active'] == 1:
                     solution_js = {}
@@ -135,7 +137,7 @@ class Build:
                     #=============================
                     connections_js = {"connections":[]}
                     connection_obj = Connection(solution['id'])
-                    connections_parser = json.loads(parser.Connections.get_connection_by_solution_id_and_name(release_id, solution['id'], connection_name, connection_obj))           
+                    connections_parser = json.loads(parser.Connections.get_connection_by_solution_id_and_name(db_file_name, release_id, solution['id'], connection_name, connection_obj))           
                     for connection in connections_parser['connections']:
                         if connection['is_active'] == 1:
                             connections_js['connections'].append(connection)
@@ -146,7 +148,7 @@ class Build:
                     #======================================
                     sql_scripts_variables_js = {"sql_scripts_variables":[]}
                     sql_scripts_variable_obj = Sql_Scripts_Variable(solution['id'])
-                    sql_scripts_variables_parser = json.loads(parser.SqlScriptsVariables.get_sql_scripts_variables_by_solution_id(release_id, solution['id'], sql_scripts_variable_obj))           
+                    sql_scripts_variables_parser = json.loads(parser.SqlScriptsVariables.get_sql_scripts_variables_by_solution_id(db_file_name, release_id, solution['id'], sql_scripts_variable_obj))           
                     for sql_scripts_variable in sql_scripts_variables_parser['sql_scripts_variables']:
                         sql_scripts_variables_js['sql_scripts_variables'].append(sql_scripts_variable)
                         solution_js.update(sql_scripts_variables_js)
@@ -156,7 +158,7 @@ class Build:
                     #=============================
                     sql_scripts_js = {"sql_scripts":[]}
                     sql_script_obj = Sql_Script(solution['id'])
-                    sql_scripts_parser = json.loads(parser.SqlScripts.get_sql_scripts_by_solution_id(release_id, solution['id'], sql_script_obj))           
+                    sql_scripts_parser = json.loads(parser.SqlScripts.get_sql_scripts_by_solution_id(db_file_name, release_id, solution['id'], sql_script_obj))           
                     for sql_script in sql_scripts_parser['sql_scripts']:
                         sql_scripts_js['sql_scripts'].append(sql_script)
                         solution_js.update(sql_scripts_js)
@@ -166,7 +168,7 @@ class Build:
                     #==========================
                     projects_js = {"projects":[]}
                     project_obj = Project(solution['id'])
-                    projects_parser = json.loads(parser.Projects.get_projects_by_solution_id(release_id, solution['id'], project_obj))           
+                    projects_parser = json.loads(parser.Projects.get_projects_by_solution_id(db_file_name, release_id, solution['id'], project_obj))           
                     for project in projects_parser['projects']:
                         projects_js['projects'].append(project)
                         solution_js.update(projects_js)
@@ -182,7 +184,7 @@ class Build:
         #=======================================
         # generate deployment configuration file
         #=======================================
-        version_js = {"drm_vrsion": self.drm_version}
+        version_js = {"drm_vrsion": self.deploy_config.drm_version}
         config_file_name = os.path.join(build_dir, CONFIG_FILE_NAME)
         with open(config_file_name, 'w') as f:
             json.dump(version_js, f)

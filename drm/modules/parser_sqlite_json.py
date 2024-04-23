@@ -2,8 +2,6 @@ import sys
 import json
 from modules import sqlite
 
-DRM_DB_NAME = "./db/drm.db"
-
 class Db:
     def __init__(self, db_name = ""):   
         """ Constructor
@@ -24,13 +22,14 @@ class Db:
 
 
 class Releases:
-    def check_release_by_id_and_connection_name(id, connection_name):
+    def check_release_by_id_and_connection_name(db_file_name, id, connection_name):
         """ Checks if active release & connection name exist in the system
+        :param db_file_name: Database file name
         :param id: Release ID
         :param connection_name: Connection name
         :return: JSON
         """
-        drm_db = Db(DRM_DB_NAME)
+        drm_db = Db(db_file_name)
         sql_command = "select releases.id as release_id, connections.id as connection_id from releases left join solutions on solutions.release_id = releases.id and solutions.is_active = 1 left join connections on connections.solution_id = solutions.id and connections.name = '{conn_name}' and connections.is_active = 1 where releases.id = {rel_id} and releases.is_active = 1;".format(rel_id = id, conn_name = connection_name)
         rows = drm_db.select_query(sql_command)
         if(len(rows) > 0):
@@ -47,13 +46,14 @@ class Releases:
         js = json.loads(js_text)
         return json.dumps(js)
 
-    def get_release_by_id(id, release_obj):
+    def get_release_by_id(db_file_name, id, release_obj):
         """ Return release details by release_id
+        :param db_file_name: Database file name
         :param id: Release ID
         :param release_obj: Release object
         :return: JSON
         """
-        drm_db = Db(DRM_DB_NAME)
+        drm_db = Db(db_file_name)
         sql_command = "select id, name, max_retries, is_active from releases where id = {rel_id};".format(rel_id = id)
         rows = drm_db.select_query(sql_command)
         for row in rows:
@@ -65,14 +65,15 @@ class Releases:
         return json.dumps(js)
 
 class Solutions:
-    def get_solutions_by_release_id(release_id, solution_obj):
+    def get_solutions_by_release_id(db_file_name, release_id, solution_obj):
         """ Return solutions list details by release_id
+        :param db_file_name: Database file name
         :param release_id: Release ID
         :param solution_obj: Solution object
         :return: JSON
         """
         js = json.loads('{"solutions":[]}')
-        drm_db = Db(DRM_DB_NAME)
+        drm_db = Db(db_file_name)
         sql_command = "select id, name, release_id, ordinal, solution_type_id, path, is_active from solutions where release_id = {rel_id} order by ordinal, id;".format(rel_id = release_id)
         rows = drm_db.select_query(sql_command)
         for row in rows:
@@ -88,8 +89,9 @@ class Solutions:
         return json.dumps(js)
 
 class Connections:
-    def get_connection_by_solution_id_and_name(release_id, solution_id, name, connection_obj):
+    def get_connection_by_solution_id_and_name(db_file_name, release_id, solution_id, name, connection_obj):
         """ Return solution connection details by solution_id and name
+        :param db_file_name: Database file name
         :param release_id: Release ID
         :param solution_id: Solution ID
         :param name: Connection name
@@ -97,7 +99,7 @@ class Connections:
         :return: JSON
         """
         js = json.loads('{"connections":[]}')
-        drm_db = Db(DRM_DB_NAME)
+        drm_db = Db(db_file_name)
         sql_command = "select id, name, solution_id, connection_type_id, connection_string, is_active from connections where solution_id = {sol_id} and name = '{name}';".format(sol_id = solution_id, name = name)
         rows = drm_db.select_query(sql_command)
         for row in rows:
@@ -112,15 +114,16 @@ class Connections:
         return json.dumps(js)
 
 class SqlScriptsVariables:
-    def get_sql_scripts_variables_by_solution_id(release_id, solution_id, sql_script_variable_obj):
+    def get_sql_scripts_variables_by_solution_id(db_file_name, release_id, solution_id, sql_script_variable_obj):
         """ Return solution sql_scripts_variables details by solution_id
+        :param db_file_name: Database file name
         :param release_id: Release ID
         :param solution_id: Solution ID
         :param sql_script_variable_obj: Sql_Scripts_Variable object
         :return: JSON
         """
         js = json.loads('{"sql_scripts_variables":[]}')
-        drm_db = Db(DRM_DB_NAME)
+        drm_db = Db(db_file_name)
         sql_command = "select id, name, solution_id, value from sql_scripts_variables where solution_id = {sol_id} order by id;".format(sol_id = solution_id)
         rows = drm_db.select_query(sql_command)
         for row in rows:
@@ -133,15 +136,16 @@ class SqlScriptsVariables:
         return json.dumps(js)
 
 class SqlScripts:
-    def get_sql_scripts_by_solution_id(release_id, solution_id, sql_script_obj):
+    def get_sql_scripts_by_solution_id(db_file_name, release_id, solution_id, sql_script_obj):
         """ Return solution sql_scripts details by solution_id
+        :param db_file_name: Database file name
         :param release_id: Release ID
         :param solution_id: Solution ID
         :param sql_script_obj: Sql_Script object
         :return: JSON
         """
         js = json.loads('{"sql_scripts":[]}')
-        drm_db = Db(DRM_DB_NAME)
+        drm_db = Db(db_file_name)
         sql_command = "select id, name, solution_id, sql_text from sql_scripts where solution_id = {sol_id} order by id;".format(sol_id = solution_id)
         rows = drm_db.select_query(sql_command)
         for row in rows:
@@ -154,15 +158,16 @@ class SqlScripts:
         return json.dumps(js)
 
 class Projects:
-    def get_projects_by_solution_id(release_id, solution_id, project_obj):
+    def get_projects_by_solution_id(db_file_name, release_id, solution_id, project_obj):
         """ Return solution projects details by solution_id
+        :param db_file_name: Database file name
         :param release_id: Release ID
         :param solution_id: Solution ID
         :param project_obj: Project object
         :return: JSON
         """
         js = json.loads('{"projects":[]}')
-        drm_db = Db(DRM_DB_NAME)
+        drm_db = Db(db_file_name)
         sql_command = "select projects.id, projects.name, projects.solution_id, projects.ordinal, targets_compare_db, targets_type_id, targets_list, targets_sql_script_id, sql_scripts.sql_text as targets_sql_text, max_degree_in_parallel, timeout_in_min, sleep_time_in_sec, fail_on_error, is_active from projects left join sql_scripts on projects.solution_id = sql_scripts.solution_id and projects.targets_sql_script_id = sql_scripts.id where projects.solution_id = {sol_id} order by projects.ordinal, projects.id;".format(sol_id = solution_id)
         rows = drm_db.select_query(sql_command)
         for row in rows:
