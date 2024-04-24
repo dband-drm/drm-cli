@@ -4,6 +4,7 @@ import argparse
 import json
 from getpass import getpass
 from modules.builder import Build
+from modules.validator import Validate
 from modules import crypto
 
 DRYRUN_MODE = "DryRun"
@@ -114,7 +115,9 @@ try:
     
     print("Building release...")   
     build = Build(deploy_config)
-    build.generate_release_full_details(args.release, args.connection)    
+    build.generate_release_full_details(args.release, args.connection)  
+    #validate = Validate(deploy_config)
+    #validate.validate_release(args.connection)
     print("Build finished successfully!!!")
     print("")
 

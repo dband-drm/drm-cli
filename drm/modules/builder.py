@@ -7,7 +7,6 @@ import zipfile
 from modules import parser_sqlite_json
 from modules import parser_json_json
 
-BUILD_FOLDER_NAME = "bin"
 CONFIG_FILE_NAME = "drm_deploy.config"
 BUILD_FILE_NAME = "drm_deploy.json"
 PACK_FILE_NAME = "deploy.drmpac"
@@ -81,8 +80,7 @@ class Build:
         """ Generates full details of a release as JSON by id
         :param id: Release ID
         :return:
-        """
-        
+        """       
         current_working_directory = os.getcwd()
         if (self.deploy_config.installation_type == "sqlite"):
             parser = parser_sqlite_json
@@ -105,9 +103,7 @@ class Build:
         #=============================
         # Create build (bin) directory
         #=============================
-        build_dir = os.path.join(current_working_directory, BUILD_FOLDER_NAME)
-        if (os.path.exists(build_dir)):
-            shutil.rmtree(build_dir)
+        build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
         if not(os.path.exists(build_dir)):
             os.mkdir(build_dir)
         
