@@ -4,6 +4,7 @@ import argparse
 import json
 from getpass import getpass
 from modules.builder import Build
+from modules.validator import Validate
 from modules import crypto,logger_cust
 import logging
 
@@ -126,14 +127,12 @@ try:
     #=========================
     logger = logging.getLogger('drm.build')
     logger.info('Starting DRM deployment (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
-    # print('Starting DRM deployment (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
-    # print("")
-
-
     
     logger.info("Building release...")   
     build = Build(deploy_config)
     build.generate_release_full_details(args.release, args.connection)    
+    validate = Validate(deploy_config)
+    validate.validate_release(args.connection)
     logger.info("Build finished successfully!!!")
     logger = logging.getLogger('drm.release')
 
