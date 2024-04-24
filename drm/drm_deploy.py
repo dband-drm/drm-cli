@@ -5,7 +5,8 @@ import json
 from getpass import getpass
 from modules.builder import Build
 from modules.validator import Validate
-from modules import crypto
+from modules import crypto,logger_cust
+import logging
 
 DRYRUN_MODE = "DryRun"
 DEPLOY_MODE = "Deploy"
@@ -59,6 +60,10 @@ parser.add_argument("-r", "--release", help = "Release ID", required = True)
 parser.add_argument("--password", action='store_true', default=False, required = False)
 parser.add_argument("--dryrun", action='store_true', default=False, required = False)
 parser.add_argument("--deploy", action='store_true', default=False, required = False)
+
+levels = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+parser.add_argument('--log-level', default='INFO', choices=levels)
+    
 args = parser.parse_args()
 
 try:
@@ -77,6 +82,16 @@ try:
     DATA_FILE_EXT = deploy_config.data_file_ext
     SQLITE_FILE_EXT = deploy_config.sqlite_file_ext
 
+    
+    loglevel=args.log_level
+    try:
+        logger = logger_cust.configure_logging('drm',loglevel)
+        logger = logging.getLogger('drm.params')
+        logger.info('start')
+        logger.debug('start')
+    except (ImportError, AttributeError):
+        print('Unable to find the log_level for  \'%s\'' % args.log_level)
+    
     #======================
     # Verify encryption key
     #======================
@@ -110,23 +125,34 @@ try:
     #=========================
     # Get release name from DB
     #=========================
-    print('Starting DRM deployment (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
-    print("")
+    logger = logging.getLogger('drm.build')
+    logger.info('Starting DRM deployment (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
+    # print('Starting DRM deployment (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
+    # print("")
+
+
     
-    print("Building release...")   
+    logger.info("Building release...")   
     build = Build(deploy_config)
     build.generate_release_full_details(args.release, args.connection)  
-    #validate = Validate(deploy_config)
-    #validate.validate_release(args.connection)
+    validate = Validate(deploy_config)
+    validate.validate_release(args.connection)
     print("Build finished successfully!!!")
     print("")
 
     print(style.GREEN + "DRM deployment finished successfully!!!" + style.RESET)
     print("==================================")
     print("")
+    build.generate_release_full_details(args.release, args.connection)    
+    logger.info("Build finished successfully!!!")
+    logger = logging.getLogger('drm.release')
+
+    logger.info(style.GREEN + "DRM deployment finished successfully!!!" + style.RESET)
+    logger.warning("==================================")
+    
     
 except Exception as e:
-	print(style.RED + "Error: " + str(e) + style.RESET)
-	print("")
-	print(style.RED + "DRM deployment failed!!!" + style.RESET)
-	print("==================================")
+	logger.exception(style.RED + "Error: " + str(e) + style.RESET)
+	#print("")
+	logger.exception(style.RED + "DRM deployment failed!!!" + style.RESET)
+	#print("==================================")
