@@ -10,13 +10,14 @@ from pathlib import Path
 from modules import init_db
 from modules import crypto
 
+current_working_directory = Path(__file__).parent.resolve()
+
 INSTALL_CONFIG_FILE_NAME = "install.config"
 DRM_DB_JSON_PATH = "init_drm_db"
 DRM_DB_JSON_FILE_NAME = "drm_db_data.json"
 DRM_FOLDER_NAME = "drm"
 DEPLOY_CONFIG_FILE_NAME = "drm_deploy.config"
 		
-
 class style():
     BLACK = '\033[30m'
     RED = '\033[31m'
@@ -31,7 +32,8 @@ class style():
 
 class Config():
 	def __init__(self):
-		f = open(INSTALL_CONFIG_FILE_NAME)
+		file = os.path.join(current_working_directory, INSTALL_CONFIG_FILE_NAME)
+		f = open(file)
 		js = json.load(f)
 
 		self.drm_version = js['drm_version'] 
@@ -145,7 +147,6 @@ def copy_drm_content(drm_path):
 		if (os.path.exists(drm_config_file)):
 			raise Exception ("DRM already installed in given path. Please select another path or unsinatall before reinstall")
 		try:
-			current_working_directory = os.getcwd()
 			drm_source_path = os.path.join(current_working_directory, DRM_FOLDER_NAME)
 			if (drm_source_path != drm_path):
 				shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=False)
@@ -250,9 +251,9 @@ def create_drm_db(drm_path, install_type, encryption_key):
 			if not(os.path.exists(db_directory)):
 				os.mkdir(db_directory)
 			
-			src_drm_db_json = os.path.join(DRM_DB_JSON_PATH, DRM_DB_JSON_FILE_NAME)
+			src_drm_db_json = os.path.join(current_working_directory, DRM_DB_JSON_PATH, DRM_DB_JSON_FILE_NAME)
 			shutil.copy(src_drm_db_json, db_directory)
-			old_drm_db_json = os.path.join(db_directory, DRM_DB_JSON_FILE_NAME)
+			old_drm_db_json = os.path.join(current_working_directory, db_directory, DRM_DB_JSON_FILE_NAME)
 			if(encryption_key != "" and encryption_key != None):
 				drm_db = init_db.InitDB(old_drm_db_json, encryption_key)
 				js = drm_db.encrypt_drm_json_db()

@@ -1,7 +1,11 @@
+import os
 import json
+from pathlib import Path
 from modules import crypto
 from modules import sqlite
 from modules import parser_json_sqlite
+
+current_working_directory = Path(__file__).parent.parent.resolve()
 
 INIT_SCHEMA_JSON = "init_drm_db/drm_db_schema.json"
 INIT_DATA_JSON = "init_drm_db/drm_db_data.json"
@@ -27,7 +31,8 @@ class InitDB:
 
 		parser = parser_json_sqlite.ParserJsonSqlite()
 
-		f = open(INIT_SCHEMA_JSON)
+		file = os.path.join(current_working_directory, INIT_SCHEMA_JSON)
+		f = open(file)
 		js = json.load(f)
 		for js_table in js['tables']:
 
@@ -54,7 +59,8 @@ class InitDB:
 		
 		parser = parser_json_sqlite.ParserJsonSqlite()
 
-		f = open(INIT_DATA_JSON)
+		file = os.path.join(current_working_directory, INIT_DATA_JSON)
+		f = open(file)
 		js = json.load(f)
 
 		#==================

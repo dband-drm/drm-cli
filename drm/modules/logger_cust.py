@@ -56,6 +56,8 @@ def configure_logging(logname,loglevel):
     console_handler.setLevel(logging.INFO)  # Only display info and above on console logging.INFO
     logger.addHandler(console_handler)
     # Create a file handler
+    if not os.path.exists("./logs"):
+        os.mkdir("./logs")
     log_filename = "./logs/app.log"
     file_handler = logging.FileHandler(log_filename)
     file_handler.setFormatter(formatter)
