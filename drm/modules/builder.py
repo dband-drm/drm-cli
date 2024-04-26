@@ -4,8 +4,11 @@ import json
 import shutil
 import io
 import zipfile
+from pathlib import Path
 from modules import parser_sqlite_json
 from modules import parser_json_json
+
+current_working_directory = Path(__file__).parent.parent.resolve()
 
 CONFIG_FILE_NAME = "drm_deploy.config"
 BUILD_FILE_NAME = "drm_deploy.json"
@@ -81,7 +84,6 @@ class Build:
         :param id: Release ID
         :return:
         """       
-        current_working_directory = os.getcwd()
         if (self.deploy_config.installation_type == "sqlite"):
             parser = parser_sqlite_json
             db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.sqlite_file_ext)

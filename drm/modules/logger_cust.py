@@ -1,10 +1,16 @@
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
+from pathlib import Path
 import getpass
 import socket
 import json
 from datetime import datetime
+
+current_working_directory = Path(__file__).parent.parent.resolve()
+
+APP_LOG_FILE_NAME = "app.log"
+ROTATE_LOG_FILE_NAME = "app_daily.json"
 
 # Custom Formatter to include user and host name
 class UserHostFormatter(logging.Formatter):
@@ -55,10 +61,12 @@ def configure_logging(logname,loglevel):
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging.INFO)  # Only display info and above on console logging.INFO
     logger.addHandler(console_handler)
+    log_dir = os.path.join(current_working_directory, "logs")
+    # Create log folder if missing
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
     # Create a file handler
-    if not os.path.exists("./logs"):
-        os.mkdir("./logs")
-    log_filename = "./logs/app.log"
+    log_filename = os.path.join(log_dir, APP_LOG_FILE_NAME)
     file_handler = logging.FileHandler(log_filename)
     file_handler.setFormatter(formatter)
     file_handler.setLevel(loglevel)  # Write all levels to the file
@@ -67,7 +75,7 @@ def configure_logging(logname,loglevel):
 # Create a TimedRotatingFileHandler that rotates every Monday at midnight
     #TimedRotatingFileHandler
     # Define the log filename
-    log_filename ="./logs/app_daily.json"
+    log_filename = os.path.join(log_dir, ROTATE_LOG_FILE_NAME)
 
     timed_rotating_file_handler = TimedRotatingFileHandler(
     log_filename,

@@ -2,11 +2,14 @@ import os
 import sys
 import argparse
 import json
+from pathlib import Path
 from getpass import getpass
 from modules.builder import Build
 from modules.validator import Validate
 from modules import crypto,logger_cust
 import logging
+
+current_working_directory = Path(__file__).parent.resolve()
 
 DRYRUN_MODE = "DryRun"
 DEPLOY_MODE = "Deploy"
@@ -26,7 +29,8 @@ class style():
     
 class Config():
     def __init__(self):
-        f = open(DEPLOY_CONFIG_FILE_NAME)
+        file = os.path.join(current_working_directory, DEPLOY_CONFIG_FILE_NAME)
+        f = open(file)
         js = json.load(f)
         
         self.drm_version = js['drm_version']

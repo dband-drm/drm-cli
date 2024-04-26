@@ -1,6 +1,9 @@
 import os
 import json
 import zipfile
+from pathlib import Path
+
+current_working_directory = Path(__file__).parent.parent.resolve()
 
 BUILD_FILE_NAME = "drm_deploy.json"
 PACK_FILE_NAME = "deploy.drmpac"
@@ -165,7 +168,6 @@ class Validate:
         """
         self.deploy_config = deploy_config
 
-        current_working_directory = os.getcwd()
         build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
         pack_file_name = os.path.join(build_dir, PACK_FILE_NAME)
 
