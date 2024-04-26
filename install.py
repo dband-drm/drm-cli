@@ -6,6 +6,7 @@ import sqlite3
 import datetime
 import json
 import shutil
+from shutil import ignore_patterns
 from pathlib import Path
 from modules import init_db
 from modules import crypto
@@ -44,6 +45,8 @@ class Config():
 		self.db_file_name = config_js['db_file_name']      
 		self.data_file_ext = config_js['data_file_ext']  
 		self.sqlite_file_ext = config_js['sqlite_file_ext']    
+
+		self.modules_js = js['modules'] 
 
 		f.close()
 
@@ -135,10 +138,11 @@ def get_drm_path():
 	except Exception as e:
                 raise Exception ("failed to get installation path, " + str(e))
 
-def copy_drm_content(drm_path):
+def copy_drm_content(drm_path, modules_js):
 	'''
 	This function copies the DRM content into the DRM  directory
 	:param drm_path: DRM full path directory
+	:param modules_js: List of modules to copy
 	'''
 	try:
 		print("Copying DRM content...")
@@ -149,14 +153,22 @@ def copy_drm_content(drm_path):
 		try:
 			drm_source_path = os.path.join(current_working_directory, DRM_FOLDER_NAME)
 			if (drm_source_path != drm_path):
-				shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=False)
+				shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=False, ignore=ignore_patterns('*.pyc', '__pycache__'))
+				for module in modules_js:
+					source_module_file_name = os.path.join(current_working_directory, "modules", module)
+					target_module_file_name = os.path.join(drm_path, "modules", module)
+					shutil.copy(source_module_file_name, target_module_file_name)
 
 		except Exception as e:
 			if (e.errno == 17):
 				user_choice = input(style.YELLOW + "Content already exists in given directory. Enter [Y]/N to overwrite content: " + style.RESET)
 				if (user_choice.lower() == "y"):
 					if (drm_source_path != drm_path):
-						shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=True)
+						shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=True, ignore=ignore_patterns('*.pyc', '__pycache__'))
+						for module in modules_js:
+							source_module_file_name = os.path.join(current_working_directory, "modules", module)
+							target_module_file_name = os.path.join(drm_path, "modules", module)
+							shutil.copyfile(source_module_file_name, target_module_file_name,)
 				else:
 					raise Exception (str(e))
 		if (drm_source_path != drm_path):
@@ -268,12 +280,13 @@ def create_drm_db(drm_path, install_type, encryption_key):
 		except Exception as e:
 			raise Exception ("failed to create DRM database, " + str(e))
 
-def install_drm(drm_path, install_type, encryption_key):
+def install_drm(drm_path, install_type, encryption_key, modules_js):
 	'''
 	This function installs the DRM
 	:param drm_path: The directory to install the DRM in
 	:param install_type: Installation type
     :param encryption_key: Encryption key
+    :param modules_js: list of modules to copy
 	'''
 	try:
 		#print("==================================")
@@ -283,7 +296,7 @@ def install_drm(drm_path, install_type, encryption_key):
 		#====================================
 		# Create DRM directory & copy content
 		#====================================
-		copy_drm_content(drm_path)
+		copy_drm_content(drm_path, modules_js)
 
 		#==============
 		# Create DRM DB
@@ -316,6 +329,8 @@ try:
 	DB_FILE_NAME = install_config.db_file_name
 	DATA_FILE_EXT = install_config.data_file_ext
 	SQLITE_FILE_EXT = install_config.sqlite_file_ext
+
+	modules_js = install_config.modules_js
 	
 	#======================================
 	# Get installation definition from user
@@ -328,7 +343,7 @@ try:
 	#============
 	# Install DRM
 	#============
-	install_drm(drm_path, install_type, encryption_key)
+	install_drm(drm_path, install_type, encryption_key, modules_js)
 
 except Exception as e:
 	print(style.RED + "Error: " + str(e) + style.RESET)
