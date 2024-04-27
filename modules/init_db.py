@@ -34,6 +34,13 @@ class InitDB:
 		file = os.path.join(current_working_directory, INIT_SCHEMA_JSON)
 		f = open(file)
 		js = json.load(f)
+
+		#==========================================================
+		#Disable all FK constraints before dropping existing tables
+		#==========================================================
+		sql_command = "PRAGMA foreign_keys = OFF;"
+		sqlite.execute_command(conn, sql_command)
+
 		for js_table in js['tables']:
 
 			#=====================================
@@ -48,6 +55,12 @@ class InitDB:
 			sql_command = parser.create_table(js_table['name'], js_table['columns'], js_table['constraints'])
 			sqlite.execute_command(conn, sql_command)
 
+		#=========================
+		#Enable all FK constraints
+		#=========================
+		sql_command = "PRAGMA foreign_keys = ON;"
+		sqlite.execute_command(conn, sql_command)
+		
 		f.close()
 
 
