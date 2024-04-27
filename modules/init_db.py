@@ -41,7 +41,7 @@ class InitDB:
 		sql_command = "PRAGMA foreign_keys = OFF;"
 		sqlite.execute_command(conn, sql_command)
 
-		for js_table in js['tables']:
+		for js_table in js['tables']: 
 
 			#=====================================
 			# Drop table if exists before recreate
