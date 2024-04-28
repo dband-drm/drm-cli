@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 from modules import parser_sqlite_json
 from modules import parser_json_json
+from modules import files_and_folders
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
@@ -123,10 +124,10 @@ class Build:
             # Get all Release Solutions
             #==========================
             solutions_js = {"solutions":[]}
-            solution_obj = Solution(release_parser['id'])
-            solutions_parser = json.loads(parser.Solutions.get_solutions_by_release_id(db_file_name, release_parser['id'], solution_obj))           
-            for solution in solutions_parser['solutions']:
-                if solution['is_active'] == 1:
+            solution_obj = Solution(release_parser["id"])
+            solutions_parser = json.loads(parser.Solutions.get_solutions_by_release_id(db_file_name, release_parser["id"], solution_obj))           
+            for solution in solutions_parser["solutions"]:
+                if solution["is_active"] == 1:
                     solution_js = {}
                     solution_js.update(solution)
 
@@ -184,18 +185,16 @@ class Build:
         #=======================================
         version_js = {"drm_vrsion": self.deploy_config.drm_version}
         config_file_name = os.path.join(build_dir, CONFIG_FILE_NAME)
-        with open(config_file_name, 'w') as f:
-            json.dump(version_js, f)
-        f.close() 
+        file = files_and_folders.Files(config_file_name)
+        drm_db = file.write_file(json.dumps(version_js))
 
         #=======================
         # Create build JSON file
         #=======================
         build_file_name = os.path.join(build_dir, BUILD_FILE_NAME)
-        with open(build_file_name, 'w') as f:
-            json.dump(release_js, f)
-        f.close() 
-        
+        file = files_and_folders.Files(build_file_name)
+        drm_db = file.write_file(json.dumps(release_js))
+       
         #===============
         # Zip build file
         #===============

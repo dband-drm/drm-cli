@@ -1,5 +1,6 @@
 import sys
 import json
+from modules import files_and_folders
 
 class Releases:
     def check_release_by_id_and_connection_name(db_file_name, id, connection_name):
@@ -13,7 +14,8 @@ class Releases:
         verified_connection_id = "null"
         _connection_id = 0
 
-        drm_db = json.loads(open(db_file_name).read())
+        file = files_and_folders.Files(db_file_name)
+        drm_db = file.load_file()
         for release in drm_db['releases']:
             if ("is_active" in release):
                 is_active = release['is_active']
@@ -49,7 +51,8 @@ class Releases:
         :param release_obj: Release object
         :return: JSON
         """
-        drm_db = json.loads(open(db_file_name).read())
+        file = files_and_folders.Files(db_file_name)
+        drm_db = file.load_file()
         for release in drm_db['releases']:
             if (release['id'] == int(id)):
                 release_obj.id = release['id']    
@@ -72,7 +75,8 @@ class Solutions:
         """
         _solution_id = 0
         js = json.loads('{"solutions":[]}')
-        drm_db = json.loads(open(db_file_name).read())
+        file = files_and_folders.Files(db_file_name)
+        drm_db = file.load_file()
         for release in drm_db['releases']:
             if (release['id'] == release_id):
                 verified_release_id = release['id']
@@ -109,7 +113,8 @@ class Connections:
         _solution_id = 0
         _connection_id = 0
         js = json.loads('{"connections":[]}')
-        drm_db = json.loads(open(db_file_name).read())
+        file = files_and_folders.Files(db_file_name)
+        drm_db = file.load_file()
         for release in drm_db['releases']:
             if (release['id'] == int(release_id)):
                 verified_release_id = release['id']
@@ -146,7 +151,8 @@ class SqlScriptsVariables:
         _solution_id = 0
         _sql_script_variable_id = 0
         js = json.loads('{"sql_scripts_variables":[]}')
-        drm_db = json.loads(open(db_file_name).read())
+        file = files_and_folders.Files(db_file_name)
+        drm_db = file.load_file()
         for release in drm_db['releases']:
             if (release['id'] == int(release_id)):
                 verified_release_id = release['id']
@@ -177,7 +183,8 @@ class SqlScripts:
         _solution_id = 0
         _sql_script_id = 0
         js = json.loads('{"sql_scripts":[]}')
-        drm_db = json.loads(open(db_file_name).read())
+        file = files_and_folders.Files(db_file_name)
+        drm_db = file.load_file()
         for release in drm_db['releases']:
             if (release['id'] == int(release_id)):
                 verified_release_id = release['id']
@@ -210,7 +217,8 @@ class Projects:
         _sql_script_id = 0
         _project_id = 0
         js = json.loads('{"projects":[]}')
-        drm_db = json.loads(open(db_file_name).read())
+        file = files_and_folders.Files(db_file_name)
+        drm_db = file.load_file()
         for release in drm_db['releases']:
             if (release['id'] == int(release_id)):
                 verified_release_id = release['id']
