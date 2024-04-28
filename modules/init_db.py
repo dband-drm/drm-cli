@@ -4,6 +4,7 @@ from pathlib import Path
 from modules import crypto
 from modules import sqlite
 from modules import parser_json_sqlite
+from modules import files_and_folders
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
@@ -25,15 +26,11 @@ class InitDB:
 		Create schema
 		:param conn: Connectionstring
 		"""
-		
-		sql_command = "PRAGMA foreign_keys = ON;"
-		sqlite.execute_command(conn, sql_command)
-
 		parser = parser_json_sqlite.ParserJsonSqlite()
 
-		file = os.path.join(current_working_directory, INIT_SCHEMA_JSON)
-		f = open(file)
-		js = json.load(f)
+		file_name = os.path.join(current_working_directory, INIT_SCHEMA_JSON)
+		file = files_and_folders.Files(file_name)
+		js = file.load_file()
 
 		#==========================================================
 		#Disable all FK constraints before dropping existing tables
@@ -61,9 +58,6 @@ class InitDB:
 		sql_command = "PRAGMA foreign_keys = ON;"
 		sqlite.execute_command(conn, sql_command)
 		
-		f.close()
-
-
 	def load_data(conn, encryption_key):
 		"""
 		Load init (syste) Data
@@ -72,9 +66,9 @@ class InitDB:
 		
 		parser = parser_json_sqlite.ParserJsonSqlite()
 
-		file = os.path.join(current_working_directory, INIT_DATA_JSON)
-		f = open(file)
-		js = json.load(f)
+		file_name = os.path.join(current_working_directory, INIT_DATA_JSON)
+		file = files_and_folders.Files(file_name)
+		js = file.load_file()
 
 		#==================
 		# Load dictionaries
@@ -215,9 +209,6 @@ class InitDB:
 
 			solution_id += 1
 
-		f.close()
-
-
 	def create_drm_db(self):
 		"""
 		Creates DRM database with system Data
@@ -242,7 +233,6 @@ class InitDB:
 		#==========================
 		sqlite.close_connection(conn)
 
-
 	def encrypt_value_by_key(json_obj, key_to_encrype, encryption_key):
 		"""
 		Replace value in json by key
@@ -264,17 +254,14 @@ class InitDB:
 				InitDB.encrypt_value_by_key(item, key_to_encrype, encryption_key)
 		return json_obj
 
-
 	def encrypt_drm_json_db(self):
 		"""
 		Creates DRM database with system Data
 		"""
-		f = open(self.db_name)
-		js = json.load(f)
+		file = files_and_folders(self.db_name)
+		js = file.load_file()
 
 		if(self.encryption_key != "" and self.encryption_key != None):
 			js = InitDB.encrypt_value_by_key(js, "connection_string", self.encryption_key)
 
-		f.close()
-		
 		return js
