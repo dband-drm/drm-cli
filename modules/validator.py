@@ -174,6 +174,7 @@ class Validate:
         with zipfile.ZipFile(pack_file_name, 'r') as zip_ref:
             with zip_ref.open(BUILD_FILE_NAME) as json_file:
                 self.release = json.load(json_file)
+                zip_ref.close()
 
     def validate_release(self, connection_name):
         """ Validate release JSON
