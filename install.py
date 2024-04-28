@@ -10,6 +10,7 @@ from shutil import ignore_patterns
 from pathlib import Path
 from modules import init_db
 from modules import crypto
+from modules import files_and_folders
 
 current_working_directory = Path(__file__).parent.resolve()
 
@@ -33,9 +34,9 @@ class style():
 
 class Config():
 	def __init__(self):
-		file = os.path.join(current_working_directory, INSTALL_CONFIG_FILE_NAME)
-		f = open(file)
-		js = json.load(f)
+		file_name = os.path.join(current_working_directory, INSTALL_CONFIG_FILE_NAME)
+		file = files_and_folders.Files(file_name)
+		js = file.load_file()
 
 		self.drm_version = js['drm_version'] 
 
@@ -48,7 +49,6 @@ class Config():
 
 		self.modules_js = js['modules'] 
 
-		f.close()
 
 #=======
 # Helper
@@ -148,7 +148,8 @@ def copy_drm_content(drm_path, modules_js):
 		print("Copying DRM content...")
 
 		drm_config_file = os.path.join(drm_path, DEPLOY_CONFIG_FILE_NAME)
-		if (os.path.exists(drm_config_file)):
+		file = files_and_folders.Files(drm_config_file)
+		if (file.check_file_exists()):
 			raise Exception ("DRM already installed in given path. Please select another path or unsinatall before reinstall")
 		try:
 			drm_source_path = os.path.join(current_working_directory, DRM_FOLDER_NAME)
@@ -188,7 +189,6 @@ def create_drm_config(drm_path, install_type, encryption_key):
 		print("Creating drm.config...")
 
 		drm_config_file = os.path.join(drm_path, DEPLOY_CONFIG_FILE_NAME)
-		#installer_user = os.environ.get("USER")
 		installer_user = os.getlogin()
 		install_timestamp = str(datetime.datetime.now())
 		security_text = "This drm cli was developed by d-band and it is amazing!!!"
@@ -218,8 +218,8 @@ def create_drm_config(drm_path, install_type, encryption_key):
 			}
 		}
 		json_obj = json.dumps(content, indent=4)
-		with open (drm_config_file, "w") as outfile:
-			outfile.write(json_obj)
+		file = files_and_folders.Files(drm_config_file)
+		file.write_file(json_obj)
 
 		print("File created successfully!!!")
 		print("")
@@ -234,14 +234,17 @@ def create_drm_db(drm_path, install_type, encryption_key):
 	:param install_type: Installation type
 	:param encryption_key: Encryption key
 	'''
+	#====================
+	# Create DB directory
+	#====================
+	db_directory = os.path.join(drm_path, DB_FOLDER_NAME)
+	folder = files_and_folders.Folders(db_directory)
+	folder.create_folder()
+
 	if (install_type == "sqlite"):
 		try:
 			print("Creating DRM DB...")
 
-			# Create DB directory
-			db_directory = os.path.join(drm_path, DB_FOLDER_NAME)
-			if not(os.path.exists(db_directory)):
-				os.mkdir(db_directory)
 			sqlite_db_file_name = DB_FILE_NAME + "." + SQLITE_FILE_EXT
 			db_name = os.path.join(db_directory, sqlite_db_file_name)
 			if(encryption_key == ""):
@@ -258,17 +261,13 @@ def create_drm_db(drm_path, install_type, encryption_key):
 		try:
 			print("Creating DRM DB (Json style)...")
 
-			# Create DB directory
-			db_directory = os.path.join(drm_path, DB_FOLDER_NAME)
-			if not(os.path.exists(db_directory)):
-				os.mkdir(db_directory)
-			
 			src_drm_db_json = os.path.join(current_working_directory, DRM_DB_JSON_PATH, DRM_DB_JSON_FILE_NAME)
 			shutil.copy(src_drm_db_json, db_directory)
 			old_drm_db_json = os.path.join(current_working_directory, db_directory, DRM_DB_JSON_FILE_NAME)
 			if(encryption_key != "" and encryption_key != None):
 				drm_db = init_db.InitDB(old_drm_db_json, encryption_key)
 				js = drm_db.encrypt_drm_json_db()
+				# Encrypt sensitive data
 				with open(old_drm_db_json, "w") as file:
 					json.dump(js, file, indent=4)
 			db_json_file_name = DB_FILE_NAME + "." + DATA_FILE_EXT

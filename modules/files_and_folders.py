@@ -1,4 +1,5 @@
 import os
+import json
 
 class Files:
     def __init__(self, file_name): 
@@ -21,8 +22,8 @@ class Files:
         #===========================
         # if file exists --> open it
         #===========================
-        if file_op in ='r' and not check_file_exists:
-            raise Exception ('File "' + self.file_name + '" not found.' )
+        if file_op == 'r' and not Files.check_file_exists(self):
+            raise Exception ('File "' + str(self.file_name) + '" not found.' )
         else:
             file = open(self.file_name, file_op)
             return file
@@ -35,29 +36,50 @@ class Files:
         #============================
         # if file exists --> close it
         #============================
-        if check_file_exists:
+        if Files.check_file_exists(self):
             file.close()
         else:
             raise Exception ('File "' + self.file_name + '" not found.' )
 
+    def load_file(self):
+        """ Load the JSON file
+        :return: JSON text
+        """       
+        error_raised = False
+        try:
+            #=================
+            # Open & Load file
+            #=================
+            file = Files.open_file(self, file_op = 'r')
+            js_text = json.load(file)
+        except Exception as e:
+            error_raised = True
+            error_message = "Reading file failed!!! " + str(e)
+        finally:
+            Files.close_file(self, file)
+            if (error_raised):
+                raise Exception (error_message)
+            return js_text
+
     def read_file(self):
         """ Read the text file
-        :return:
+        :return: text
         """       
         error_raised = False
         try:
             #=================
             # Open & Read file
             #=================
-            file = open_file(file_op = 'r'):
-            file.read()
+            file = Files.open_file(self, file_op = 'r')
+            text = file.read()
         except Exception as e:
             error_raised = True
             error_message = "Reading file failed!!! " + str(e)
         finally:
-            close_file(file)
-            if (error_raised)
+            Files.close_file(self, file)
+            if (error_raised):
                 raise Exception (error_message)
+            return text
 
     def write_file(self, text):
         """ Write the text file
@@ -68,14 +90,14 @@ class Files:
             #=======================
             # Open & Write into file
             #=======================
-            file = open_file(file_op = 'w'):
+            file = Files.open_file(self, file_op = 'w')
             file.write(text)
         except Exception as e:
             error_raised = True
             error_message = "Writing file failed!!! " + str(e)
         finally:
-            close_file(file)
-            if (error_raised)
+            Files.close_file(self, file)
+            if (error_raised):
                 raise Exception (error_message)
 
     def append_file(self, text):
@@ -87,14 +109,14 @@ class Files:
             #========================
             # Open & Append into file
             #========================
-            file = open_file(file_op = 'a'):
+            file = Files.open_file(self, file_op = 'a')
             file.write(text)
         except Exception as e:
             error_raised = True
             error_message = "Appending into file failed!!! " + str(e)
         finally:
-            close_file(file)
-            if (error_raised)
+            Files.close_file(self, file)
+            if (error_raised):
                 raise Exception (error_message)
 
     def delete_file(self, ignore_file_not_found = False):
@@ -106,7 +128,7 @@ class Files:
             #============
             # Delete file
             #============
-            if check_file_exists:
+            if Files.check_file_exists(self):
                 os.remove(self.file_name)
             else:
                 if not ignore_file_not_found:
@@ -137,7 +159,7 @@ class Folders:
             #==============
             # Create folder
             #==============
-            if not check_folder_exists:
+            if not Folders.check_folder_exists(self):
                 os.mkdir(self.folder_name)
             else:
                 if not ignore_if_already_exist:
@@ -154,7 +176,7 @@ class Folders:
             #==============
             # Delete folder
             #==============
-            if  check_folder_exists:
+            if  Folders.check_folder_exists(self):
                 os.rmdir(self.folder_name)
             else:
                 if not ignore_if_not_exist:
@@ -171,7 +193,7 @@ class Folders:
             #==============
             # Delete folder
             #==============
-            if  check_folder_exists:
+            if  Folders.check_folder_exists(self):
                 os.rmdir(self.folder_name)
             else:
                 if not ignore_if_not_exist:
