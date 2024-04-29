@@ -44,6 +44,35 @@ class JSONFormatter(logging.Formatter):
         }
     # Return the JSON string
         return json.dumps(log_record)
+# Configure the logging system for install
+def configure_install_logging(logname,loglevel=logging.INFO):
+     # Create a logger
+    logger = logging.getLogger(logname)
+    logger.setLevel(loglevel)  # Set global logging level
+    #logging.DEBUG
+    
+    # Define the format for the log messages
+    log_format = "%(asctime)s  - %(name)s - %(user)s@%(host)s - %(levelname)s - %(message)s"
+    formatter = UserHostFormatter(fmt=log_format)
+
+    # Create a console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(loglevel)  # Only display info and above on console logging.INFO
+    logger.addHandler(console_handler)
+    log_dir = os.path.join(current_working_directory, "logs")
+    # Create log folder if missing
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
+    # Create a file handler
+    log_filename = os.path.join(log_dir, APP_LOG_FILE_NAME)
+    file_handler = logging.FileHandler(log_filename)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(loglevel)  # Write all levels to the file
+    logger.addHandler(file_handler)
+    
+    return logger
+
 # Configure the logging system
 def configure_logging(logname,loglevel):
     # Create a logger
@@ -65,29 +94,22 @@ def configure_logging(logname,loglevel):
     # Create log folder if missing
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
-    # Create a file handler
-    log_filename = os.path.join(log_dir, APP_LOG_FILE_NAME)
-    file_handler = logging.FileHandler(log_filename)
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(loglevel)  # Write all levels to the file
-    logger.addHandler(file_handler)
     
-# Create a TimedRotatingFileHandler that rotates every Monday at midnight
-    #TimedRotatingFileHandler
+    # Create a TimedRotatingFileHandler that rotates every Monday at midnight
+    # TimedRotatingFileHandler
     # Define the log filename
     log_filename = os.path.join(log_dir, ROTATE_LOG_FILE_NAME)
 
     timed_rotating_file_handler = TimedRotatingFileHandler(
     log_filename,
     when='d',  # 'w0' means every Monday
-    interval=1,  # Every week
+    interval=1,  # Every day
     backupCount=3,  # Keep last 3 backups
     atTime=None  # Default is midnight
 )
     json_formatter = JSONFormatter()
     timed_rotating_file_handler.setFormatter(json_formatter)
-    #timed_rotating_file_handler.setFormatter(formatter)
-    timed_rotating_file_handler.setLevel(logging.DEBUG)  # Write all levels to the file
+    timed_rotating_file_handler.setLevel(loglevel)  # Write all levels to the file
     # Add handlers to the logger    
     logger.addHandler(timed_rotating_file_handler)
 
