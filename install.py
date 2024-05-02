@@ -8,8 +8,8 @@ import json
 import shutil
 from shutil import ignore_patterns
 from pathlib import Path
-from modules import init_db
-from modules import crypto,logger_cust
+from modules import drm_logger, init_db
+from modules import crypto
 import logging
 from modules import files_and_folders
 
@@ -50,6 +50,10 @@ class Config():
 
 		self.modules_js = js['modules'] 
 
+		log_js = js['log']
+		self.log_folder_name = log_js['folder_name']
+		self.log_max_size_mb = log_js['max_size_mb']
+		self.log_backup_count = log_js['backup_count']
 
 #=======
 # Helper
@@ -235,7 +239,13 @@ def create_drm_config(drm_path, install_type, encryption_key):
 				"db_file_name": DB_FILE_NAME,
 				"data_file_ext": DATA_FILE_EXT,
 				"sqlite_file_ext": SQLITE_FILE_EXT				
-			}
+			},
+			"log":{
+				"folder_name": LOG_FOLDER_NAME,
+				"max_size_mb": LOG_MAX_SIZE_MB,
+				"backup_count": LOG_BACKUP_COUNT
+			},
+			"trace_flags": []
 		}
 		json_obj = json.dumps(content, indent=4)
 		file = files_and_folders.Files(drm_config_file)
@@ -356,10 +366,13 @@ try:
 	DB_FILE_NAME = install_config.db_file_name
 	DATA_FILE_EXT = install_config.data_file_ext
 	SQLITE_FILE_EXT = install_config.sqlite_file_ext
+	LOG_FOLDER_NAME = install_config.log_folder_name
+	LOG_MAX_SIZE_MB = install_config.log_max_size_mb
+	LOG_BACKUP_COUNT = install_config.log_backup_count
 
 	modules_js = install_config.modules_js
 	#logger
-	logger = logger_cust.configure_install_logging('drm.install')
+	logger = drm_logger.configure_install_logging('install')
 	
 	#======================================
 	# Get installation definition from user
