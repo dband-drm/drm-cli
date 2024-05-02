@@ -6,7 +6,7 @@ from pathlib import Path
 from getpass import getpass
 from modules.builder import Build
 from modules.validator import Validate
-from modules import crypto,logger_cust
+from modules import crypto,drm_logger
 import logging
 
 current_working_directory = Path(__file__).parent.resolve()
@@ -47,6 +47,11 @@ class Config():
         self.data_file_ext = config_js['data_file_ext']
         self.sqlite_file_ext = config_js['sqlite_file_ext']
         
+        log_js = js['log']
+        self.log_folder_name = log_js['folder_name']
+        self.log_max_size_mb = log_js['max_size_mb']
+        self.log_backup_count = log_js['backup_count']
+
         f.close()
 
 os.system('')
@@ -86,10 +91,14 @@ try:
     DATA_FILE_EXT = deploy_config.data_file_ext
     SQLITE_FILE_EXT = deploy_config.sqlite_file_ext
 
+    LOG_FOLDER_NAME = deploy_config.log_folder_name
+    LOG_MAX_SIZE_MB = deploy_config.log_max_size_mb
+    LOG_BACKUP_COUNT = deploy_config.log_backup_count
+
     
     loglevel=args.log_level
     try:
-        logger = logger_cust.configure_logging('drm',loglevel)
+        logger = drm_logger.configure_logging('drm',loglevel,LOG_FOLDER_NAME,LOG_MAX_SIZE_MB,LOG_BACKUP_COUNT)
         logger = logging.getLogger('drm.params')
         logger.info('start')
         logger.debug('start')
