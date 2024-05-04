@@ -80,14 +80,16 @@ class Project:
 
 class Build:
     def __init__(self, deploy_config):   
-        """ Constructor
+        """ 
+        Constructor
         :param deploy_config: Deployment config file
         :return:
         """
         self.deploy_config = deploy_config
 
     def generate_release_full_details(self, release_id, connection_name):
-        """ Generates full details of a release as JSON by id
+        """ 
+        Generates full details of a release as JSON by id
         :param release_id: Release ID
         :param connection_name: Connection name
         :return:

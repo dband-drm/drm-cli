@@ -6,8 +6,9 @@ class Files:
         self.file_name = file_name     
   
     def check_file_exists(self):
-        """ Checks if file exist
-        :return: boolean
+        """ 
+        Checks if file exist
+        :return: File exists or not (Boolean)
         """       
         if os.path.exists(self.file_name):
             return True
@@ -15,9 +16,10 @@ class Files:
             return False
 
     def open_file(self, file_op):
-        """ Open the text file
+        """ 
+        Open the text file
         :param file_op: File operation ("w", "r", "a")
-        :return: file object
+        :return: file object (File)
         """       
         #===========================
         # if file exists --> open it
@@ -29,7 +31,8 @@ class Files:
             return file
 
     def close_file(self, file):
-        """ Close the text file
+        """ 
+        Close the text file
         :param file: file object
         :return:
         """       
@@ -42,8 +45,9 @@ class Files:
             raise Exception ('File "' + self.file_name + '" not found.' )
 
     def load_file(self):
-        """ Load the JSON file
-        :return: JSON text
+        """ 
+        Load a JSON file
+        :return: JSON text (JSON)
         """       
         error_raised = False
         try:
@@ -62,8 +66,9 @@ class Files:
             return js_text
 
     def read_file(self):
-        """ Read the text file
-        :return: text
+        """ 
+        Read the text file
+        :return: File text (String)
         """       
         error_raised = False
         try:
@@ -82,7 +87,8 @@ class Files:
             return text
 
     def write_file(self, text):
-        """ Write the text file
+        """ 
+        Write the text file
         :return:
         """       
         error_raised = False
@@ -101,7 +107,8 @@ class Files:
                 raise Exception (error_message)
 
     def append_file(self, text):
-        """ Append the text to an existing file
+        """ 
+        Append a text to an existing file
         :return:
         """       
         error_raised = False
@@ -120,7 +127,8 @@ class Files:
                 raise Exception (error_message)
 
     def delete_file(self, ignore_file_not_found = False):
-        """ Delete a file
+        """ 
+        Delete a file
         :param ignore_file_not_found: ignores if a file not found
         :return:
         """       
@@ -134,7 +142,7 @@ class Files:
                 if not ignore_file_not_found:
                     raise Exception ('File "' + self.file_name + '" not found.' )
         except Exception as e:
-            error_message = "Deleting file failed!!! " + str(e)
+            error_message = "File deletion failed!!! " + str(e)
 
 
 class Folders:
@@ -142,8 +150,9 @@ class Folders:
         self.folder_name = folder_name     
   
     def check_folder_exists(self):
-        """ Checks if folder exists
-        :return: boolean
+        """ 
+        Checks if folder exists
+        :return: Folder exists or not (Boolean)
         """       
         if os.path.exists(self.folder_name):
             return True
@@ -151,7 +160,8 @@ class Folders:
             return False
 
     def create_folder(self, ignore_if_already_exist = True):
-        """ Create a folder
+        """ 
+        Create a folder
         :param ignore_if_already_exists: ignores if a folder already exist
         :return:
         """       
@@ -168,7 +178,8 @@ class Folders:
             error_message = "Creating folder failed!!! " + str(e)
 
     def delete_folder(self, ignore_if_not_exist = True):
-        """ Delete a folder
+        """ 
+        Delete a folder
         :param ignore_if_not_exist: ignores if a folder not exist
         :return:
         """       
@@ -182,21 +193,5 @@ class Folders:
                 if not ignore_if_not_exist:
                     raise Exception ('Folder "' + self.folder_name + '" not exist.' )
         except Exception as e:
-            error_message = "Creating folder failed!!! " + str(e)
+            error_message = "Folder deletion failed!!! " + str(e)
 
-    def delete_folder(self, ignore_if_not_exist = True):
-        """ Delete a folder
-        :param ignore_if_not_exist: ignores if a folder not exist
-        :return:
-        """       
-        try:
-            #==============
-            # Delete folder
-            #==============
-            if  Folders.check_folder_exists(self):
-                os.rmdir(self.folder_name)
-            else:
-                if not ignore_if_not_exist:
-                    raise Exception ('Folder "' + self.folder_name + '" not exist.' )
-        except Exception as e:
-            error_message = "Creating folder failed!!! " + str(e)

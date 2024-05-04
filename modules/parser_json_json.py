@@ -4,11 +4,12 @@ from modules import files_and_folders
 
 class Releases:
     def check_release_by_id_and_connection_name(db_file_name, id, connection_name):
-        """ Checks if active release & connection name exist in the system
+       """ 
+        Checks if active release & connection name exist in the system
         :param db_file_name: Database file name
         :param id: Release ID
         :param connection_name: Connection name
-        :return: JSON
+        :return: release ID & Connection ID (JSON)
         """
         verified_release_id = "null"
         verified_connection_id = "null"
@@ -45,11 +46,12 @@ class Releases:
         return json.dumps(js)
 
     def get_release_by_id(db_file_name, id, release_obj):
-        """ Return release details by release_id
+        """ 
+        Return release details by release_id
         :param db_file_name: Database file name
         :param id: Release ID
         :param release_obj: Release object
-        :return: JSON
+        :return: Release info (JSON)
         """
         file = files_and_folders.Files(db_file_name)
         drm_db = file.load_file()
@@ -67,11 +69,12 @@ class Releases:
 
 class Solutions:
     def get_solutions_by_release_id(db_file_name, release_id, solution_obj):
-        """ Return solutions list details by release_id
+        """ 
+        Return solutions list details by release_id
         :param db_file_name: Database file name
         :param release_id: Release ID
         :param solution_obj: Solution object
-        :return: JSON
+        :return: Solution info (JSON)
         """
         _solution_id = 0
         js = json.loads('{"solutions":[]}')
@@ -102,13 +105,14 @@ class Solutions:
 
 class Connections:
     def get_connection_by_solution_id_and_name(db_file_name, release_id, solution_id, name, connection_obj):
-        """ Return solution connection details by solution_id and name
+        """ 
+        Return solution connection details by solution_id and name
         :param db_file_name: Database file name
         :param release_id: Release ID
         :param solution_id: Solution ID
         :param name: Connection name
         :param connection_obj: Connection object
-        :return: JSON
+        :return: Connection details (JSON)
         """
         _solution_id = 0
         _connection_id = 0
@@ -141,12 +145,13 @@ class Connections:
 
 class SqlScriptsVariables:
     def get_sql_scripts_variables_by_solution_id(db_file_name, release_id, solution_id, sql_script_variable_obj):
-        """ Return solution sql_scripts_variables details by solution_id
+        """ 
+        Return solution sql_scripts_variables details by solution_id
         :param db_file_name: Database file name
         :param release_id: Release ID
         :param solution_id: Solution ID
         :param sql_script_variable_obj: Sql_Scripts_Variable object
-        :return: JSON
+        :return: SQL Scripts variables & values (JSON)
         """
         _solution_id = 0
         _sql_script_variable_id = 0
@@ -173,12 +178,13 @@ class SqlScriptsVariables:
 
 class SqlScripts:
     def get_sql_scripts_by_solution_id(db_file_name, release_id, solution_id, sql_script_obj):
-        """ Return solution sql_scripts details by solution_id
+        """ 
+        Return solution sql_scripts details by solution_id
         :param db_file_name: Database file name
         :param release_id: Release ID
         :param solution_id: Solution ID
         :param sql_script_obj: Sql_Script object
-        :return: JSON
+        :return: Get databases from queriy scripts (JSON)
         """
         _solution_id = 0
         _sql_script_id = 0
@@ -206,12 +212,13 @@ class SqlScripts:
 
 class Projects:
     def get_projects_by_solution_id(db_file_name, release_id, solution_id, project_obj):
-        """ Return solution projects details by solution_id
+        """ 
+        Return solution projects details by solution_id
         :param db_file_name: Database file name
         :param release_id: Release ID
         :param solution_id: Solution ID
         :param project_obj: Project object
-        :return: JSON
+        :return: Projects info (JSON)
         """
         _solution_id = 0
         _sql_script_id = 0

@@ -11,10 +11,16 @@ import logging
 
 current_working_directory = Path(__file__).parent.resolve()
 
+#===========
+# Constrants
+#===========
 DRYRUN_MODE = "DryRun"
 DEPLOY_MODE = "Deploy"
 DEPLOY_CONFIG_FILE_NAME = "drm_deploy.config"
-
+		
+#================
+# Printing colors
+#================
 class style():
     BLACK = '\033[30m'
     RED = '\033[31m'
@@ -26,13 +32,18 @@ class style():
     WHITE = '\033[37m'
     UNDERLINE = '\033[4m'
     RESET = '\033[0m'
-    
+
+#=================
+# Read config file
+#=================
 class Config():
     def __init__(self):
+		# Read file
         file = os.path.join(current_working_directory, DEPLOY_CONFIG_FILE_NAME)
         f = open(file)
         js = json.load(f)
-        
+
+		# Extract variables values configured
         self.drm_version = js['drm_version']
         
         installation_info_js = js['installation_info']
@@ -75,6 +86,9 @@ parser.add_argument('--log-level', default='INFO', choices=levels)
     
 args = parser.parse_args()
 
+#=====
+# Main
+#=====
 try:
 
 	#==================================
