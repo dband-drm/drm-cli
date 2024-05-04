@@ -11,10 +11,16 @@ from modules import files_and_folders
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
+#===========
+# Constrants
+#===========
 CONFIG_FILE_NAME = "drm_deploy.config"
 BUILD_FILE_NAME = "drm_deploy.json"
 PACK_FILE_NAME = "deploy.drmpac"
 
+#=================
+# Entities objects
+#=================
 class Release:
     def __init__(self, id, name = None, max_retries = None, is_active = None): 
         self.id = id       
@@ -75,23 +81,28 @@ class Project:
 class Build:
     def __init__(self, deploy_config):   
         """ Constructor
-        :param installation_type: Installation type (json/sqlite)
+        :param deploy_config: Deployment config file
         :return:
         """
         self.deploy_config = deploy_config
 
     def generate_release_full_details(self, release_id, connection_name):
         """ Generates full details of a release as JSON by id
-        :param id: Release ID
+        :param release_id: Release ID
+        :param connection_name: Connection name
         :return:
-        """       
+        """
+        #========================================
+        # Choose DB & parser by installation type       
+        #========================================
+        # SQLite to JSON
         if (self.deploy_config.installation_type == "sqlite"):
             parser = parser_sqlite_json
             db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.sqlite_file_ext)
+        # JSON to JSON
         else:
             parser = parser_json_json
             db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.data_file_ext)
-
 
         #===========================================
         # Check if active release & connection exist
@@ -100,8 +111,7 @@ class Build:
         if (check_parser['release_id'] == None):
             raise Exception ('Release ID "' + str(release_id) + '" not found.' )
         elif (check_parser['connection_id'] == None):
-            raise Exception (('No active connection "{connection_name}" is associated with release ID "' + str(release_id) + '".' ).format(connection_name = connection_name))
-        
+            raise Exception (('No active connection "{connection_name}" is associated with release ID "' + str(release_id) + '".' ).format(connection_name = connection_name))        
 
         #=============================
         # Create build (bin) directory
@@ -172,8 +182,7 @@ class Build:
                         projects_js['projects'].append(project)
                         solution_js.update(projects_js)
 
-                    solutions_js['solutions'].append(solution_js)
-                    
+                    solutions_js['solutions'].append(solution_js)                    
                     
                     release_js.update(solutions_js)
 
@@ -199,10 +208,12 @@ class Build:
         # Zip build file
         #===============
         pack_file_name = os.path.join(build_dir, PACK_FILE_NAME)
+        # Copy the output files into ZIP folder
         with zipfile.ZipFile(pack_file_name, 'w', zipfile.ZIP_DEFLATED) as myzip:
             myzip.write(build_file_name, BUILD_FILE_NAME)
             myzip.write(config_file_name, CONFIG_FILE_NAME)
             
+        # Remove the remaining outpu file
         if os.path.exists(build_file_name):
             os.remove(build_file_name)
         if os.path.exists(config_file_name):
