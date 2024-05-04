@@ -18,6 +18,7 @@ current_working_directory = Path(__file__).parent.resolve()
 #===========
 # Constrants
 #===========
+DRM_VERSION	= "1.0.0.0"
 INSTALL_CONFIG_FILE_NAME = "install.config"
 DRM_DB_JSON_PATH = "init_drm_db"
 DRM_DB_JSON_FILE_NAME = "drm_db_data.json"
@@ -44,13 +45,14 @@ class style():
 #=================
 class Config():
 	def __init__(self):
+		self.drm_version = DRM_VERSION 
+
 		# Read file
 		file_name = os.path.join(current_working_directory, INSTALL_CONFIG_FILE_NAME)
 		file = files_and_folders.Files(file_name)
 		js = file.load_file()
 
 		# Extract variables values configured
-		self.drm_version = js['drm_version'] 
 
 		config_js = js['config']   
 		self.build_folder_name = config_js['build_folder_name']      
@@ -84,8 +86,9 @@ def get_installation_type():
 	:return: installation type (string)
 	"""
 	try:
-		logger = logging.getLogger('drm.install.get_installation_type')
-    
+		#logger
+		logger = logging.getLogger('get_installation_type')
+
 		#========================
 		# Enter installation type
 		#========================
@@ -93,12 +96,12 @@ def get_installation_type():
 		while install_type not in ("json", "sqlite", ""):
 			install_type = input("Enter DRM installation type([JSON]/SQLite): ").lower()
 		if install_type == "":
+			logger.debug('Installation type selected default.')
 			install_type = "sqlite"
 
+		logger.debug('install_type: "{install_type"}'.format(install_type = install_type))
 		return install_type
 	except Exception as e:
-		logger.error('Installation, get installation type (Error: "%s")',str(e))
-		logger.info('Failed to get installation type')
 		raise Exception ("failed to get installation type, " + str(e)) 
 
 def get_encryption_key():
@@ -107,8 +110,9 @@ def get_encryption_key():
 	:return: Encryption key (string)
 	"""
 	try:
-		logger = logging.getLogger('drm.install.get_encryption_key')
-		
+		#logger
+		logger = logging.getLogger('get_encryption_key')
+
 		flag = -1
 		while flag == -1:
 			validate_policy = True
@@ -138,14 +142,19 @@ def get_encryption_key():
 
 			# Verify key policy
 			elif (len(encryption_key)<=8):
+				logger.debug('Validation rule (length) failed.')
 				flag = -1
 			elif not re.search("[a-z]", encryption_key):
+				logger.debug('Validation rule ([a-z]) failed.')
 				flag = -1
 			elif not re.search("[A-Z]", encryption_key):
+				logger.debug('Validation rule ([A-Z]) failed.')
 				flag = -1
 			elif not re.search("[0-9]", encryption_key):
+				logger.debug('Validation rule ([0-9]) failed.')
 				flag = -1
 			elif not re.search("[~`!@#$%^&*()-_=+,<.>/?;:]" , encryption_key):
+				logger.debug('Validation rule (Special Character) failed.')
 				flag = -1
 			else:
 				flag = 0
@@ -165,7 +174,8 @@ def get_drm_path():
 	:return: installation directory (string)
 	"""
 	try:
-		logger = logging.getLogger('drm.install.get_drm_path')
+		#logger
+		logger = logging.getLogger('get_drm_path')
 
 		#===========================================
 		# Enter destination (installation) directory
@@ -178,12 +188,11 @@ def get_drm_path():
 			drm_path = input("Enter path to install the DRM on (Default: " + home + "): ")
 			# Empty --> user default home directory
 			if(drm_path == ""):
+				logger.debug('DRM path use default')
 				drm_path = home
 		return drm_path
 	except Exception as e:
-				logger.error('Installation, get installation path (Error: "%s")',str(e))
-				logger.info('Failed to get installation path')
-				raise Exception ("failed to get installation path, " + str(e))
+		raise Exception ("failed to get installation path, " + str(e))
 
 def copy_drm_content(drm_path, modules_js):
 	'''
@@ -193,7 +202,9 @@ def copy_drm_content(drm_path, modules_js):
 	:return:
 	'''
 	try:
-		logger = logging.getLogger('drm.install.copy_drm_content')
+		#logger
+		logger = logging.getLogger('copy_drm_content')
+
 		logger.info('Copying DRM content...')
 	
 		drm_config_file = os.path.join(drm_path, DEPLOY_CONFIG_FILE_NAME)
@@ -211,12 +222,19 @@ def copy_drm_content(drm_path, modules_js):
 			# Copy DRM content into destination directory
 			#============================================
 			# If destination directory (selected by the user) differ from installer --> Copy the drm content to it
+			logger.debug('drm_source_path: "{drm_source_path}", drm_path = "{drm_path}"'.format(drm_source_path = drm_source_path, drm_path = drm_path))
 			if (drm_source_path != drm_path):
+				logger.debug('Calling function shutil.copytree...')
 				shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=False, ignore=ignore_patterns('*.pyc', '__pycache__'))
+				logger.debug('Function shutil.copytree exit successfully!!!')
+				logger.debug('Copying modules...')
 				for module in modules_js:
 					source_module_file_name = os.path.join(current_working_directory, "modules", module)
 					target_module_file_name = os.path.join(drm_path, "modules", module)
+					logger.debug('source_module_file_name: "{source_module_file_name}", target_module_file_name = "{target_module_file_name}"'.format(source_module_file_name = source_module_file_name, target_module_file_name = target_module_file_name))
+					logger.debug('Calling function shutil.copy...')
 					shutil.copy(source_module_file_name, target_module_file_name)
+					logger.debug('Function shutil.copcopyytree exit successfully!!!')
 
 		except Exception as e:
 			#======================================================================================
@@ -232,17 +250,15 @@ def copy_drm_content(drm_path, modules_js):
 						for module in modules_js:
 							source_module_file_name = os.path.join(current_working_directory, "modules", module)
 							target_module_file_name = os.path.join(drm_path, "modules", module)
+							logger.debug('Calling function shutil.copytree...')
 							shutil.copyfile(source_module_file_name, target_module_file_name,)
+							logger.debug('Function shutil.copytree exit successfully!!!')
 				else:
-					logger.error('Installation, content already exists (Error: "%s")',str(e))
-					logger.info('Failed to copy contrent , content already exists ')
 					raise Exception (str(e))
 		if (drm_source_path != drm_path):
 			logger.info('Content copied successfully!!!')
 
 	except Exception as e:
-		logger.error('Installation, copy contrent (Error: "%s")',str(e))
-		logger.info('Failed to copy contrent')
 		raise Exception ("failed to copy content into DRM directory, " + str(e))
 
 def create_drm_config(drm_path, install_type, encryption_key):
@@ -253,7 +269,9 @@ def create_drm_config(drm_path, install_type, encryption_key):
     :param encryption_key: Encryption key
 	'''
 	try:
-		logger = logging.getLogger('drm.install.create_drm_config')
+		#logger
+		logger = logging.getLogger('create_drm_config')
+
 		logger.info('Creating drm.config...')
 
 		#=============================================
@@ -267,10 +285,13 @@ def create_drm_config(drm_path, install_type, encryption_key):
 		# If user chose encryption key --> encrypt the security_text
 		if (encryption_key != ""):
 			crpt = crypto.Crypto(encryption_key)
+			logger.debug('Calling function crpt.encrypt_string...')
 			security_text = crpt.encrypt_string(security_text)
+			logger.debug('Function crpt.encrypt_string exit successfully!!!')
 			encrypted = True
 
 		# Build configiration JSON
+		logger.debug('Build configiration JSON...')
 		content = {
 			"drm_version": DRM_VERSION,
 			"installation_info":
@@ -298,14 +319,15 @@ def create_drm_config(drm_path, install_type, encryption_key):
 		}
 		json_obj = json.dumps(content, indent=4)
 		file = files_and_folders.Files(drm_config_file)
+		logger.debug('Calling function write_file...')
 		file.write_file(json_obj)
+		logger.debug('Function write_file exit successfully!!!')
+		logger.debug('Build configiration JSON finished successfully!!!')
 
 		logger.info('drm.config created successfully!!!')
 
-	except Exception as e:
-				logger.error('Installation, create drm.config (Error: "%s")',str(e))
-				logger.info('Failed to create drm.config')
-				raise Exception ("failed to create drm.config, " + str(e))
+	except Exception as e:	
+		raise Exception ("failed to create drm.config, " + str(e))
 
 def create_drm_db(drm_path, install_type, encryption_key):
 	'''
@@ -315,40 +337,43 @@ def create_drm_db(drm_path, install_type, encryption_key):
 	:param encryption_key: Encryption key
 	:return:
 	'''
-	logger = logging.getLogger('drm.install.create_drm_db')
+	try:
+		#logger
+		logger = drm_logger.configure_install_logging('create_drm_db')
 
-	#===================================
-	# Create DB directory in destination
-	#===================================
-	db_directory = os.path.join(drm_path, DB_FOLDER_NAME)
-	folder = files_and_folders.Folders(db_directory)
-	folder.create_folder()
+		#===================================
+		# Create DB directory in destination
+		#===================================
+		db_directory = os.path.join(drm_path, DB_FOLDER_NAME)
+		folder = files_and_folders.Folders(db_directory)
+		logger.debug('Calling function Folders.create_folder...')
+		folder.create_folder()
+		logger.debug('Function function Folders.create_folder exit successfully!!!')
 
-	#=========================
-	# SQLite installation type
-	#=========================
-	if (install_type == "sqlite"):
-		try:
+		#=========================
+		# SQLite installation type
+		#=========================
+		if (install_type == "sqlite"):
 			logger.info('Creating DRM DB...')
 
 			sqlite_db_file_name = DB_FILE_NAME + "." + SQLITE_FILE_EXT
 			db_name = os.path.join(db_directory, sqlite_db_file_name)
 			if(encryption_key == ""):
 				encryption_key = None
+			logger.debug('Calling function init_db.InitDB...')
 			drm_db = init_db.InitDB(db_name, encryption_key)
+			logger.debug('Function function init_db.InitDB exit successfully!!!')
 			# Create Database & load system Data
+			logger.debug('Calling function create_drm_db...')
 			drm_db.create_drm_db()
-
+			logger.debug('Function function create_drm_db exit successfully!!!')
+			
 			logger.info('DRM database created successfully!!!')
-		except Exception as e:
-			logger.error('Installation, create DRM database (Error: "%s")',str(e))
-			logger.info('Failed to create DRM database')
-			raise Exception ("failed to create DRM database, " + str(e))
-	#=======================
-	# JSON installation type
-	#=======================
-	else:
-		try:
+
+		#=======================
+		# JSON installation type
+		#=======================
+		else:
 			logger.info('Creating DRM DB (Json style)...')
 			src_drm_db_json = os.path.join(current_working_directory, DRM_DB_JSON_PATH, DRM_DB_JSON_FILE_NAME)
 			# copy JSON DB from installer into destination DB directory
@@ -366,10 +391,8 @@ def create_drm_db(drm_path, install_type, encryption_key):
 			
 			logger.info('DRM database created successfully!!!')
 
-		except Exception as e:
-			logger.error('Installation, create DRM database (Error: "%s")',str(e))
-			logger.info('Failed to create DRM database')
-			raise Exception ("failed to create DRM database, " + str(e))
+	except Exception as e:
+		raise Exception ("failed to create DRM database, " + str(e))
 
 def install_drm(drm_path, install_type, encryption_key, modules_js):
 	'''
@@ -379,77 +402,96 @@ def install_drm(drm_path, install_type, encryption_key, modules_js):
     :param encryption_key: Encryption key
     :param modules_js: list of modules to copy
 	'''
-	try:
-		logger = logging.getLogger('drm.install.install_drm')
-		logger.info('==================================')
+	#logger
+	logger = drm_logger.configure_install_logging('install_drm')
+	logger.info('==================================')
+	logger.info('Installing DRM...')
 
-		logger.info('Installing DRM...')
+	#====================================
+	# Create DRM directory & copy content
+	#====================================
+	logger.debug('Calling function copy_drm_content...')
+	copy_drm_content(drm_path, modules_js)
+	logger.debug('Function copy_drm_content exit successfully!!!')
 
-		#====================================
-		# Create DRM directory & copy content
-		#====================================
-		copy_drm_content(drm_path, modules_js)
+	#==============
+	# Create DRM DB
+	#==============
+	logger.debug('Calling function create_drm_db...')
+	create_drm_db(drm_path, install_type, encryption_key)
+	logger.debug('Function create_drm_db exit successfully!!!')
 
-		#==============
-		# Create DRM DB
-		#==============
-		create_drm_db(drm_path, install_type, encryption_key)
+	#==================
+	# Create drm.config
+	#==================
+	logger.debug('Calling function create_drm_config...')
+	create_drm_config(drm_path, install_type, encryption_key)
+	logger.debug('Function create_drm_config exit successfully!!!')
 
-		#==================
-		# Create drm.config
-		#==================
-		create_drm_config(drm_path, install_type, encryption_key)
+	logger.info('DRM installation finished successfully!!!')
+	logger.info('==================================')
 
-		logger.info('DRM installation finished successfully!!!')
-		logger.info('==================================')
-
-	except Exception as e:
-		logger.error('Installation, failed (Error: "%s")',str(e))
-		logger.info('Installation failed')
-		raise Exception ("installation failed, " + str(e))
 
 #=====
 # Main
 #=====
 try:
 	
+	#logger
+	logger = drm_logger.configure_install_logging('install')
+
 	os.system('')
 
 	#==================================
 	# Create constants by configuration 
 	#==================================
+	logger.debug('Reading configuration...')
 	install_config = Config()
 	DRM_VERSION = install_config.drm_version
+	logger.debug('DRM_VERSION: "%s")',DRM_VERSION)
 	BUILD_FOLDER_NAME = install_config.build_folder_name
+	logger.debug('BUILD_FOLDER_NAME: "%s")',BUILD_FOLDER_NAME)
 	DB_FOLDER_NAME = install_config.db_folder_name
+	logger.debug('DB_FOLDER_NAME: "%s")',DB_FOLDER_NAME)
 	DB_FILE_NAME = install_config.db_file_name
+	logger.debug('DB_FILE_NAME: "%s")',DB_FILE_NAME)
 	DATA_FILE_EXT = install_config.data_file_ext
+	logger.debug('DATA_FILE_EXT: "%s")',DATA_FILE_EXT)
 	SQLITE_FILE_EXT = install_config.sqlite_file_ext
+	logger.debug('SQLITE_FILE_EXT: "%s")',SQLITE_FILE_EXT)
 	LOG_FOLDER_NAME = install_config.log_folder_name
+	logger.debug('LOG_FOLDER_NAME: "%s")',LOG_FOLDER_NAME)
 	LOG_MAX_SIZE_MB = install_config.log_max_size_mb
+	logger.debug('LOG_MAX_SIZE_MB: "%s")',LOG_MAX_SIZE_MB)
 	LOG_BACKUP_COUNT = install_config.log_backup_count
+	logger.debug('LOG_BACKUP_COUNT: "%s")',LOG_BACKUP_COUNT)
+	logger.debug('Configuration reading finished successfully!!!')
 
 	modules_js = install_config.modules_js
-	#logger
-	logger = drm_logger.configure_install_logging('install')
 	
 	#======================================
 	# Get installation definition from user
 	#======================================
-	install_type = get_installation_type()	
-	logger.info('Installation  (Type: "%s")',install_type)
-    
+	logger.debug('Calling function get_installation_type...')
+	install_type = get_installation_type()	    
+	logger.debug('Function get_installation_type exit successfully!!!')
+
+	logger.debug('Calling function get_encryption_key...')
 	encryption_key = get_encryption_key()
-	logger.info('Installation  (Encryption Key: "%s")',encryption_key)
+	logger.debug('Function get_encryption_key exit successfully!!!')
+
+	logger.debug('Calling function get_drm_path...')
 	drm_path = get_drm_path()
-	logger.info('Installation  (Path: "%s")',drm_path)
+	logger.debug('Function get_drm_path exit successfully!!!')
 	
 	#============
 	# Install DRM
 	#============
+	logger.debug('Calling function install_drm...')
 	install_drm(drm_path, install_type, encryption_key, modules_js)
+	logger.debug('Function install_drm exit successfully!!!')
 
 except Exception as e:
-	logger.error('Installation  (Error: "%s")',str(e))
+	logger.error('Error: "%s"',str(e))
 	logger.info('DRM installation failed!!!')
 
