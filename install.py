@@ -15,12 +15,18 @@ from modules import files_and_folders
 
 current_working_directory = Path(__file__).parent.resolve()
 
+#===========
+# Constrants
+#===========
 INSTALL_CONFIG_FILE_NAME = "install.config"
 DRM_DB_JSON_PATH = "init_drm_db"
 DRM_DB_JSON_FILE_NAME = "drm_db_data.json"
 DRM_FOLDER_NAME = "drm"
 DEPLOY_CONFIG_FILE_NAME = "drm_deploy.config"
 		
+#================
+# Printing colors
+#================
 class style():
     BLACK = '\033[30m'
     RED = '\033[31m'
@@ -33,12 +39,17 @@ class style():
     UNDERLINE = '\033[4m'
     RESET = '\033[0m'
 
+#=================
+# Read config file
+#=================
 class Config():
 	def __init__(self):
+		# Read file
 		file_name = os.path.join(current_working_directory, INSTALL_CONFIG_FILE_NAME)
 		file = files_and_folders.Files(file_name)
 		js = file.load_file()
 
+		# Extract variables values configured
 		self.drm_version = js['drm_version'] 
 
 		config_js = js['config']   
@@ -70,11 +81,14 @@ parser = argparse.ArgumentParser(prog = program, description = description, epil
 def get_installation_type():
 	"""
 	 This function returns the installation type entered by the user
-	:return:
+	:return: installation type (string)
 	"""
 	try:
 		logger = logging.getLogger('drm.install.get_installation_type')
     
+		#========================
+		# Enter installation type
+		#========================
 		install_type = "none"
 		while install_type not in ("json", "sqlite", ""):
 			install_type = input("Enter DRM installation type([JSON]/SQLite): ").lower()
@@ -90,21 +104,30 @@ def get_installation_type():
 def get_encryption_key():
 	"""
 	This function returns the encryption key entered by the user
-	:return:
+	:return: Encryption key (string)
 	"""
 	try:
 		logger = logging.getLogger('drm.install.get_encryption_key')
+		
 		flag = -1
 		while flag == -1:
 			validate_policy = True
+			#=====================
+			# Enter encryption key
+			#=====================
 			encryption_key = input("Enter encryption key or enter '?' to see encryption key policy (Default, empty is not encrypted): ")
+			
+			# If user chooses clean text (not encrypted)
 			if (encryption_key == "" or encryption_key == None):
+				# Verify with the user
 				user_choice = input(style.YELLOW + "Are you sure you want to keep sensitive Data as clear text? Enter [Y]/N to keep unsecured Data: " + style.RESET)
 				if (user_choice.lower() == "y"):
 					flag = 0
 				else:
 					validate_policy = False
 					flag = -1
+
+			# Encryption rules helper
 			elif (encryption_key == "?"):
 				flag = -1
 				print("1. Minimum 8 characters.")
@@ -112,6 +135,8 @@ def get_encryption_key():
 				print("3. At least one alphabet should be of Upper Case [A-Z]")
 				print("4. At least 1 number or digit between [0-9].")
 				print("5. At least 1 special character suc as !@#...")
+
+			# Verify key policy
 			elif (len(encryption_key)<=8):
 				flag = -1
 			elif not re.search("[a-z]", encryption_key):
@@ -125,6 +150,7 @@ def get_encryption_key():
 			else:
 				flag = 0
 			
+			# selected key does not meet with policy
 			if flag == -1 and encryption_key != "?" and validate_policy:
 				logger.warning('The encryption key does not meet with validation policy!')
 		return encryption_key
@@ -136,14 +162,21 @@ def get_encryption_key():
 def get_drm_path():
 	"""
 	This function returns the installation path entered by the user
-	:return:
+	:return: installation directory (string)
 	"""
 	try:
 		logger = logging.getLogger('drm.install.get_drm_path')
+
+		#===========================================
+		# Enter destination (installation) directory
+		#===========================================
+		# get the user default home directory
 		home = os.path.join(str(Path.home()), "drm")
 		drm_path = ""
+
 		while drm_path == "":
 			drm_path = input("Enter path to install the DRM on (Default: " + home + "): ")
+			# Empty --> user default home directory
 			if(drm_path == ""):
 				drm_path = home
 		return drm_path
@@ -157,6 +190,7 @@ def copy_drm_content(drm_path, modules_js):
 	This function copies the DRM content into the DRM  directory
 	:param drm_path: DRM full path directory
 	:param modules_js: List of modules to copy
+	:return:
 	'''
 	try:
 		logger = logging.getLogger('drm.install.copy_drm_content')
@@ -164,12 +198,19 @@ def copy_drm_content(drm_path, modules_js):
 	
 		drm_config_file = os.path.join(drm_path, DEPLOY_CONFIG_FILE_NAME)
 		file = files_and_folders.Files(drm_config_file)
+		# Configuration already exists --> already installed (stop the installation)
 		if (file.check_file_exists()):
 			logger.warning('DRM already installed in given path. Please select another path or unsinatall before reinstall')
 			logger.info('DRM already installed')
 			raise Exception ("DRM already installed in given path. Please select another path or unsinatall before reinstall")
 		try:
+			# Get drm content from installer
 			drm_source_path = os.path.join(current_working_directory, DRM_FOLDER_NAME)
+
+			#============================================
+			# Copy DRM content into destination directory
+			#============================================
+			# If destination directory (selected by the user) differ from installer --> Copy the drm content to it
 			if (drm_source_path != drm_path):
 				shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=False, ignore=ignore_patterns('*.pyc', '__pycache__'))
 				for module in modules_js:
@@ -178,6 +219,9 @@ def copy_drm_content(drm_path, modules_js):
 					shutil.copy(source_module_file_name, target_module_file_name)
 
 		except Exception as e:
+			#======================================================================================
+			# At least one content already exists in destination directory --> Request to overwrite
+			#======================================================================================
 			if (e.errno == 17):
 				logger.warning('Content already exists in given directory')
 				user_choice = input(style.YELLOW + "Content already exists in given directory. Enter [Y]/N to overwrite content: " + style.RESET)
@@ -212,16 +256,21 @@ def create_drm_config(drm_path, install_type, encryption_key):
 		logger = logging.getLogger('drm.install.create_drm_config')
 		logger.info('Creating drm.config...')
 
+		#=============================================
+		# Create configuration DRM file in destination
+		#=============================================
 		drm_config_file = os.path.join(drm_path, DEPLOY_CONFIG_FILE_NAME)
 		installer_user = os.getlogin()
 		install_timestamp = str(datetime.datetime.now())
 		security_text = "This drm cli was developed by d-band and it is amazing!!!"
 		encrypted = False
+		# If user chose encryption key --> encrypt the security_text
 		if (encryption_key != ""):
 			crpt = crypto.Crypto(encryption_key)
 			security_text = crpt.encrypt_string(security_text)
 			encrypted = True
 
+		# Build configiration JSON
 		content = {
 			"drm_version": DRM_VERSION,
 			"installation_info":
@@ -264,16 +313,20 @@ def create_drm_db(drm_path, install_type, encryption_key):
 	:param drm_path: The directory to install the DRM in
 	:param install_type: Installation type
 	:param encryption_key: Encryption key
+	:return:
 	'''
-
 	logger = logging.getLogger('drm.install.create_drm_db')
-	#====================
-	# Create DB directory
-	#====================
+
+	#===================================
+	# Create DB directory in destination
+	#===================================
 	db_directory = os.path.join(drm_path, DB_FOLDER_NAME)
 	folder = files_and_folders.Folders(db_directory)
 	folder.create_folder()
 
+	#=========================
+	# SQLite installation type
+	#=========================
 	if (install_type == "sqlite"):
 		try:
 			logger.info('Creating DRM DB...')
@@ -291,10 +344,14 @@ def create_drm_db(drm_path, install_type, encryption_key):
 			logger.error('Installation, create DRM database (Error: "%s")',str(e))
 			logger.info('Failed to create DRM database')
 			raise Exception ("failed to create DRM database, " + str(e))
-	else: #JSON
+	#=======================
+	# JSON installation type
+	#=======================
+	else:
 		try:
 			logger.info('Creating DRM DB (Json style)...')
 			src_drm_db_json = os.path.join(current_working_directory, DRM_DB_JSON_PATH, DRM_DB_JSON_FILE_NAME)
+			# copy JSON DB from installer into destination DB directory
 			shutil.copy(src_drm_db_json, db_directory)
 			old_drm_db_json = os.path.join(current_working_directory, db_directory, DRM_DB_JSON_FILE_NAME)
 			if(encryption_key != "" and encryption_key != None):
@@ -351,7 +408,9 @@ def install_drm(drm_path, install_type, encryption_key, modules_js):
 		logger.info('Installation failed')
 		raise Exception ("installation failed, " + str(e))
 
-
+#=====
+# Main
+#=====
 try:
 	
 	os.system('')
