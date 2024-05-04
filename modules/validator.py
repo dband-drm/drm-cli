@@ -16,7 +16,8 @@ PACK_FILE_NAME = "deploy.drmpac"
 #====================
 class Release:
     def verify_fields(release):
-        """ Verify fields values
+        """ 
+        Verify fields values
         :param release: release json
         :return:
         """       
@@ -32,7 +33,8 @@ class Release:
 
 class Solution:
     def verify_active_exists(release):
-        """ Verify release has at least one active solution
+        """ 
+        Verify release has at least one active solution
         :param release: release json
         :return:
         """       
@@ -46,7 +48,8 @@ class Solution:
             raise Exception ("No active Solution found!!!")
 
     def verify_uniqueness(release):
-        """ Verify IDs & Names are unique
+        """ 
+        Verify IDs & Names are unique
         :param release: release json
         :return:
         """       
@@ -64,7 +67,8 @@ class Solution:
                 raise Exception ('Solution name "' + str(solution['name']) + '" found in multiple solutions!!!')
 
     def verify_fields(release):
-        """ Verify fields values
+        """ 
+        Verify fields values
         :param release: release json
         :return:
         """       
@@ -90,7 +94,8 @@ class Solution:
 
 class Project:
     def verify_active_exists(release):
-        """ Verify release has at least one active project in an active solution
+        """ 
+        Verify release has at least one active project in an active solution
         :param release: release json
         :return:
         """       
@@ -109,7 +114,8 @@ class Project:
             raise Exception ("No active Project found!!!")
 
     def verify_uniqueness(release):
-        """ Verify IDs & Names are unique
+        """ 
+        Verify IDs & Names are unique
         :param release: release json
         :return:
         """               
@@ -128,7 +134,8 @@ class Project:
                         raise Exception ('Multiple project Name "' + str(project['name']) + '" found in solution "' + str(solution['name']) + '"!!!')
 
     def verify_fields(release):
-        """ Verify fields values
+        """ 
+        Verify fields values
         :param release: release json
         :return:
         """      
@@ -172,7 +179,8 @@ class Project:
 #=====================
 class Validate:
     def __init__(self, deploy_config):   
-        """ Constructo
+        """ 
+        Constructor
         :param installation_type: Installation type (json/sqlite)
         :return:
         """
@@ -190,7 +198,8 @@ class Validate:
                 zip_ref.close()
 
     def validate_release(self, connection_name):
-        """ Validate release JSON
+        """ 
+        Validate release JSON
         :return:
         """       
         try:

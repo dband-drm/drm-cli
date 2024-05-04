@@ -5,6 +5,12 @@ class Crypto:
         self.password = password
 
     def xor_encrypt_decrypt(data: str, password: str) -> str:
+        """ 
+        Encrypt Data using password
+        :param data: Data
+        :param password: Password
+        :return: Encrypted Data (String)
+        """       
         # Convert the data and password into byte arrays
         data_bytes = data.encode()
         password_bytes = password.encode()
@@ -20,6 +26,11 @@ class Crypto:
         return encrypted_decrypted_str
 
     def encrypt_string(self, plaintext: str) -> str:
+        """ 
+        Encrypt text
+        :param plaintext: Plain text
+        :return: Encryoted Base64 text (String)
+        """       
         # Perform XOR encryption and then encode the result in base64
         encrypted = Crypto.xor_encrypt_decrypt(plaintext, self.password)
         encrypted_base64 = b64encode(encrypted.encode()).decode()
@@ -27,6 +38,11 @@ class Crypto:
         return encrypted_base64
 
     def decrypt_string(self, encrypted_data: str) -> str:
+        """ 
+        Decrypt encrypted text
+        :param encrypted_data: Encrypted text
+        :return: Plain text (String)
+        """       
         # Decode the base64 encoded data and then perform XOR decryption
         encrypted = b64decode(encrypted_data).decode()
         decrypted = Crypto.xor_encrypt_decrypt(encrypted, self.password)

@@ -8,6 +8,9 @@ from modules import files_and_folders
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
+#===========
+# Constrants
+#===========
 INIT_SCHEMA_JSON = "init_drm_db/drm_db_schema.json"
 INIT_DATA_JSON = "init_drm_db/drm_db_data.json"
 
@@ -25,6 +28,7 @@ class InitDB:
 		"""
 		Create schema
 		:param conn: Connectionstring
+		:return:
 		"""
 		parser = parser_json_sqlite.ParserJsonSqlite()
 
@@ -62,6 +66,8 @@ class InitDB:
 		"""
 		Load init (syste) Data
 		:param conn: Connectionstring
+		:param encryption_key: Encryption key
+		:return:
 		"""
 		
 		parser = parser_json_sqlite.ParserJsonSqlite()
@@ -212,6 +218,7 @@ class InitDB:
 	def create_drm_db(self):
 		"""
 		Creates DRM database with system Data
+		:return:
 		"""
 		#================
 		# Create Database
@@ -233,30 +240,31 @@ class InitDB:
 		#==========================
 		sqlite.close_connection(conn)
 
-	def encrypt_value_by_key(json_obj, key_to_encrype, encryption_key):
+	def encrypt_value_by_key(json_obj, key_to_encrypt, encryption_key):
 		"""
 		Replace value in json by key
 		param json_obj: JSON
-		param key_to_encrype: key to encrypt in the JSON
+		param key_to_encrypt: key to encrypt in the JSON
 		param encryption_key: Encryption key
-		return: JSON
+		return: JSON with sensitive data encrypted (JSON)
 		"""
 		if isinstance(json_obj, dict):
 			for key, value in json_obj.items():
-				if key == key_to_encrype:
+				if key == key_to_encrypt:
 					crpt = crypto.Crypto(encryption_key)
 					encrypted_text = crpt.encrypt_string(value)						
 					json_obj[key] = encrypted_text
 				else:
-					InitDB.encrypt_value_by_key(value, key_to_encrype, encryption_key)
+					InitDB.encrypt_value_by_key(value, key_to_encrypt, encryption_key)
 		elif isinstance(json_obj, list):
 			for item in json_obj:
-				InitDB.encrypt_value_by_key(item, key_to_encrype, encryption_key)
+				InitDB.encrypt_value_by_key(item, key_to_encrypt, encryption_key)
 		return json_obj
 
 	def encrypt_drm_json_db(self):
 		"""
 		Creates DRM database with system Data
+		:return:
 		"""
 		file = files_and_folders(self.db_name)
 		js = file.load_file()
