@@ -5,9 +5,15 @@ from pathlib import Path
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
+#===========
+# Constrants
+#===========
 BUILD_FILE_NAME = "drm_deploy.json"
 PACK_FILE_NAME = "deploy.drmpac"
 
+#====================
+# Entities validators
+#====================
 class Release:
     def verify_fields(release):
         """ Verify fields values
@@ -89,7 +95,9 @@ class Project:
         :return:
         """       
         valid = False
-        
+        #=========================================================
+        # Verify at lease one Project exists under Active solution        
+        #=========================================================
         if "solutions" in release:
             for solution in release['solutions']:
                 if solution['is_active'] == True:
@@ -159,7 +167,9 @@ class Project:
                         else:
                             raise Exception ('No targets type defined for project "' + project['name'] + '" in solution "' + str(solution['id']) + '"!!!')
 
-
+#=====================
+# Validator main class
+#=====================
 class Validate:
     def __init__(self, deploy_config):   
         """ Constructo
@@ -171,6 +181,9 @@ class Validate:
         build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
         pack_file_name = os.path.join(build_dir, PACK_FILE_NAME)
 
+        #===============================================
+        # Extract deploy plan from drmpac for validation
+        #===============================================
         with zipfile.ZipFile(pack_file_name, 'r') as zip_ref:
             with zip_ref.open(BUILD_FILE_NAME) as json_file:
                 self.release = json.load(json_file)
@@ -181,12 +194,22 @@ class Validate:
         :return:
         """       
         try:
+
+            #==========================
+            # Release validation checks
+            #==========================
             Release.verify_fields(self.release)
 
+            #============================
+            # Solutions validation checks
+            #============================
             Solution.verify_active_exists(self.release)
             Solution.verify_uniqueness(self.release)
             Solution.verify_fields(self.release)
             
+            #===========================
+            # Projects validation checks
+            #===========================
             Project.verify_active_exists(self.release)
             Project.verify_uniqueness(self.release)            
             Project.verify_fields(self.release)
