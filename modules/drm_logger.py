@@ -6,6 +6,8 @@ import getpass
 import socket
 import json
 from datetime import datetime
+from functools import wraps
+import traceback
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
@@ -92,7 +94,7 @@ def configure_install_logging(logname,loglevel=logging.INFO):
     # Create a console handler
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(loglevel)  # Only display info and above on console logging.INFO
+    console_handler.setLevel(logging.INFO)  # Only display info and above on console logging.INFO
     logger.addHandler(console_handler)
     #Get log directory
     log_dir = get_verify_directory(LOG_DIR)
@@ -165,3 +167,50 @@ def configure_logging(logname,loglevel,logfoldername,logmaxsize,backupcount):
 
     
     return logger
+
+# Define a decorator for logging and exception handling
+def log_decorator(logger):
+    """ Configure log_decorator
+    :param logger: logger
+    :return: NULL
+    """  
+    def decorator(func):
+        """ Configure decorator
+        :param func: func
+        :return: decorator
+        """  
+        @wraps(func)  
+        def wrapper(*args, **kwargs):
+            """ Configure wrapper # Preserve function metadata
+            :param args: *args
+            :param kwargs: **kwargs
+            :return: wrapper
+            """ 
+            # Log function start with additional information
+            
+            logger.debug(f"{func.__name__} start with args={args}, kwargs={kwargs}")
+            try:
+                result = func(*args, **kwargs)  # Execute the wrapped function
+                return result  # Return the function's result
+            except Exception as e:
+                logger.error(f"Exception in {func.__name__}: {e}")
+                # Get exception type and message
+                exception_type = type(e).__name__
+                exception_message = str(e)
+                
+                # Get stack trace
+                stack_trace = traceback.format_exc()  # Full stack trace as a string
+                
+                
+                # Output the exception information for debugging
+                logger.debug(f"Exception in {func.__name__}: {e}")
+                logger.debug(f"Exception type: {exception_type}")
+                logger.debug(f"Exception message: {exception_message}")
+                logger.debug(f"Stack trace:   {stack_trace}")
+                 
+                raise  # Reraise the exception to maintain the original function behavior
+            finally:
+                # Log function end, regardless of whether an exception occurred
+                logger.debug(f"{func.__name__} end")
+        return wrapper
+    return decorator

@@ -6,8 +6,8 @@ class ParserJsonSqlite:
 		pass
 
 	def drop_table (self, table_name):
-        """ 
-        Generate a drop table if exists command
+		"""
+		Generate a drop table if exists command
         :param table_name: Table name
         :return: SQL Command (string)
         """
@@ -17,7 +17,7 @@ class ParserJsonSqlite:
 
 
 	def create_table (self, table_name, js_columns, js_constraints):
-        """ 
+		""" 
         Generate a create table command including constraints
         :param table_name: Table name
         :param js_columns: JSON includes list of columns names, data types & sizes
@@ -118,7 +118,7 @@ class ParserJsonSqlite:
 
 
 	def insert_row (self, table_name, columns_names, columns_values):
-        """ 
+		""" 
         Generate an insert record into a table command
         :param table_name: Table name
         :param columns_names: list of columns
