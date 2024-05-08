@@ -70,8 +70,8 @@ os.system('')
 #=======
 # Helper
 #=======
-program = "drm.py"
-description = "This is a RDM CLI, developed by d-band that deploys releases configured in the DRM database."
+program = "drm_deploy.py"
+description = "This is a DRM CLI, developed by d-band that deploys releases configured in the DRM database."
 copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
  
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
@@ -112,8 +112,8 @@ try:
     
     loglevel=args.log_level
     try:
-        logger = drm_logger.configure_logging('drm',loglevel,LOG_FOLDER_NAME,LOG_MAX_SIZE_MB,LOG_BACKUP_COUNT)
-        logger = logging.getLogger('drm.params')
+        logger = drm_logger.configure_logging('drm_deploy',loglevel,LOG_FOLDER_NAME,LOG_MAX_SIZE_MB,LOG_BACKUP_COUNT)
+        logger = logging.getLogger('drm_deploy.params')
         logger.info('start')
         logger.debug('start')
     except (ImportError, AttributeError):

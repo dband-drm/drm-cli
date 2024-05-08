@@ -71,7 +71,7 @@ class Config():
 # Helper
 #=======
 program = "install.py"
-description = "This is a RDM Installer CLI, developed by d-band for Data deployments."
+description = "This is a DRM Installer CLI, developed by d-band for Data deployments."
 copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
 
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
