@@ -9,9 +9,8 @@ import shutil
 from shutil import ignore_patterns
 from pathlib import Path
 import logging
-from modules import drm_logger, init_db, crypto, files_and_folders
+from modules import drm_logger
 
-logger = drm_logger.configure_install_logging('install',logging.INFO)
 current_working_directory = Path(__file__).parent.resolve()
 
 #===========
@@ -75,6 +74,25 @@ description = "This is a DRM Installer CLI, developed by d-band for Data deploym
 copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
 
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
+parser.add_argument("--trace", action='store_true', default=False, required = False)
+args = parser.parse_args()
+
+
+#=================
+# Set logger level
+#=================
+logger_level = logging.INFO
+if (args.trace):
+	logger_level = logging.DEBUG
+
+logger = drm_logger.configure_install_logging(__name__,logger_level)
+os.environ["DRM_LOGGER_LEVEL"] = str(logger_level)
+
+#===============
+# Import modules
+#===============
+from modules import init_db, crypto, files_and_folders
+	
 
 #==========
 # Functions

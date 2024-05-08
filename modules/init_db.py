@@ -1,8 +1,11 @@
 import os
 import json
+import logging
 from pathlib import Path
-from modules import crypto, sqlite, parser_json_sqlite, files_and_folders
+from modules import crypto, sqlite, parser_json_sqlite, files_and_folders, drm_logger
 
+level = os.environ.get('DRM_LOGGER_LEVEL')
+logger = drm_logger.configure_install_logging(__name__,int(level))
 current_working_directory = Path(__file__).parent.parent.resolve()
 
 #===========
@@ -12,6 +15,7 @@ INIT_SCHEMA_JSON = "init_drm_db/drm_db_schema.json"
 INIT_DATA_JSON = "init_drm_db/drm_db_data.json"
 
 class InitDB:
+
 	def __init__(self, db_name = "", encryption_key = None):
 		"""
 		Constructor
@@ -20,7 +24,10 @@ class InitDB:
 		"""
 		self.db_name = db_name
 		self.encryption_key = encryption_key
+		level = os.environ.get('DRM_LOGGER_LEVEL')
 
+
+	@drm_logger.log_decorator(logger) 
 	def create_tables(conn):
 		"""
 		Create schema
@@ -59,6 +66,8 @@ class InitDB:
 		sql_command = "PRAGMA foreign_keys = ON;"
 		sqlite.execute_command(conn, sql_command)
 		
+
+	@drm_logger.log_decorator(logger) 
 	def load_data(conn, encryption_key):
 		"""
 		Load init (syste) Data
@@ -212,6 +221,8 @@ class InitDB:
 
 			solution_id += 1
 
+
+	@drm_logger.log_decorator(logger) 
 	def create_drm_db(self):
 		"""
 		Creates DRM database with system Data
@@ -237,6 +248,8 @@ class InitDB:
 		#==========================
 		sqlite.close_connection(conn)
 
+
+	@drm_logger.log_decorator(logger) 
 	def encrypt_value_by_key(json_obj, key_to_encrypt, encryption_key):
 		"""
 		Replace value in json by key
@@ -258,6 +271,8 @@ class InitDB:
 				InitDB.encrypt_value_by_key(item, key_to_encrypt, encryption_key)
 		return json_obj
 
+
+	@drm_logger.log_decorator(logger) 
 	def encrypt_drm_json_db(self):
 		"""
 		Creates DRM database with system Data

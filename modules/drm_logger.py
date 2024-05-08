@@ -84,7 +84,7 @@ def configure_install_logging(logname,loglevel=logging.INFO):
     #===========================
     # Define logger [console,file]
     #===========================
-     # Create a logger
+    # Create a logger
     logger = logging.getLogger(logname)
     logger.setLevel(loglevel)  # Set global logging level
     
@@ -95,7 +95,6 @@ def configure_install_logging(logname,loglevel=logging.INFO):
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging.INFO)  # Only display info and above on console logging.INFO
-    logger.addHandler(console_handler)
     #Get log directory
     log_dir = get_verify_directory(LOG_DIR)
     # Create a file handler
@@ -103,8 +102,12 @@ def configure_install_logging(logname,loglevel=logging.INFO):
     file_handler = logging.FileHandler(log_filename)
     file_handler.setFormatter(formatter)
     file_handler.setLevel(loglevel)  # Write all levels to the file
-    logger.addHandler(file_handler)
     
+    # Add the handler to the logger if not already added
+    if not logger.hasHandlers():
+        logger.addHandler(console_handler)
+        logger.addHandler(file_handler)
+
     return logger
 
 def configure_logging(logname,loglevel,logfoldername,logmaxsize,backupcount):
