@@ -2,12 +2,12 @@ import os
 import sys
 import argparse
 import json
+import logging
 from pathlib import Path
 from getpass import getpass
 from modules.builder import Build
 from modules.validator import Validate
 from modules import crypto,drm_logger
-import logging
 
 current_working_directory = Path(__file__).parent.resolve()
 

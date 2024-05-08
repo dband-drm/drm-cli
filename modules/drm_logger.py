@@ -193,7 +193,6 @@ def log_decorator(logger):
                 result = func(*args, **kwargs)  # Execute the wrapped function
                 return result  # Return the function's result
             except Exception as e:
-                logger.error(f"Exception in {func.__name__}: {e}")
                 # Get exception type and message
                 exception_type = type(e).__name__
                 exception_message = str(e)
