@@ -5,9 +5,7 @@ import shutil
 import io
 import zipfile
 from pathlib import Path
-from modules import parser_sqlite_json
-from modules import parser_json_json
-from modules import files_and_folders
+from modules import parser_sqlite_json, parser_json_json, files_and_folders
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 

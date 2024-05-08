@@ -8,10 +8,8 @@ import json
 import shutil
 from shutil import ignore_patterns
 from pathlib import Path
-from modules import drm_logger, init_db
-from modules import crypto
 import logging
-from modules import files_and_folders
+from modules import drm_logger, init_db, crypto, files_and_folders
 
 logger = drm_logger.configure_install_logging('install',logging.INFO)
 current_working_directory = Path(__file__).parent.resolve()

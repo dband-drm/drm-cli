@@ -1,10 +1,7 @@
 import os
 import json
 from pathlib import Path
-from modules import crypto
-from modules import sqlite
-from modules import parser_json_sqlite
-from modules import files_and_folders
+from modules import crypto, sqlite, parser_json_sqlite, files_and_folders
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
