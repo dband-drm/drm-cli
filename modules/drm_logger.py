@@ -13,8 +13,8 @@ current_working_directory = Path(__file__).parent.parent.resolve()
 
 BYTES_PER_MB = 1024 * 1024
 
-LOG_DIR = "logs"
-LOG_DIR_TRACE = "traces"
+LOG_DIR = "log"
+LOG_DIR_TRACE = "trace"
 
 INSTALL_LOG_FILE_NAME = "install.log"
 DRM_DEPLOY_LOG_FILE_NAME = "drm_deploy.log"
