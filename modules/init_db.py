@@ -4,8 +4,9 @@ import logging
 from pathlib import Path
 from modules import crypto, sqlite, parser_json_sqlite, files_and_folders, drm_logger
 
-level = os.environ.get('DRM_LOGGER_LEVEL')
-logger = drm_logger.configure_install_logging(__name__,int(level))
+#level = os.environ.get('DRM_LOGGER_LEVEL')
+#logger = drm_logger.configure_install_logging(__name__,int(level))
+logger = drm_logger.configure_logging(__name__)
 current_working_directory = Path(__file__).parent.parent.resolve()
 
 #===========

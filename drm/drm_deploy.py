@@ -81,11 +81,27 @@ parser.add_argument("--password", action='store_true', default=False, required =
 parser.add_argument("--dryrun", action='store_true', default=False, required = False)
 parser.add_argument("--deploy", action='store_true', default=False, required = False)
 
-levels = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
-parser.add_argument('--log-level', default='INFO', choices=levels)
+parser.add_argument("--trace", action='store_true', default=False, required = False)
     
 args = parser.parse_args()
+"""
+parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
+parser.add_argument("--trace", action='store_true', default=False, required = False)
+args = parser.parse_args()
 
+
+#=================
+# Set logger level
+#=================
+logger_level = logging.INFO
+logger_mode = 0 #0-install , 1-deploy 
+if (args.trace):
+	logger_level = logging.DEBUG
+
+logger = drm_logger.configure_logging(__name__)
+os.environ["DRM_LOGGER_LEVEL"] = str(logger_level)
+os.environ["DRM_LOGGER_MODE"] = str(logger_mode)
+"""
 #=====
 # Main
 #=====
@@ -110,14 +126,24 @@ try:
     LOG_BACKUP_COUNT = deploy_config.log_backup_count
 
     
-    loglevel=args.log_level
+    #=================
+    # Set logger level
+    #=================
+    
     try:
-        logger = drm_logger.configure_logging('drm_deploy',loglevel,LOG_FOLDER_NAME,LOG_MAX_SIZE_MB,LOG_BACKUP_COUNT)
-        logger = logging.getLogger('drm_deploy.params')
-        logger.info('start')
-        logger.debug('start')
+        logger_level = logging.INFO
+        logger_mode = 1 #0-install , 1-deploy 
+        if (args.trace):
+            logger_level = logging.DEBUG
+
+        logger = drm_logger.configure_logging(__name__)
+        os.environ["DRM_LOGGER_LEVEL"] = str(logger_level)
+        os.environ["DRM_LOGGER_MODE"] = str(logger_mode)
+        os.environ["LOG_FOLDER_NAME"] = str(LOG_FOLDER_NAME)
+        os.environ["LOG_MAX_SIZE_MB"] = str(LOG_MAX_SIZE_MB)
+        os.environ["LOG_BACKUP_COUNT"] = str(LOG_BACKUP_COUNT)
     except (ImportError, AttributeError):
-        print('Unable to find the log_level for  \'%s\'' % args.log_level)
+        raise ('Failed to init logger')
     
     #======================
     # Verify encryption key
