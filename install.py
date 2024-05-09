@@ -81,13 +81,21 @@ args = parser.parse_args()
 #=================
 # Set logger level
 #=================
-logger_level = logging.INFO
-if (args.trace):
-	logger_level = logging.DEBUG
+try:
+    logger_level = logging.INFO
+    logger_mode = 0 #0-install , 1-deploy 
+    if (args.trace):
+        logger_level = logging.DEBUG
 
-logger = drm_logger.configure_install_logging(__name__,logger_level)
-os.environ["DRM_LOGGER_LEVEL"] = str(logger_level)
+    os.environ["DRM_LOGGER_LEVEL"] = str(logger_level)
+    os.environ["DRM_LOGGER_MODE"] = str(logger_mode)
+    os.environ["LOG_FOLDER_NAME"] = str('log')
+    os.environ["LOG_MAX_SIZE_MB"] = str(10)
+    os.environ["LOG_BACKUP_COUNT"] = str(3)
+    logger = drm_logger.configure_logging(__name__)
 
+except (ImportError, AttributeError):
+    raise ('Failed to init logger')
 #===============
 # Import modules
 #===============

@@ -60,7 +60,30 @@ class JSONFormatter(logging.Formatter):
         }
     # Convert the dictionary into a JSON-formatted string
         return json.dumps(log_record)
-    
+
+class CustomFormatter(logging.Formatter):
+
+    grey = "\x1b[38;20m"
+    yellow = "\x1b[33;20m"
+    red = "\x1b[31;20m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+    #format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+    format = "%(asctime)s - %(levelname)s - %(message)s"
+
+    FORMATS = {
+        logging.DEBUG: grey + format + reset,
+        logging.INFO: grey + format + reset,
+        logging.WARNING: yellow + format + reset,
+        logging.ERROR: red + format + reset,
+        logging.CRITICAL: bold_red + format + reset
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+       
 def get_verify_directory(dirname):
     """ Verify directory exists 
     :param dirname: directory name
@@ -89,18 +112,22 @@ def configure_install_logging(logname,loglevel=logging.INFO):
     logger.setLevel(loglevel)  # Set global logging level
     
     # Define the format for the log messages
-    log_format = "%(asctime)s - %(levelname)s - %(message)s"
-    formatter = logging.Formatter(log_format)
+    #log_format = "%(asctime)s - %(levelname)s - %(message)s"
+    #formatter = logging.Formatter(log_format)
+
+    #logger.setFormatter(CustomFormatter())
+
     # Create a console handler
     console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
+    #console_handler.setFormatter(formatter)
+    console_handler.setFormatter(CustomFormatter())
     console_handler.setLevel(logging.INFO)  # Only display info and above on console logging.INFO
     #Get log directory
     log_dir = get_verify_directory(LOG_DIR)
     # Create a file handler
     log_filename = os.path.join(log_dir, INSTALL_LOG_FILE_NAME)
     file_handler = logging.FileHandler(log_filename)
-    file_handler.setFormatter(formatter)
+    file_handler.setFormatter(CustomFormatter())
     file_handler.setLevel(loglevel)  # Write all levels to the file
     
     # Add the handler to the logger if not already added
@@ -110,7 +137,7 @@ def configure_install_logging(logname,loglevel=logging.INFO):
 
     return logger
 
-def configure_logging(logname,loglevel,logfoldername,logmaxsize,backupcount):
+def configure_logging(logname):
     """ Configure_logging
     :param logname: log name
     :param loglevel: log level [logging.INFO]
@@ -122,39 +149,65 @@ def configure_logging(logname,loglevel,logfoldername,logmaxsize,backupcount):
     #===========================
     # Define logger [console,filerotate,trace]
     #===========================
+    #Globals
+    mode            =     os.environ.get('DRM_LOGGER_MODE')
+    logfoldername   =     os.environ.get("LOG_FOLDER_NAME")
+    logmaxsize      =     os.environ.get("LOG_MAX_SIZE_MB")
+    backupcount     =     os.environ.get("LOG_BACKUP_COUNT")
+    level           =     os.environ.get('DRM_LOGGER_LEVEL')
     # Create a logger
     logger = logging.getLogger(logname)
     # Set global logging level
-    logger.setLevel(loglevel)  
+    logger.setLevel(logging.DEBUG)  
     # Define the format for the log messages
         #"%(asctime)s  - %(name)s - %(user)s@%(host)s - %(levelname)s - %(message)s"
         #formatter = UserHostFormatter(fmt=log_format)
-    log_format = "%(asctime)s - %(levelname)s - %(message)s"
-    formatter = logging.Formatter(log_format)
+    #log_format = "%(asctime)s - %(levelname)s - %(message)s"
+    #formatter = logging.Formatter(log_format)
+    #moved to cust format
 
     # Create a console handler
     console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
+    console_handler.setFormatter(CustomFormatter())
     console_handler.setLevel(logging.INFO)  # Only display info and above on console logging.INFO
-    logger.addHandler(console_handler)
+    
     #Get log directory
     log_dir = get_verify_directory(logfoldername)
     # Specify the rotation size in MB 
     backup_count = int(backupcount)
     # Convert the size to bytes
-    max_bytes = (logmaxsize) * BYTES_PER_MB
+    max_bytes = int(logmaxsize) * BYTES_PER_MB
     # Create a rotate file handler
-    log_r_filename = os.path.join(log_dir ,DRM_DEPLOY_LOG_FILE_NAME)
+    if mode == "0":
+        log_r_filename = os.path.join(log_dir ,INSTALL_LOG_FILE_NAME)
+    else:
+        log_r_filename = os.path.join(log_dir ,DRM_DEPLOY_LOG_FILE_NAME)
+    
     file_r_handler = RotatingFileHandler(log_r_filename, mode='a', maxBytes=max_bytes, backupCount=backup_count, encoding=None, delay=False, errors=None)
 
-    file_r_handler.setFormatter(formatter)
-    file_r_handler.setLevel(loglevel)  # Write all levels to the file
-    logger.addHandler(file_r_handler)
+    file_r_handler.setFormatter(CustomFormatter())
+    file_r_handler.setLevel(logging.INFO)  # Write all levels to the file 
     
-    # Create a TimedRotatingFileHandler for Trace    
-    if loglevel==logging.DEBUG:
-        log_filename_trace = os.path.join(log_dir,LOG_DIR_TRACE, DRM_DEPLOY_LOG_FILE_NAME_TRACE)
+    #logger = drm_logger.configure_install_logging(__name__,int(level))
+    # Create a TimedRotatingFileHandler for Trace
+    file_t_handler = None
+    if int(level)==logging.DEBUG:
+        #Get log directory
+        log_dir_trace = get_verify_directory(os.path.join(log_dir,LOG_DIR_TRACE))
 
+        log_filename_trace_format =  datetime.now().strftime("%Y_%m_%d-%H_%M_%S") + DRM_DEPLOY_LOG_FILE_NAME_TRACE 
+        log_filename_trace_file = os.path.join(log_dir_trace,log_filename_trace_format )
+
+        # Create a file handler
+        file_t_handler = logging.FileHandler(log_filename_trace_file)
+        file_t_handler.setFormatter(CustomFormatter())
+        file_t_handler.setLevel(logging.DEBUG)  # Write all levels to the file
+    
+        json_formatter = JSONFormatter()
+        file_t_handler.setFormatter(json_formatter)
+
+
+        """"
         timed_rotating_file_handler = TimedRotatingFileHandler(
         log_filename_trace,
         when='d',  # 'w0' means every Monday
@@ -162,13 +215,17 @@ def configure_logging(logname,loglevel,logfoldername,logmaxsize,backupcount):
         backupCount=3,  # Keep last 3 backups
         atTime=None  # Default is midnight
         )
-        json_formatter = JSONFormatter()
-        timed_rotating_file_handler.setFormatter(json_formatter)
+       
         timed_rotating_file_handler.setLevel(loglevel)  # Write all levels to the file
-        # Add handlers to the logger    
-        logger.addHandler(timed_rotating_file_handler)
+        """
 
-    
+    # Add the handler to the logger if not already added
+    if not logger.hasHandlers():
+        logger.addHandler(console_handler)
+        logger.addHandler(file_r_handler)
+        if not file_t_handler is None:
+             logger.addHandler(file_t_handler)
+
     return logger
 
 # Define a decorator for logging and exception handling
