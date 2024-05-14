@@ -1,11 +1,17 @@
 import os
 import json
-
+import logging
+from modules import drm_logger
 
 class Files:
+
+    logger = drm_logger.configure_logging("files_and_folders.Files")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, file_name): 
         self.file_name = file_name     
   
+    @drm_logger.log_decorator(logger) 
     def check_file_exists(self):
         """ 
         Checks if file exist
@@ -16,6 +22,7 @@ class Files:
         else:
             return False
 
+    @drm_logger.log_decorator(logger) 
     def open_file(self, file_op):
         """ 
         Open the text file
@@ -31,6 +38,7 @@ class Files:
             file = open(self.file_name, file_op)
             return file
 
+    @drm_logger.log_decorator(logger) 
     def close_file(self, file):
         """ 
         Close the text file
@@ -45,6 +53,7 @@ class Files:
         else:
             raise Exception ('File "' + self.file_name + '" not found.' )
 
+    @drm_logger.log_decorator(logger) 
     def load_file(self):
         """ 
         Load a JSON file
@@ -66,6 +75,7 @@ class Files:
                 raise Exception (error_message)
             return js_text
 
+    @drm_logger.log_decorator(logger) 
     def read_file(self):
         """ 
         Read the text file
@@ -87,6 +97,7 @@ class Files:
                 raise Exception (error_message)
             return text
 
+    @drm_logger.log_decorator(logger) 
     def write_file(self, text):
         """ 
         Write the text file
@@ -107,6 +118,7 @@ class Files:
             if (error_raised):
                 raise Exception (error_message)
 
+    @drm_logger.log_decorator(logger) 
     def append_file(self, text):
         """ 
         Append a text to an existing file
@@ -127,6 +139,7 @@ class Files:
             if (error_raised):
                 raise Exception (error_message)
 
+    @drm_logger.log_decorator(logger) 
     def delete_file(self, ignore_file_not_found = False):
         """ 
         Delete a file
@@ -147,9 +160,14 @@ class Files:
 
 
 class Folders:
+
+    logger = drm_logger.configure_logging("files_and_folders.Folders")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, folder_name): 
         self.folder_name = folder_name     
   
+    @drm_logger.log_decorator(logger) 
     def check_folder_exists(self):
         """ 
         Checks if folder exists
@@ -160,6 +178,7 @@ class Folders:
         else:
             return False
 
+    @drm_logger.log_decorator(logger) 
     def create_folder(self, ignore_if_already_exist = True):
         """ 
         Create a folder
@@ -178,6 +197,7 @@ class Folders:
         except Exception as e:
             error_message = "Creating folder failed!!! " + str(e)
 
+    @drm_logger.log_decorator(logger) 
     def delete_folder(self, ignore_if_not_exist = True):
         """ 
         Delete a folder

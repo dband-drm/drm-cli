@@ -1,7 +1,9 @@
 import os
 import json
 import zipfile
+import logging
 from pathlib import Path
+from modules import drm_logger
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
@@ -15,6 +17,10 @@ PACK_FILE_NAME = "deploy.drmpac"
 # Entities validators
 #====================
 class Release:
+
+    logger = drm_logger.configure_logging("validator.Release")
+
+    @drm_logger.log_decorator(logger) 
     def verify_fields(release):
         """ 
         Verify fields values
@@ -32,6 +38,10 @@ class Release:
 
 
 class Solution:
+
+    logger = drm_logger.configure_logging("validator.Solution")
+
+    @drm_logger.log_decorator(logger) 
     def verify_active_exists(release):
         """ 
         Verify release has at least one active solution
@@ -47,6 +57,7 @@ class Solution:
         if not(valid):
             raise Exception ("No active Solution found!!!")
 
+    @drm_logger.log_decorator(logger) 
     def verify_uniqueness(release):
         """ 
         Verify IDs & Names are unique
@@ -66,6 +77,7 @@ class Solution:
             else:
                 raise Exception ('Solution name "' + str(solution['name']) + '" found in multiple solutions!!!')
 
+    @drm_logger.log_decorator(logger) 
     def verify_fields(release):
         """ 
         Verify fields values
@@ -93,6 +105,10 @@ class Solution:
 
 
 class Project:
+
+    logger = drm_logger.configure_logging("validator.Project")
+
+    @drm_logger.log_decorator(logger) 
     def verify_active_exists(release):
         """ 
         Verify release has at least one active project in an active solution
@@ -113,6 +129,7 @@ class Project:
         if not(valid):
             raise Exception ("No active Project found!!!")
 
+    @drm_logger.log_decorator(logger) 
     def verify_uniqueness(release):
         """ 
         Verify IDs & Names are unique
@@ -133,6 +150,7 @@ class Project:
                     else:
                         raise Exception ('Multiple project Name "' + str(project['name']) + '" found in solution "' + str(solution['name']) + '"!!!')
 
+    @drm_logger.log_decorator(logger) 
     def verify_fields(release):
         """ 
         Verify fields values
@@ -178,6 +196,10 @@ class Project:
 # Validator main class
 #=====================
 class Validate:
+
+    logger = drm_logger.configure_logging("validator.Validate")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, deploy_config):   
         """ 
         Constructor
@@ -197,6 +219,7 @@ class Validate:
                 self.release = json.load(json_file)
                 zip_ref.close()
 
+    @drm_logger.log_decorator(logger) 
     def validate_release(self, connection_name):
         """ 
         Validate release JSON

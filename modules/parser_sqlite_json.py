@@ -1,8 +1,13 @@
 import sys
 import json
-from modules import sqlite
+import logging
+from modules import sqlite, drm_logger
 
 class Db:
+
+    logger = drm_logger.configure_logging("parser_sqlite_json.Db")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, db_name = ""):   
         """ 
         Constructor
@@ -11,6 +16,7 @@ class Db:
         """
         self.db_name = db_name
 
+    @drm_logger.log_decorator(logger) 
     def select_query(self, query):    
         """ 
         Run SQL query & return result
@@ -24,6 +30,10 @@ class Db:
 
 
 class Releases:
+
+    logger = drm_logger.configure_logging("parser_sqlite_json.Releases")
+
+    @drm_logger.log_decorator(logger) 
     def check_release_by_id_and_connection_name(db_file_name, id, connection_name):
         """ 
         Checks if active release & connection name exist in the system
@@ -54,6 +64,7 @@ class Releases:
         js = json.loads(js_text)
         return json.dumps(js)
 
+    @drm_logger.log_decorator(logger) 
     def get_release_by_id(db_file_name, id, release_obj):
         """ 
         Return release details by release_id
@@ -77,6 +88,10 @@ class Releases:
         return json.dumps(js)
 
 class Solutions:
+
+    logger = drm_logger.configure_logging("parser_sqlite_json.Solutions")
+
+    @drm_logger.log_decorator(logger) 
     def get_solutions_by_release_id(db_file_name, release_id, solution_obj):
         """ 
         Return solutions list details by release_id
@@ -105,6 +120,10 @@ class Solutions:
         return json.dumps(js)
 
 class Connections:
+
+    logger = drm_logger.configure_logging("parser_sqlite_json.Connections")
+
+    @drm_logger.log_decorator(logger) 
     def get_connection_by_solution_id_and_name(db_file_name, release_id, solution_id, name, connection_obj):
         """ 
         Return solution connection details by solution_id and name
@@ -134,6 +153,10 @@ class Connections:
         return json.dumps(js)
 
 class SqlScriptsVariables:
+
+    logger = drm_logger.configure_logging("parser_sqlite_json.SqlScriptsVariables")
+
+    @drm_logger.log_decorator(logger) 
     def get_sql_scripts_variables_by_solution_id(db_file_name, release_id, solution_id, sql_script_variable_obj):
         """ 
         Return solution sql_scripts_variables details by solution_id
@@ -160,6 +183,10 @@ class SqlScriptsVariables:
         return json.dumps(js)
 
 class SqlScripts:
+
+    logger = drm_logger.configure_logging("parser_sqlite_json.SqlScripts")
+
+    @drm_logger.log_decorator(logger) 
     def get_sql_scripts_by_solution_id(db_file_name, release_id, solution_id, sql_script_obj):
         """ 
         Return solution sql_scripts details by solution_id
@@ -186,6 +213,10 @@ class SqlScripts:
         return json.dumps(js)
 
 class Projects:
+
+    logger = drm_logger.configure_logging("parser_sqlite_json.Projects")
+
+    @drm_logger.log_decorator(logger) 
     def get_projects_by_solution_id(db_file_name, release_id, solution_id, project_obj):
         """ 
         Return solution projects details by solution_id
