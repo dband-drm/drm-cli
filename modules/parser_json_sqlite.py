@@ -1,10 +1,15 @@
 import json
-from modules import sqlite
+import logging
+from modules import sqlite, drm_logger
 
 class ParserJsonSqlite:
+
+	logger = drm_logger.configure_logging("parser_json_sqlite.ParserJsonSqlite")
+
 	def __init__(self) -> None:
 		pass
 
+	@drm_logger.log_decorator(logger) 
 	def drop_table (self, table_name):
 		"""
 		Generate a drop table if exists command
@@ -16,6 +21,7 @@ class ParserJsonSqlite:
 		return sql_command
 
 
+	@drm_logger.log_decorator(logger) 
 	def create_table (self, table_name, js_columns, js_constraints):
 		""" 
         Generate a create table command including constraints
@@ -117,6 +123,7 @@ class ParserJsonSqlite:
 		return sql_command
 
 
+	@drm_logger.log_decorator(logger) 
 	def insert_row (self, table_name, columns_names, columns_values):
 		""" 
         Generate an insert record into a table command

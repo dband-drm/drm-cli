@@ -1,9 +1,16 @@
+import logging
+from modules import drm_logger
 from base64 import b64encode, b64decode
 
 class Crypto:
+
+    logger = drm_logger.configure_logging("crypto.Crypto")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, password = ""):
         self.password = password
 
+    @drm_logger.log_decorator(logger) 
     def xor_encrypt_decrypt(data: str, password: str) -> str:
         """ 
         Encrypt Data using password
@@ -25,6 +32,7 @@ class Crypto:
         
         return encrypted_decrypted_str
 
+    @drm_logger.log_decorator(logger) 
     def encrypt_string(self, plaintext: str) -> str:
         """ 
         Encrypt text
@@ -37,6 +45,7 @@ class Crypto:
         
         return encrypted_base64
 
+    @drm_logger.log_decorator(logger) 
     def decrypt_string(self, encrypted_data: str) -> str:
         """ 
         Decrypt encrypted text

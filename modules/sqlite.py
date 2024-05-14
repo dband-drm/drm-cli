@@ -1,6 +1,11 @@
 import sqlite3
+import logging
 from sqlite3 import Error
+from modules import drm_logger
 
+logger = drm_logger.configure_logging("sqlite")
+
+@drm_logger.log_decorator(logger) 
 def create_connection(db_file):
     """ 
     create a database connection to the SQLite database specified by the db_file
@@ -15,6 +20,7 @@ def create_connection(db_file):
 
     return conn
 
+@drm_logger.log_decorator(logger) 
 def close_connection(conn):
     """ 
     close a database connection
@@ -23,6 +29,7 @@ def close_connection(conn):
     """
     conn.close
 
+@drm_logger.log_decorator(logger) 
 def execute_query(conn, query):
     """
     Query & return results
@@ -37,6 +44,7 @@ def execute_query(conn, query):
 
     return rows
 
+@drm_logger.log_decorator(logger) 
 def execute_command(conn, command):
     """
     Execute SQL command (DDL/DML)

@@ -4,8 +4,9 @@ import json
 import shutil
 import io
 import zipfile
+import logging
 from pathlib import Path
-from modules import parser_sqlite_json, parser_json_json, files_and_folders
+from modules import parser_sqlite_json, parser_json_json, files_and_folders, drm_logger
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
@@ -20,6 +21,10 @@ PACK_FILE_NAME = "deploy.drmpac"
 # Entities objects
 #=================
 class Release:
+
+    logger = drm_logger.configure_logging("builder.Release")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, id, name = None, max_retries = None, is_active = None): 
         self.id = id       
         self.name = name       
@@ -27,6 +32,10 @@ class Release:
         self.is_active = is_active       
 
 class Solution:
+
+    logger = drm_logger.configure_logging("builder.Solution")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, release_id, id = None, name = None, ordinal = None, solution_type_id = None, path = None, is_active = None): 
         self.id = id       
         self.name = name       
@@ -37,6 +46,10 @@ class Solution:
         self.is_active = is_active       
 
 class Connection:
+
+    logger = drm_logger.configure_logging("builder.Connection")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, solution_id, id = None, name = None, connection_type_id = None, connection_string = None, is_active = None): 
         self.id = id       
         self.name = name       
@@ -46,6 +59,10 @@ class Connection:
         self.is_active = is_active       
 
 class Sql_Scripts_Variable:
+
+    logger = drm_logger.configure_logging("builder.Sql_Scripts_Variable")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, solution_id, id = None, name = None, value = None): 
         self.id = id       
         self.name = name       
@@ -53,6 +70,10 @@ class Sql_Scripts_Variable:
         self.value = value      
 
 class Sql_Script:
+
+    logger = drm_logger.configure_logging("builder.Sql_Script")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, solution_id, id = None, name = None, sql_text = None): 
         self.id = id       
         self.name = name       
@@ -60,6 +81,10 @@ class Sql_Script:
         self.sql_text = sql_text      
 
 class Project:
+
+    logger = drm_logger.configure_logging("builder.Project")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, solution_id, id = None, name = None, ordinal = None, targets_compare_db = None, targets_type_id = None, targets_list = None, targets_sql_script_id = None, targets_sql_text = None, max_degree_in_parallel = None, timeout_in_min = None, sleep_time_in_sec = None, fail_on_error = None, is_active = None): 
         self.id = id       
         self.name = name       
@@ -77,6 +102,10 @@ class Project:
         self.is_active = fail_on_error      
 
 class Build:
+
+    logger = drm_logger.configure_logging("builder.Build")
+
+    @drm_logger.log_decorator(logger) 
     def __init__(self, deploy_config):   
         """ 
         Constructor
@@ -85,6 +114,7 @@ class Build:
         """
         self.deploy_config = deploy_config
 
+    @drm_logger.log_decorator(logger) 
     def generate_release_full_details(self, release_id, connection_name):
         """ 
         Generates full details of a release as JSON by id

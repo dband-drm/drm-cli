@@ -92,7 +92,7 @@ try:
     os.environ["LOG_FOLDER_NAME"] = str('log')
     os.environ["LOG_MAX_SIZE_MB"] = str(10)
     os.environ["LOG_BACKUP_COUNT"] = str(3)
-    logger = drm_logger.configure_logging(__name__)
+    logger = drm_logger.configure_logging("install")
 
 except (ImportError, AttributeError):
     raise ('Failed to init logger')
