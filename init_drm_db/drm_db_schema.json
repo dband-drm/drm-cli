@@ -133,7 +133,7 @@
 					"name": "max_retries",
 					"data_type": "integer",
 					"is_nullable": false,
-					"default": "1"
+					"default": "0"
 				},
 				{
 					"name": "is_active",

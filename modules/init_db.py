@@ -107,6 +107,8 @@ class InitDB:
 		table_name = "releases"
 		for release_row in js[table_name]:
 
+			table_name = "releases"
+
 			#===============
 			# Insert release
 			#===============
@@ -169,20 +171,21 @@ class InitDB:
 
 				# For each sql_scripts_variables
 				table_name = "sql_scripts_variables"
-				for sql_scripts_variable_row in solution_row[table_name]:
-					#=============================
-					# Insert sql_scripts_variables
-					#=============================
-					columns = list(sql_scripts_variable_row.keys())
-					values = list(sql_scripts_variable_row.values())
-					columns.append("id")
-					values.append(sql_scripts_variables_id)
-					columns.append("solution_id")
-					values.append(solution_id)
-					sql_command = parser.insert_row(table_name, columns, values)
-					sqlite.execute_command(conn, sql_command)
+				if (table_name in solution_row):
+					for sql_scripts_variable_row in solution_row[table_name]:
+						#=============================
+						# Insert sql_scripts_variables
+						#=============================
+						columns = list(sql_scripts_variable_row.keys())
+						values = list(sql_scripts_variable_row.values())
+						columns.append("id")
+						values.append(sql_scripts_variables_id)
+						columns.append("solution_id")
+						values.append(solution_id)
+						sql_command = parser.insert_row(table_name, columns, values)
+						sqlite.execute_command(conn, sql_command)
 
-					sql_scripts_variables_id += 1
+						sql_scripts_variables_id += 1
 
 				# For each sql_scripts_variables
 				table_name = "projects"
