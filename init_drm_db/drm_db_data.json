@@ -88,6 +88,34 @@
 	"releases": [
 		{
 			"id": 1,
+			"name": "Demo release: Deploy a project to a single mssql database",
+			"is_active": true,
+			"solutions": [
+				{
+					"name": "Simple solution",
+					"solution_type_id": 1,
+					"path": "TBD",
+					"connections": [
+						{
+							"name": "dev",
+							"connection_type_id": 1,
+							"connection_string": "Server=localhost;User Id=drm;Password=drm;"
+						}
+					],
+					"projects": [
+						{
+							"name": "Project_A",
+							"targets_compare_db": "DB_A1",
+							"targets_type_id": 1,
+							"targets_list": "[\"DB_A1\"]",
+							"fail_on_error": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": 2,
 			"name": "Demo release: Deploy mssql solution",
 			"max_retries": 3,
 			"is_active": true,
@@ -142,14 +170,14 @@
 							"name": "Project_A",
 							"targets_compare_db": "DB_A",
 							"targets_type_id": 1,
-							"targets_list": "{\"DB_A\"}",
+							"targets_list": "[\"DB_A\"]",
 							"fail_on_error": false
 						},
 						{
 							"name": "Project_B",
 							"targets_compare_db": "DB_B1",
 							"targets_type_id": 1,
-							"targets_list": "{\"DB_B2\",\"DB_B3\",\"DB_B4\",\"DB_B1\"}",
+							"targets_list": "[\"DB_B2\",\"DB_B3\",\"DB_B4\",\"DB_B1\"]",
 							"max_degree_in_parallel": 2,
 							"timeout_in_min": 10,
 							"sleep_time_in_sec": 2,

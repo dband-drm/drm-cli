@@ -9,7 +9,7 @@ class Releases:
 
     @drm_logger.log_decorator(logger) 
     def check_release_by_id_and_connection_name(db_file_name, id, connection_name):
-       """ 
+        """ 
         Checks if active release & connection name exist in the system
         :param db_file_name: Database file name
         :param id: Release ID
