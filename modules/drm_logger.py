@@ -184,8 +184,10 @@ def configure_logging(logname):
         log_r_filename = os.path.join(log_dir ,DRM_DEPLOY_LOG_FILE_NAME)
     
     file_r_handler = RotatingFileHandler(log_r_filename, mode='a', maxBytes=max_bytes, backupCount=backup_count, encoding=None, delay=False, errors=None)
-
-    file_r_handler.setFormatter(CustomFormatter())
+    # Define the format for the log messages
+    file_log_format = "%(asctime)s - %(levelname)s - %(message)s"
+    file_formatter = logging.Formatter(file_log_format)
+    file_r_handler.setFormatter(file_formatter)
     file_r_handler.setLevel(logging.INFO)  # Write all levels to the file 
     
     #logger = drm_logger.configure_install_logging(__name__,int(level))
