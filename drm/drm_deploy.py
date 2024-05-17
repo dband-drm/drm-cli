@@ -5,9 +5,7 @@ import json
 import logging
 from pathlib import Path
 from getpass import getpass
-from modules.builder import Build
-from modules.validator import Validate
-from modules import crypto,drm_logger
+from modules import drm_logger
 
 current_working_directory = Path(__file__).parent.resolve()
 
@@ -136,15 +134,22 @@ try:
         if (args.trace):
             logger_level = logging.DEBUG
 
-        logger = drm_logger.configure_logging(__name__)
         os.environ["DRM_LOGGER_LEVEL"] = str(logger_level)
         os.environ["DRM_LOGGER_MODE"] = str(logger_mode)
         os.environ["LOG_FOLDER_NAME"] = str(LOG_FOLDER_NAME)
         os.environ["LOG_MAX_SIZE_MB"] = str(LOG_MAX_SIZE_MB)
         os.environ["LOG_BACKUP_COUNT"] = str(LOG_BACKUP_COUNT)
+        logger = drm_logger.configure_logging("deploy")
+
     except (ImportError, AttributeError):
         raise ('Failed to init logger')
+    #===============
+    # Import modules
+    #===============
     
+    from modules.builder import Build
+    from modules.validator import Validate
+    from modules import crypto
     #======================
     # Verify encryption key
     #======================
@@ -170,6 +175,7 @@ try:
     executionMode = DRYRUN_MODE
     if (args.dryrun and args.deploy):
     	raise Exception("Error, command supports only single operation mode (--dryrun / --deploy)")
+    #executionMode
     if (args.deploy):
     	executionMode = DEPLOY_MODE
     else:
@@ -178,6 +184,7 @@ try:
     #=========================
     # Get release name from DB
     #=========================
+    
     logger = logging.getLogger('drm.build')
     logger.info('Starting DRM deployment (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
     
