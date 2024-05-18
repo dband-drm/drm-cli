@@ -41,6 +41,8 @@ class Config():
         f = open(file)
         js = json.load(f)
 
+        self.full_config = js
+
 		# Extract variables values configured
         self.drm_version = js['drm_version']
         
@@ -62,9 +64,9 @@ class Config():
         self.log_backup_count = log_js['backup_count']
 
         if 'locations' in js:
-            locations_js = js['locations']
-            if 'sqlpackage_dir' in locations_js:
-                self.sqlpackage_dir = locations_js['sqlpackage_dir']
+            for location in js['locations']:
+                if 'sqlpackage_path' in location:
+                    self.sqlpackage_path = location['sqlpackage_path']
 
         f.close()
 
@@ -144,7 +146,7 @@ try:
         os.environ["LOG_FOLDER_NAME"] = str(LOG_FOLDER_NAME)
         os.environ["LOG_MAX_SIZE_MB"] = str(LOG_MAX_SIZE_MB)
         os.environ["LOG_BACKUP_COUNT"] = str(LOG_BACKUP_COUNT)
-        logger = drm_logger.configure_logging("deploy")
+        logger = drm_logger.configure_logging("drm_deploy")
 
     except (ImportError, AttributeError):
         raise ('Failed to init logger')
@@ -158,6 +160,7 @@ try:
     #======================
     # Verify encryption key
     #======================
+    encryption_key = None
     if (DB_SECURED):
         if not (args.password):
             if ("DRM_SECRET" in os.environ):
@@ -202,7 +205,8 @@ try:
     logger.info("Build finished successfully!!!")
     logger = logging.getLogger('drm.release')
 
-    deploy = deploy.Deploy(deploy_config)
+    deploy = deploy.Deploy(deploy_config, encryption_key)
+    deploy.deploy_release()
 
     logger.info(style.GREEN + "DRM deployment finished successfully!!!" + style.RESET)
     logger.info("==================================")
