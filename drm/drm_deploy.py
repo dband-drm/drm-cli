@@ -123,6 +123,11 @@ try:
     LOG_MAX_SIZE_MB = deploy_config.log_max_size_mb
     LOG_BACKUP_COUNT = deploy_config.log_backup_count
 
+    if hasattr(deploy_config, 'sqlpackage_dir'):
+        SQLPACKAGE_DIR = deploy_config.sqlpackage_dir
+    else:
+        SQLPACKAGE_DIR = None
+
     
     #=================
     # Set logger level
@@ -153,17 +158,18 @@ try:
     #======================
     # Verify encryption key
     #======================
-    if not (args.password):
-        if ("DRM_SECRET" in os.environ):
-            encryption_key = os.environ["DRM_SECRET"]
-    else:
-        encryption_key = getpass(prompt='Please enter encryption key: ')
-
-    if encryption_key is None:
-        raise Exception ("Encryption key not provided!!!")
-
-    security_text = "This drm cli was developed by d-band and it is amazing!!!"
     if (DB_SECURED):
+        if not (args.password):
+            if ("DRM_SECRET" in os.environ):
+                encryption_key = os.environ["DRM_SECRET"]
+        else:
+            encryption_key = getpass(prompt='Please enter encryption key: ')
+
+        if encryption_key is None:
+            raise Exception ("Encryption key not provided!!!")
+
+        security_text = "This drm cli was developed by d-band and it is amazing!!!"
+
         crpt = crypto.Crypto(encryption_key)
         encrypted_text = crpt.encrypt_string(security_text)
         if (encrypted_text != SECURITY_TEXT):
@@ -175,11 +181,12 @@ try:
     executionMode = DRYRUN_MODE
     if (args.dryrun and args.deploy):
     	raise Exception("Error, command supports only single operation mode (--dryrun / --deploy)")
+    
     #executionMode
     if (args.deploy):
-    	executionMode = DEPLOY_MODE
+        executionMode = DEPLOY_MODE
     else:
-    	executionMode = DRYRUN_MODE
+        executionMode = DRYRUN_MODE
 
     #=========================
     # Get release name from DB
@@ -197,7 +204,7 @@ try:
     logger = logging.getLogger('drm.release')
 
     logger.info(style.GREEN + "DRM deployment finished successfully!!!" + style.RESET)
-    logger.warning("==================================")
+    logger.info("==================================")
     
     
 except Exception as e:
