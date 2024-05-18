@@ -61,6 +61,11 @@ class Config():
         self.log_max_size_mb = log_js['max_size_mb']
         self.log_backup_count = log_js['backup_count']
 
+        if 'locations' in js:
+            locations_js = js['locations']
+            if 'sqlpackage_dir' in locations_js:
+                self.sqlpackage_dir = locations_js['sqlpackage_dir']
+
         f.close()
 
 os.system('')
@@ -123,11 +128,6 @@ try:
     LOG_MAX_SIZE_MB = deploy_config.log_max_size_mb
     LOG_BACKUP_COUNT = deploy_config.log_backup_count
 
-    if hasattr(deploy_config, 'sqlpackage_dir'):
-        SQLPACKAGE_DIR = deploy_config.sqlpackage_dir
-    else:
-        SQLPACKAGE_DIR = None
-
     
     #=================
     # Set logger level
@@ -151,10 +151,10 @@ try:
     #===============
     # Import modules
     #===============
-    
     from modules.builder import Build
     from modules.validator import Validate
-    from modules import crypto
+    from modules import crypto, deploy
+    
     #======================
     # Verify encryption key
     #======================
@@ -180,9 +180,8 @@ try:
     #=========================
     executionMode = DRYRUN_MODE
     if (args.dryrun and args.deploy):
-    	raise Exception("Error, command supports only single operation mode (--dryrun / --deploy)")
-    
-    #executionMode
+        raise Exception("Error, command supports only single operation mode (--dryrun / --deploy)")
+
     if (args.deploy):
         executionMode = DEPLOY_MODE
     else:
@@ -202,6 +201,8 @@ try:
     validate.validate_release(args.connection)
     logger.info("Build finished successfully!!!")
     logger = logging.getLogger('drm.release')
+
+    deploy = deploy.Deploy(deploy_config)
 
     logger.info(style.GREEN + "DRM deployment finished successfully!!!" + style.RESET)
     logger.info("==================================")

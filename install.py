@@ -313,6 +313,7 @@ def create_drm_config(drm_path, install_type, encryption_key):
 				"max_size_mb": LOG_MAX_SIZE_MB,
 				"backup_count": LOG_BACKUP_COUNT
 			},
+			"locations": [],
 			"trace_flags": []
 		}
 		json_obj = json.dumps(content, indent=4)
