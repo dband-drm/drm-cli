@@ -181,11 +181,12 @@ try:
     executionMode = DRYRUN_MODE
     if (args.dryrun and args.deploy):
     	raise Exception("Error, command supports only single operation mode (--dryrun / --deploy)")
+    
     #executionMode
     if (args.deploy):
-    	executionMode = DEPLOY_MODE
+        executionMode = DEPLOY_MODE
     else:
-    	executionMode = DRYRUN_MODE
+        executionMode = DRYRUN_MODE
 
     #=========================
     # Get release name from DB
