@@ -12,6 +12,17 @@ class Files:
         self.file_name = file_name     
   
     @drm_logger.log_decorator(logger) 
+    def find_file_in_dir(self, dir):
+        """ 
+        Finds a file in given directory & return first instance
+        :param dir: directory to search in
+        :return: First file absolute name (String)
+        """       
+        for root, dirs, files in os.walk(dir):
+            if self.file_name in files:
+                return os.path.join(root, self.file_name)
+
+    @drm_logger.log_decorator(logger) 
     def check_file_exists(self):
         """ 
         Checks if file exist
