@@ -94,7 +94,7 @@
 				{
 					"name": "DRM mssql demo solution",
 					"solution_type_id": 1,
-					"path": "TBD",
+					"path": "../mssql",
 					"connections": [
 						{
 							"name": "dev",
