@@ -194,7 +194,7 @@ try:
     # Get release name from DB
     #=========================
     
-    logger = logging.getLogger('drm.build')
+    #logger = logging.getLogger('drm.build')
     logger.info('Starting DRM deployment (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
     
     logger.info("Building release...")   
@@ -203,7 +203,7 @@ try:
     validate = Validate(deploy_config)
     validate.validate_release(args.connection)
     logger.info("Build finished successfully!!!")
-    logger = logging.getLogger('drm.release')
+    #logger = logging.getLogger('drm.release')
 
     deploy = deploy.Deploy(deploy_config, encryption_key)
     deploy.deploy_release()
