@@ -213,7 +213,7 @@ try:
     
     
 except Exception as e:
-	logger.exception(style.RED + "Error: " + str(e) + style.RESET)
+	logger.exception("Error: " + str(e))
 	#print("")
-	logger.exception(style.RED + "DRM deployment failed!!!" + style.RESET)
+	logger.exception("DRM deployment failed!!!")
 	#print("==================================")
