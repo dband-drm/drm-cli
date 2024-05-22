@@ -3,6 +3,7 @@ import json
 import zipfile
 import sqlite3
 import logging
+import subprocess
 from pathlib import Path
 from sqlite3 import Error
 from shutil import which
@@ -16,6 +17,8 @@ current_working_directory = Path(__file__).parent.parent.resolve()
 DEPLOY_CONFIG_FILE_NAME = "drm_deploy.config"
 BUILD_FILE_NAME = "drm_deploy.json"
 PACK_FILE_NAME = "deploy.drmpac"
+DRYRUN_MODE = "DryRun"
+DEPLOY_MODE = "Deploy"
 
 class MsSql:
 
@@ -26,30 +29,30 @@ class MsSql:
 
         # Get SqlPackage from configuration
         if hasattr(deploy_config, 'sqlpackage_path'):
-            self.file_name = deploy_config.sqlpackage_path
+            self.upgrade_tool_file_name = deploy_config.sqlpackage_path
         else:
             self.logger.info("sqlpackage utility path was not supplied in drm_deploy.config, searching (This may take a while)...")
             # Known from PATH or in current directory
             app = "sqlpackage"
             if which(app) != None:
-                self.file_name = app
+                self.upgrade_tool_file_name = app
             app = "sqlpackage.exe"
             if which(app) != None:
-                self.file_name = app
+                self.upgrade_tool_file_name = app
             # Not known --> search
             if (which("sqlpackage") == None and which("sqlpackage.exe") == None):
                 f = files_and_folders.Files("sqlpackage")
-                self.file_name = f.find_file_in_dir("/")
-                if (self.file_name == None):
+                self.upgrade_tool_file_name = f.find_file_in_dir("/")
+                if (self.upgrade_tool_file_name == None):
                     f = files_and_folders.Files("sqlpackage.exe")
-                    self.file_name = f.find_file_in_dir("/")
-                if (self.file_name == None):
+                    self.upgrade_tool_file_name = f.find_file_in_dir("/")
+                if (self.upgrade_tool_file_name == None):
                     raise ('sqlpackage utility not found!!!')
                 else:
-                    self.file_name = (self.file_name.replace("\\", "\\\\"))
+                    self.upgrade_tool_file_name = (self.upgrade_tool_file_name.replace("\\", "\\\\"))
                     
             self.logger.info("sqlpackage utility found & configured in drm_deploy.config for next deployments!!!")
-            locations_js = json.loads('{"sqlpackage_path": "' + self.file_name + '"}')
+            locations_js = json.loads('{"sqlpackage_path": "' + self.upgrade_tool_file_name + '"}')
             js = deploy_config.full_config
             js['locations'].append(locations_js)
             json_obj = json.dumps(js, indent=4)
@@ -61,7 +64,7 @@ class MsSql:
     @drm_logger.log_decorator(logger) 
     def get_list_of_targets(self, targets_type_id, targets_list, targets_sql_text):
         """ 
-        Deploy release
+        Returns a list of target databases to deploy into
         :param targets_type_id: targets type id (list or query)
         :param targets_list: targets json list
         :param targets_sql_text: SQL query which returns a list of targets
@@ -72,14 +75,68 @@ class MsSql:
         #==========
         if targets_type_id == 1:
             return json.loads(targets_list)
+               
 
+    @drm_logger.log_decorator(logger) 
+    def get_source_file(self, solution_path, project_name):
+        """ 
+        returns the source file path 
+        :param solution_path: solution path
+        :param project_name: project_name
+        :return: source file full path (String)
+        """ 
+        return os.path.join (solution_path, project_name, "bin", "Debug", project_name + ".dacpac")
+               
+
+    @drm_logger.log_decorator(logger) 
+    def get_fixed_connection_string(self, connection_string, project_targets_compare_db):
+        """ 
+        returns the fixed connection string using compare DB
+        :param connection_string: connection string from the solution
+        :param project_targets_compare_db: database name to connect into
+        :return: fixed conneciton string (String)
+        """ 
+        return connection_string + "Database={project_targets_compare_db};".format(project_targets_compare_db = project_targets_compare_db)
+               
+
+    @drm_logger.log_decorator(logger) 
+    def generate_upgrade_script(self, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string):
+        """ 
+        returns the fixed connection string using compare DB
+        :param solution_id: solution ID
+        :param project_id: project ID
+        :param project_name: project name
+        :param project_targets_compare_db: target databasename to compare with
+        :param source_file: source file name (dacpac)
+        :param target_connection_string: connectionstring
+        :return: update script name (String)
+        """ 
+        # Define upgrade script file
+        upgrade_script = os.path.join (current_working_directory, "bin", "S" + str(solution_id) + "-P" + str(project_id) + "-" + project_name + "-" + project_targets_compare_db + ".sql")
+        self.logger.info("Generating upgrade script ""{upgrade_script}""...".format(upgrade_script = upgrade_script))
+        
+        #=============================
+        # Generate upgrade script file
+        #=============================
+        result = subprocess.run([self.upgrade_tool_file_name, "/Action:script", "/SourceFile:" + source_file, "/TargetConnectionString:" + target_connection_string, "/OutputPath:" + upgrade_script], capture_output=True)
+        # Check if process exit with a failure
+        if result.stderr:
+            raise Exception (result.stderr)
+            #raise subprocess.CalledProcessError(
+            #        returncode = result.returncode,
+            #        cmd = result.args,
+            #        stderr = result.stderr
+            #        )
+        self.logger.info("Upgrade script generated successfully!!!")
+
+        return upgrade_script
 
 class Deploy:
 
     logger = drm_logger.configure_logging("deploy.Deploy")
 
     @drm_logger.log_decorator(logger) 
-    def __init__(self, deploy_config, encryption_key = False): 
+    def __init__(self, deploy_config, encryption_key = False, execution_mode = DRYRUN_MODE): 
         self.deploy_config = deploy_config
 
         build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
@@ -94,6 +151,7 @@ class Deploy:
                 zip_ref.close()
 
         self.encryption_key = encryption_key
+        self.execution_mode = execution_mode
 
     @drm_logger.log_decorator(logger) 
     def deploy_release(self):
@@ -169,8 +227,19 @@ class Deploy:
                         project_sleep_time_in_sec = js_project['sleep_time_in_sec']
                         project_fail_on_error = js_project['fail_on_error']
 
-                        targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, project_targets_sql_text)
-                        print(len(targets_list_js))
-                        for target_db in targets_list_js:
-                            print(target_db)
+                        #========================
+                        # Generate upgrade script
+                        #========================
+                        source_file = solution_obj.get_source_file(solution_path, project_name)
+                        target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
+                        upgrade_script = solution_obj.generate_upgrade_script(solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string)
+
+                        #================================
+                        # Deploy mode (Not a DryRun mode)
+                        #================================
+                        if (self.execution_mode == DEPLOY_MODE):
+                            # Get list targets
+                            targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, project_targets_sql_text)
+                            for target_db in targets_list_js:
+                                print(target_db)
                             
