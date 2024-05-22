@@ -181,14 +181,14 @@ try:
     #=========================
     # Determine execution mode
     #=========================
-    executionMode = DRYRUN_MODE
+    execution_mode = DRYRUN_MODE
     if (args.dryrun and args.deploy):
         raise Exception("Error, command supports only single operation mode (--dryrun / --deploy)")
 
     if (args.deploy):
-        executionMode = DEPLOY_MODE
+        execution_mode = DEPLOY_MODE
     else:
-        executionMode = DRYRUN_MODE
+        execution_mode = DRYRUN_MODE
 
     #=========================
     # Get release name from DB
@@ -205,10 +205,10 @@ try:
     logger.info("Build finished successfully!!!")
     #logger = logging.getLogger('drm.release')
 
-    deploy = deploy.Deploy(deploy_config, encryption_key)
+    deploy = deploy.Deploy(deploy_config, encryption_key, execution_mode)
     deploy.deploy_release()
 
-    logger.info(style.GREEN + "DRM deployment finished successfully!!!" + style.RESET)
+    logger.info("DRM deployment finished successfully!!!")
     logger.info("==================================")
     
     
