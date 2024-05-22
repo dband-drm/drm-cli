@@ -67,6 +67,8 @@ class Config():
             for location in js['locations']:
                 if 'sqlpackage_path' in location:
                     self.sqlpackage_path = location['sqlpackage_path']
+                if 'sqlcmd_path' in location:
+                    self.sqlcmd_path = location['sqlcmd_path']
 
         f.close()
 
@@ -89,24 +91,7 @@ parser.add_argument("--deploy", action='store_true', default=False, required = F
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
 args = parser.parse_args()
-"""
-parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
-parser.add_argument("--trace", action='store_true', default=False, required = False)
-args = parser.parse_args()
 
-
-#=================
-# Set logger level
-#=================
-logger_level = logging.INFO
-logger_mode = 0 #0-install , 1-deploy 
-if (args.trace):
-	logger_level = logging.DEBUG
-
-logger = drm_logger.configure_logging(__name__)
-os.environ["DRM_LOGGER_LEVEL"] = str(logger_level)
-os.environ["DRM_LOGGER_MODE"] = str(logger_mode)
-"""
 #=====
 # Main
 #=====
@@ -193,8 +178,6 @@ try:
     #=========================
     # Get release name from DB
     #=========================
-    
-    #logger = logging.getLogger('drm.build')
     logger.info('Starting DRM deployment (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
     
     logger.info("Building release...")   
@@ -203,7 +186,6 @@ try:
     validate = Validate(deploy_config)
     validate.validate_release(args.connection)
     logger.info("Build finished successfully!!!")
-    #logger = logging.getLogger('drm.release')
 
     deploy = deploy.Deploy(deploy_config, encryption_key, execution_mode)
     deploy.deploy_release()
