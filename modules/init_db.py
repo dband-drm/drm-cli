@@ -282,7 +282,7 @@ class InitDB:
 		Creates DRM database with system Data
 		:return:
 		"""
-		file = files_and_folders(self.db_name)
+		file = files_and_folders.Files(self.db_name)
 		js = file.load_file()
 
 		if(self.encryption_key != "" and self.encryption_key != None):
