@@ -297,6 +297,10 @@ class Projects:
                                         project_obj.sleep_time_in_sec = project['sleep_time_in_sec']
                                     else:
                                          project_obj.sleep_time_in_sec = None   
+                                    if ("deployment_properties" in project):   
+                                        project_obj.deployment_properties = project['deployment_properties']
+                                    else:
+                                         project_obj.deployment_properties = []  
                                     if ("fail_on_error" in project):   
                                         project_obj.fail_on_error = project['fail_on_error']
                                     else:
