@@ -8,6 +8,7 @@ from getpass import getpass
 from modules import drm_logger
 
 current_working_directory = Path(__file__).parent.resolve()
+drm_directory = Path(__file__).parent.resolve()
 
 #===========
 # Constrants
@@ -96,6 +97,8 @@ args = parser.parse_args()
 # Main
 #=====
 try:
+
+    os.chdir(drm_directory)
 
 	#==================================
 	# Create constants by configuration 
@@ -192,10 +195,12 @@ try:
 
     logger.info("DRM deployment finished successfully!!!")
     logger.info("==================================")
+    os.chdir(current_working_directory)
     
     
 except Exception as e:
-	logger.exception("Error: " + str(e))
-	#print("")
-	logger.exception("DRM deployment failed!!!")
-	#print("==================================")
+    # Log any exceptions raised during the  execution
+    logger.critical(f"{e}")
+    logger.info(f"DRM deployment failed!!!")
+    logger.info('==================================')
+    os.chdir(current_working_directory)
