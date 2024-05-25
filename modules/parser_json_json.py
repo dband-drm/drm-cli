@@ -65,7 +65,10 @@ class Releases:
             if (release['id'] == int(id)):
                 release_obj.id = release['id']    
                 release_obj.name = release['name']    
-                release_obj.max_retries = release['max_retries']
+                if  ("max_retries" in release):   
+                    release_obj.max_retries = release['max_retries']
+                else:
+                    release_obj.max_retries = 0
                 if  ("is_active" in release):   
                     release_obj.is_active = release['is_active'] 
                 else:
