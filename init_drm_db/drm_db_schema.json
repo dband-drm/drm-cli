@@ -402,6 +402,11 @@
 					"is_nullable": true
 				},
 				{
+					"name": "deployment_properties",
+					"data_type": "text",
+					"is_nullable": true
+				},
+				{
 					"name": "fail_on_error",
 					"data_type": "boolean",
 					"is_nullable": false,

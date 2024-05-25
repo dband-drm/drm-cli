@@ -108,6 +108,7 @@
 							"targets_compare_db": "DB_A1",
 							"targets_type_id": 1,
 							"targets_list": "[\"DB_A1\"]",
+							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptionsFalse\"]",
 							"fail_on_error": true
 						}
 					]
@@ -123,7 +124,7 @@
 				{
 					"name": "MSSQL solution",
 					"solution_type_id": 1,
-					"path": "D:\\TFS\\MSSQL\\Solution.sln",
+					"path": "D:/TFS/MSSQL/Solution.sln",
 					"connections": [
 						{
 							"name": "dev",

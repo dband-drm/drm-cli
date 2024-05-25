@@ -42,7 +42,7 @@ class MsSql:
             if (file_name == None):
                 raise ('{file_name} utility not found!!!'.format(file_name = file_name))
             else:
-                return (file_name.replace("\\", "\\\\"))
+                return (file_name.replace("\\", "/"))
 
 
         js = deploy_config.full_config
@@ -136,7 +136,7 @@ class MsSql:
         """ 
         # Define upgrade script file
         upgrade_script = os.path.join (current_working_directory, "bin", "S" + str(solution_id) + "-P" + str(project_id) + "-" + project_name + "-" + project_targets_compare_db + ".sql")
-        self.logger.info("Generating upgrade script ""{upgrade_script}""...".format(upgrade_script = upgrade_script))
+        self.logger.info('Generating upgrade script "{upgrade_script}"...'.format(upgrade_script = upgrade_script))
         
         #=============================
         # Generate upgrade script file
@@ -167,7 +167,7 @@ class MsSql:
         :return: update script name (String)
         """ 
         upgrade_log_file = os.path.join (current_working_directory, "log", "S" + str(solution_id) + "-P" + str(project_id) + "-" + project_name + "-" + target_name + ".log")
-        self.logger.info("Running upgrade script against ""{target_name}"" (log file: ""{upgrade_log_file}"")...".format(target_name = target_name, upgrade_log_file = upgrade_log_file))
+        self.logger.info('Running upgrade script against "{target_name}" (log file: "{upgrade_log_file}")...'.format(target_name = target_name, upgrade_log_file = upgrade_log_file))
         
         # Exctract connection details
         connection_win_auth = False
