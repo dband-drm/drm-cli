@@ -457,6 +457,7 @@ try:
 	# Install DRM
 	#============
 	install_drm(drm_path, install_type, encryption_key, modules_js)
+	os.chdir(current_working_directory)
 	
 
 except Exception as e:
@@ -464,3 +465,4 @@ except Exception as e:
 	logger.critical(f"{e}")
 	logger.info(f"DRM installation failed!!!")
 	logger.info('==================================')
+	os.chdir(current_working_directory)
