@@ -246,7 +246,7 @@ class Projects:
             project_obj.max_degree_in_parallel = row[9]    
             project_obj.timeout_in_min = row[10]    
             project_obj.sleep_time_in_sec = row[11]    
-            project_obj.deployment_properties = row[12]    
+            project_obj.deployment_properties = row[12] 
             project_obj.fail_on_error = row[13]    
             project_obj.is_active = row[14]    
             project_js = json.loads(json.dumps(project_obj.__dict__))
