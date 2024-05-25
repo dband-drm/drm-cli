@@ -123,7 +123,7 @@ class MsSql:
         return connection_string + "Database={project_targets_compare_db};".format(project_targets_compare_db = project_targets_compare_db)
                
     @drm_logger.log_decorator(logger) 
-    def generate_upgrade_script(self, solution_id, project_id, project_name, project_targets_compare_db, source_file, connection_string):
+    def generate_upgrade_script(self, solution_id, project_id, project_name, project_targets_compare_db, source_file, connection_string, deployment_properties):
         """ 
         returns the fixed connection string using compare DB
         :param solution_id: solution ID
@@ -132,16 +132,38 @@ class MsSql:
         :param project_targets_compare_db: target database name to compare with
         :param source_file: source file name (dacpac)
         :param connection_string: connection string
+        :param deployment_properties: array of deployment properties
         :return: update script name (String)
         """ 
         # Define upgrade script file
         upgrade_script = os.path.join (current_working_directory, "bin", "S" + str(solution_id) + "-P" + str(project_id) + "-" + project_name + "-" + project_targets_compare_db + ".sql")
         self.logger.info('Generating upgrade script "{upgrade_script}"...'.format(upgrade_script = upgrade_script))
         
+        #================================
+        # Builld subprocessarguments list
+        #================================
+        args_list = []
+        # Utility
+        args_list.append(self.upgrade_tool_file_name)
+        # Generate script
+        args_list.append("/Action:script")
+        # Dacpac source file
+        args_list.append("/SourceFile:" + source_file)
+        # Target connection string
+        args_list.append("/TargetConnectionString:" + connection_string)
+        # Output log file
+        args_list.append("/OutputPath:" + upgrade_script)
+        # Deployment properties
+        if (deployment_properties == None):
+            deployment_properties = []
+        js_deployment_properties = json.loads(deployment_properties)
+        for property in js_deployment_properties:
+            args_list.append("/p:" + property)
+
         #=============================
         # Generate upgrade script file
         #=============================
-        result = subprocess.run([self.upgrade_tool_file_name, "/Action:script", "/SourceFile:" + source_file, "/TargetConnectionString:" + connection_string, "/OutputPath:" + upgrade_script], capture_output=True)
+        result = subprocess.run(args_list, capture_output=True)
         # Check if process exit with a failure
         if result.stderr:
             raise Exception (result.stderr)
@@ -298,6 +320,7 @@ class Deploy:
                         project_max_degree_in_parallel = js_project['max_degree_in_parallel']
                         project_timeout_in_min = js_project['timeout_in_min']
                         project_sleep_time_in_sec = js_project['sleep_time_in_sec']
+                        project_deployment_properties = js_project['deployment_properties']
                         project_fail_on_error = js_project['fail_on_error']
 
                         #========================
@@ -305,7 +328,7 @@ class Deploy:
                         #========================
                         source_file = solution_obj.get_source_file(solution_path, project_name)
                         target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
-                        upgrade_script = solution_obj.generate_upgrade_script(solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string)
+                        upgrade_script = solution_obj.generate_upgrade_script(solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties)
 
                         #================================
                         # Deploy mode (Not a DryRun mode)
