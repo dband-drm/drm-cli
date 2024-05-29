@@ -20,6 +20,7 @@ DRM_VERSION	= "1.0.0.0"
 INSTALL_CONFIG_FILE_NAME = "install.config"
 DRM_DB_JSON_PATH = "init_drm_db"
 DRM_DB_JSON_FILE_NAME = "drm_db_data.json"
+DRM_SCHEM_JSON_FILE_NAME = "drm_db_schema.json"
 DRM_FOLDER_NAME = "drm"
 DEPLOY_CONFIG_FILE_NAME = "drm_deploy.config"
 		
@@ -359,8 +360,6 @@ def create_drm_db(drm_path, install_type, encryption_key):
 			# Create Database & load system Data
 			drm_db.create_drm_db()
 			
-			logger.info('DRM database created successfully!!!')
-
 		#=======================
 		# JSON installation type
 		#=======================
@@ -381,7 +380,9 @@ def create_drm_db(drm_path, install_type, encryption_key):
 			new_drm_db_json = os.path.join(db_directory, db_json_file_name)
 			shutil.move(old_drm_db_json, new_drm_db_json)
 			
-			logger.info('DRM database created successfully!!!')
+		drm_db_schema_json = os.path.join(current_working_directory, DRM_DB_JSON_PATH, DRM_SCHEM_JSON_FILE_NAME)
+		shutil.copy(drm_db_schema_json, db_directory)
+		logger.info('DRM database created successfully!!!')
 
 	except Exception as e:
 		raise Exception ("failed to create DRM database, " + str(e))
