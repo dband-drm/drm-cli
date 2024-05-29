@@ -110,6 +110,14 @@
 							"targets_list": "[\"DB_A1\"]",
 							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\"]",
 							"fail_on_error": true
+						},
+						{
+							"name": "Project_A",
+							"targets_compare_db": "DB_A1",
+							"targets_type_id": 1,
+							"targets_list": "[\"DB_A1\"]",
+							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\"]",
+							"fail_on_error": true
 						}
 					]
 				}

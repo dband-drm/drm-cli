@@ -3,6 +3,32 @@ import json
 import logging
 from modules import files_and_folders, drm_logger
 
+class Generic:
+
+    logger = drm_logger.configure_logging("parser_json_json.Generic")
+
+    @drm_logger.log_decorator(logger) 
+    def get_table_columns_list(schema_file_name, table_name):
+        """ 
+        Return table columns list
+        :param table_name: Table name
+        :return: List of columns (JSON)
+        """
+        file = files_and_folders.Files(schema_file_name)
+        drm_schema = file.load_file()
+
+        js = json.loads('[]')
+        #=================================
+        # Get Projects info by Solution ID
+        #=================================
+        for table in drm_schema['tables']:
+            if (table["name"] == table_name):
+                for column in table["columns"]:
+                    js.append(column["name"])
+            
+        return json.dumps(js)
+
+
 class Releases:
 
     logger = drm_logger.configure_logging("parser_json_json.Releases")

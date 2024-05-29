@@ -27,7 +27,7 @@ class Db:
         rows = sqlite.execute_query(conn, query)
         sqlite.close_connection(conn)
         return rows
-
+    
 
 class Releases:
 
@@ -252,4 +252,3 @@ class Projects:
             project_js = json.loads(json.dumps(project_obj.__dict__))
             js['projects'].append(project_js)
         return json.dumps(js)
-

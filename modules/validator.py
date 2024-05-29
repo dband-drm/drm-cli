@@ -132,7 +132,7 @@ class Project:
     @drm_logger.log_decorator(logger) 
     def verify_uniqueness(release):
         """ 
-        Verify IDs & Names are unique
+        Verify IDs are unique
         :param release: release json
         :return:
         """               
@@ -145,10 +145,10 @@ class Project:
                         ids.append(project['id'])
                     else:
                         raise Exception ('Multiple project ID "' + str(project['id']) + '" found in solution "' + str(solution['name']) + '"!!!')
-                    if project['name'] not in names:
-                        names.append(project['name'])
-                    else:
-                        raise Exception ('Multiple project Name "' + str(project['name']) + '" found in solution "' + str(solution['name']) + '"!!!')
+                    #if project['name'] not in names:
+                    #    names.append(project['name'])
+                    #else:
+                    #    raise Exception ('Multiple project Name "' + str(project['name']) + '" found in solution "' + str(solution['name']) + '"!!!')
 
     @drm_logger.log_decorator(logger) 
     def verify_fields(release):

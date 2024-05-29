@@ -426,11 +426,6 @@
 					"columns": "id"
 				},
 				{
-					"name": "uq_projects__name",
-					"type": "UQ",
-					"columns": "solution_id, name"
-				},
-				{
 					"name": "uq_projects__ordinal",
 					"type": "UQ",
 					"columns": "solution_id, ordinal"
