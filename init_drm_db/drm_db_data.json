@@ -110,14 +110,6 @@
 							"targets_list": "[\"DB_A1\"]",
 							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\"]",
 							"fail_on_error": true
-						},
-						{
-							"name": "Project_A",
-							"targets_compare_db": "DB_A1",
-							"targets_type_id": 1,
-							"targets_list": "[\"DB_A1\"]",
-							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\"]",
-							"fail_on_error": true
 						}
 					]
 				}
@@ -125,39 +117,24 @@
 		},
 		{
 			"id": 2,
-			"name": "Demo release: Deploy mssql solution",
+			"name": "Demo release: Deploy multiple projects to multiple mssql database",
 			"max_retries": 3,
 			"is_active": true,
 			"solutions": [
 				{
-					"name": "MSSQL solution",
+					"name": "DRM mssql demo solution",
 					"solution_type_id": 1,
-					"path": "D:/TFS/MSSQL/Solution.sln",
+					"path": "../mssql",
 					"connections": [
 						{
 							"name": "dev",
 							"connection_type_id": 1,
-							"connection_string": "Server=drmSrv-Lab\\Dev;Trusted_Connection=True;"
+							"connection_string": "Server=127.0.0.1;User Id=drm;Password=drm;Encrypt=False;"
 						},
 						{
 							"name": "test",
 							"connection_type_id": 1,
-							"connection_string": "Server=drmSrv-Lab\\Test;Trusted_Connection=True;"
-						},
-						{
-							"name": "prod-USA",
-							"connection_type_id": 1,
-							"connection_string": "Server=drmSrv-USA;User Id=myUsername;Password=myPassword;"
-						},
-						{
-							"name": "prod-EUR",
-							"connection_type_id": 1,
-							"connection_string": "Server=drmSrv-EUR;User Id=myUsername;Password=myPassword;"
-						},
-						{
-							"name": "prod-ASIA",
-							"connection_type_id": 1,
-							"connection_string": "Server=drmSrv-ASIA;User Id=myUsername;Password=myPassword;"
+							"connection_string": "Server=127.0.0.1;User Id=drm;Password=drm;Encrypt=False;"
 						}
 					],
 					"sql_scripts_variables": [
@@ -177,25 +154,27 @@
 					"projects": [
 						{
 							"name": "Project_A",
-							"targets_compare_db": "DB_A",
+							"targets_compare_db": "DB_A1",
 							"targets_type_id": 1,
-							"targets_list": "[\"DB_A\"]",
-							"fail_on_error": false
+							"targets_list": "[\"DB_A1\"]",
+							"fail_on_error": true
 						},
 						{
 							"name": "Project_B",
 							"targets_compare_db": "DB_B1",
 							"targets_type_id": 1,
-							"targets_list": "[\"DB_B2\",\"DB_B3\",\"DB_B4\",\"DB_B1\"]",
+							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\", \"CommentOutSetVarDeclarations=True\"]",
+							"targets_list": "[\"DB_B1\", \"DB_B2\", \"DB_B3\", \"DB_B4\"]",
 							"max_degree_in_parallel": 2,
 							"timeout_in_min": 10,
 							"sleep_time_in_sec": 2,
-							"fail_on_error": true
+							"fail_on_error": false
 						},
 						{
 							"name": "Project_C",
 							"targets_compare_db": "DB_C1",
 							"targets_type_id": 2,
+							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\", \"CommentOutSetVarDeclarations=True\"]",
 							"targets_sql_text": "select name from sys.databases where name like 'DB_C%' order by name",
 							"max_degree_in_parallel": 5,
 							"timeout_in_min": 30,
