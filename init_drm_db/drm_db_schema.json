@@ -576,6 +576,69 @@
 			]	
 		},
 		{
+			"name": "deployments_tries",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "guid",
+					"is_nullable": false
+				},				
+				{
+					"name": "deployment_id",
+					"data_type": "guid",
+					"is_nullable": false
+				},				
+				{
+					"name": "try_num",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "start_time",
+					"data_type": "datetime",
+					"is_nullable": false
+				},				
+				{
+					"name": "end_time",
+					"data_type": "datetime",
+					"is_nullable": true
+				},				
+				{
+					"name": "error_message",
+					"data_type": "string",
+					"length": 200,
+					"is_nullable": true
+				},				
+				{
+					"name": "deployment_status_id",
+					"data_type": "integer",
+					"is_nullable": false,
+					"default": 0
+				}				
+			],
+			"constraints": [
+				{
+					"name": "pk_deployments_tries",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "fk_deployments_tries__deployment_id",
+					"type": "FK",
+					"columns": "deployment_id",
+					"ref_table": "deployments",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_deployments_tries__deployment_status_id",
+					"type": "FK",
+					"columns": "deployment_status_id",
+					"ref_table": "deployment_statuses",
+					"ref_columns": "id"
+				}
+			]	
+		},
+		{
 			"name": "deployments_solutions",
 			"columns": [
 				{
@@ -584,7 +647,7 @@
 					"is_nullable": false
 				},
 				{
-					"name": "deployment_id",
+					"name": "deployment_try_id",
 					"data_type": "guid",
 					"is_nullable": false
 				},				
@@ -617,10 +680,10 @@
 					"columns": "id"
 				},
 				{
-					"name": "fk_deployments_solutions__deployment_id",
+					"name": "fk_deployments_solutions__deployment_try_id",
 					"type": "FK",
-					"columns": "deployment_id",
-					"ref_table": "deployments",
+					"columns": "deployment_try_id",
+					"ref_table": "deployments_tries",
 					"ref_columns": "id"
 				},
 				{
