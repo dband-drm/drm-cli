@@ -2,14 +2,13 @@ import os
 import uuid
 import json
 import zipfile
-import sqlite3
 import logging
 import subprocess
+import shutil
 from pathlib import Path
-from sqlite3 import Error
 from shutil import which
 from datetime import datetime
-from modules import drm_logger, files_and_folders, crypto, parser_sqlite_json, parser_json_json
+from modules import drm_logger, files_and_folders, crypto, parser_sqlite_json, parser_json_json, sqlite, parser_json_sqlite
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
@@ -267,11 +266,108 @@ class Deploy:
         # SQLite to JSON
         if (deploy_config.installation_type == "sqlite"):
             self.parser = parser_sqlite_json
+            self.db_parser = parser_json_sqlite.ParserJsonSqlite()
             self.db_file_name = os.path.join(current_working_directory, deploy_config.db_folder_name, deploy_config.db_file_name + "." + deploy_config.sqlite_file_ext)
         # JSON to JSON
         else:
             self.parser = parser_json_json
             self.db_file_name = os.path.join(current_working_directory, deploy_config.db_folder_name, deploy_config.db_file_name + "." + deploy_config.data_file_ext)
+
+
+    @drm_logger.log_decorator(logger) 
+    def copy_deploy_to_sqlite(self,deployment_js):
+        """ 
+        Copy deploy results into Sqlite
+        :return:
+        """ 
+		#================
+		# Create Database
+		#================
+        conn = sqlite.create_connection(self.db_file_name)
+
+        #==================
+        # Insert deployment
+        #==================
+        table_name = "deployments"
+        columns = []
+        values = []
+        deployments_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, table_name)
+        for deployment_column_name in json.loads(deployments_columns_list):
+            if (deployment_js[deployment_column_name] != None):
+                columns.append(deployment_column_name)
+                values.append(deployment_js[deployment_column_name])
+                if (deployment_column_name) == "id":
+                    deployment_id = deployment_js[deployment_column_name]
+        if len(columns) != 0:
+            sql_command = self.db_parser.insert_row(table_name, columns, values)
+            sqlite.execute_command(conn, sql_command)
+
+            #========================
+            # Insert deployment_tries
+            #========================
+            table_name = "deployments_tries"
+            if table_name in deployment_js:
+                deployments_tries_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, table_name)
+                for deployment_try_js in deployment_js[table_name]:
+                    columns = []
+                    values = []
+                    for deployment_try_column_name in json.loads(deployments_tries_columns_list):
+                        if(deployment_try_column_name == "deployment_id"):
+                            columns.append(deployment_try_column_name)
+                            values.append(deployment_id)
+                        else:
+                            if (deployment_try_js[deployment_try_column_name] != None):
+                                columns.append(deployment_try_column_name)
+                                values.append(deployment_try_js[deployment_try_column_name])
+                                if (deployment_try_column_name == "id"):
+                                    deployment_try_id = deployment_js[deployment_try_column_name]
+                    if len(columns) != 0:
+                        sql_command = self.db_parser.insert_row(table_name, columns, values)
+                        sqlite.execute_command(conn, sql_command)
+
+                        #============================
+                        # Insert deployment_solutions
+                        #============================
+                        table_name = "deployments_solutions"
+                        if table_name in deployment_try_js:
+                            deployments_solutions_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, table_name)
+                            for deployment_solution_js in deployment_try_js[table_name]:
+                                columns = []
+                                values = []
+                                for deployment_solution_column_name in json.loads(deployments_solutions_columns_list):
+                                    if(deployment_solution_column_name == "deployment_try_id"):
+                                        columns.append(deployment_solution_column_name)
+                                        values.append(deployment_try_id)
+                                    else:
+                                        if (deployment_solution_js[deployment_solution_column_name] != None):
+                                            columns.append(deployment_solution_column_name)
+                                            values.append(deployment_solution_js[deployment_solution_column_name])
+                                            if (deployment_solution_column_name == "id"):
+                                                deployment_solution_id = deployment_solution_js[deployment_solution_column_name]
+                                if len(columns) != 0:
+                                    sql_command = self.db_parser.insert_row(table_name, columns, values)
+                                    sqlite.execute_command(conn, sql_command)
+
+                                    #===========================
+                                    # Insert deployment_projects
+                                    #===========================
+                                    table_name = "deployments_projects"
+                                    if table_name in deployment_solution_js:
+                                        deployments_projects_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, table_name)
+                                        for deployment_project_js in deployment_solution_js[table_name]:
+                                            columns = []
+                                            values = []
+                                            for deployment_project_column_name in json.loads(deployments_projects_columns_list):
+                                                if(deployment_project_column_name == "deployment_solution_id"):
+                                                    columns.append(deployment_project_column_name)
+                                                    values.append(deployment_solution_id)
+                                                else:
+                                                    if (deployment_project_js[deployment_project_column_name] != None):
+                                                        columns.append(deployment_project_column_name)
+                                                        values.append(deployment_project_js[deployment_project_column_name])
+                                            if len(columns) != 0:
+                                                sql_command = self.db_parser.insert_row(table_name, columns, values)
+                                                sqlite.execute_command(conn, sql_command)
 
 
     @drm_logger.log_decorator(logger) 
@@ -299,9 +395,10 @@ class Deploy:
             deploy_file_base_name = "{execution_mode}_{deployment_id}_R{release_id}".format(execution_mode = self.execution_mode, deployment_id = deployment_id, release_id = release_id)
             deploy_log_file_name = "{deploy_file_base_name}.json".format(deploy_file_base_name = deploy_file_base_name)
             deploy_dir = os.path.join(current_working_directory, DEPLOY_DIR)
-            if not(os.path.exists(deploy_dir)):
+            if (self.deploy_config.installation_type == "json") and not(os.path.exists(deploy_dir)):
                 os.mkdir(deploy_dir)
-            deployment_file = files_and_folders.Files(os.path.join(deploy_dir, deploy_log_file_name))
+            build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
+            deployment_file = files_and_folders.Files(os.path.join(build_dir, deploy_log_file_name))
 
             deployment_js = {}
             deployments_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, "deployments")
@@ -329,22 +426,26 @@ class Deploy:
                 elif (deployment_column_name == "error_message"):
                     deployment_js[deployment_column_name] = None
             deployment_js["max_retries"] = release_max_retries
-            deployment_js["tries"] = []
+            deployment_js["deployments_tries"] = []
             deployment_file.write_file(json.dumps(deployment_js, indent=7))
             
             try_num += 1
             deployment_js = deployment_file.load_file()
             deployment_try_js = {}
-            deployment_try_js["try_num"] = try_num
-            for deployment_column_name in json.loads(deployments_columns_list):
-                if (deployment_column_name == "start_time"):
-                    deployment_try_js[deployment_column_name] = datetime.now().isoformat()
-                elif (deployment_column_name == "end_time"):
-                    deployment_try_js[deployment_column_name] = None
-                elif (deployment_column_name == "error_message"):
-                    deployment_try_js[deployment_column_name] = None
-                elif (deployment_column_name == "deployment_status_id"):
-                    deployment_try_js[deployment_column_name] = 1
+            deployments_tries_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, "deployments_tries")
+            for deployment_try_column_name in json.loads(deployments_tries_columns_list):
+                if (deployment_try_column_name == "id"):
+                    deployment_try_js[deployment_try_column_name] = str(uuid.uuid4())
+                elif (deployment_try_column_name == "try_num"):
+                    deployment_try_js[deployment_try_column_name] = try_num
+                elif (deployment_try_column_name == "start_time"):
+                    deployment_try_js[deployment_try_column_name] = datetime.now().isoformat()
+                elif (deployment_try_column_name == "end_time"):
+                    deployment_try_js[deployment_try_column_name] = None
+                elif (deployment_try_column_name == "error_message"):
+                    deployment_try_js[deployment_try_column_name] = None
+                elif (deployment_try_column_name == "deployment_status_id"):
+                    deployment_try_js[deployment_try_column_name] = 1
                     deployment_try_js["deployment_status_name"] = DEPLOYMENT_IN_PROGRESS_STATUS
 
             deployment_try_js["deployments_solutions"] = []        
@@ -490,11 +591,19 @@ class Deploy:
 
 
 
-            deployment_js["tries"].append(deployment_try_js)
+            deployment_js["deployments_tries"].append(deployment_try_js)
             deployment_js["deployment_status_id"] = 2
             deployment_js["deployment_status_name"] = DEPLOYMENT_SUCCESS_STATUS
             deployment_js["end_time"] = datetime.now().isoformat()
             deployment_file.write_file(json.dumps(deployment_js, indent=7))
+    
+            if (self.deploy_config.installation_type == "sqlite"):
+                self.copy_deploy_to_sqlite(deployment_js)
+            else:
+                deployment_file_build_name = os.path.join(build_dir, deploy_log_file_name)
+                deployment_file_deply_name = os.path.join(deploy_dir, deploy_log_file_name)                
+                shutil.copy(deployment_file_build_name, deployment_file_deply_name)
+
         except Exception as e:            
             deployment_project_js["error_message"] = f"{e}"
             deployment_project_js["end_time"] = datetime.now().isoformat()
@@ -506,10 +615,17 @@ class Deploy:
             deployment_try_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
             deployment_try_js["error_message"] = f"{e}"
             deployment_try_js["end_time"] = datetime.now().isoformat()
-            deployment_js["tries"].append(deployment_try_js)
+            deployment_js["deployments_tries"].append(deployment_try_js)
             deployment_js["deployment_status_id"] = 4
             deployment_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
             deployment_js["error_message"] = f"{e}"
             deployment_js["end_time"] = datetime.now().isoformat()
             deployment_file.write_file(json.dumps(deployment_js, indent=7))
+            if (self.deploy_config.installation_type == "sqlite"):
+                self.copy_deploy_to_sqlite(deployment_js)
+            else:
+                deployment_file_build_name = os.path.join(build_dir, deploy_log_file_name)
+                deployment_file_deply_name = os.path.join(deploy_dir, deploy_log_file_name)                
+                shutil.copy(deployment_file_build_name, deployment_file_deply_name)
+
             raise Exception (f"{e}")
