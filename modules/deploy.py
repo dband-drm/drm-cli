@@ -8,7 +8,8 @@ import shutil
 from pathlib import Path
 from shutil import which
 from datetime import datetime
-from modules import drm_logger, files_and_folders, crypto, parser_sqlite_json, parser_json_json, sqlite, parser_json_sqlite
+from modules import drm_logger, files_and_folders, crypto, parser_sqlite_json
+from modules import parser_json_json, sqlite, parser_json_sqlite, mssql
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
@@ -94,7 +95,7 @@ class MsSql:
                 
 
     @drm_logger.log_decorator(logger) 
-    def get_list_of_targets(self, targets_type_id, targets_list, targets_sql_text):
+    def get_list_of_targets(self, targets_type_id, targets_list, connection_string, targets_sql_text):
         """ 
         Returns a list of target databases to deploy into
         :param targets_type_id: targets type id (list or query)
@@ -102,11 +103,22 @@ class MsSql:
         :param targets_sql_text: SQL query which returns a list of targets
         :return: List of target databases (json)
         """ 
-        #==========
-        # JSON list
-        #==========
-        if targets_type_id == 1:
-            return json.loads(targets_list)
+        try:
+            #==========
+            # JSON list
+            #==========
+            if targets_type_id == 1:
+                return json.loads(targets_list)
+            #==========
+            # SQL query
+            #==========
+            elif targets_type_id == 2:
+                target_db_obj = mssql.MsSql(self.run_script_tool_file_name, connection_string)
+                result = target_db_obj.execute_query(targets_sql_text)
+                names = [entry["name"] for entry in json.loads(result)]
+                return names
+        except Exception as e:            
+            raise Exception (f"failed to get list of targets: {e}")
                
 
     @drm_logger.log_decorator(logger) 
@@ -164,7 +176,7 @@ class MsSql:
         args_list.append("/OutputPath:" + upgrade_script)
         # Deployment properties
         if (deployment_properties == None):
-            deployment_properties = []
+            deployment_properties = '[]'
         js_deployment_properties = json.loads(deployment_properties)
         for property in js_deployment_properties:
             args_list.append("/p:" + property)
@@ -219,18 +231,17 @@ class MsSql:
         # Run upgrade script file against target DB
         #==========================================
         if not (connection_win_auth):
-            result = subprocess.run([self.run_script_tool_file_name, "-S", connection_server, "-U", connection_username, "-P", connection_password, "-i", upgrade_script, "-o", upgrade_log_file], capture_output=True)
+            result = subprocess.run([self.run_script_tool_file_name, "-S", connection_server, "-v", "DatabaseName=" + target_name, "-U", connection_username, "-P", connection_password, "-i", upgrade_script, "-o", upgrade_log_file], capture_output=True)
         else:
-            result = subprocess.run([self.run_script_tool_file_name, "-S", connection_server, "-E", "-i", upgrade_script, "-o", upgrade_log_file], capture_output=True)
-
+            result = subprocess.run([self.run_script_tool_file_name, "-S", connection_server, "-v", "DatabaseName=" + target_name, "-E", "-i", upgrade_script, "-o", upgrade_log_file], capture_output=True)
         # Check if process exit with a failure
         if result.stderr:
             raise Exception (result.stderr)
-            #raise subprocess.CalledProcessError(
-            #        returncode = result.returncode,
-            #        cmd = result.args,
-            #        stderr = result.stderr
-            #        )
+        f = files_and_folders.Files(upgrade_log_file)
+        error_text, error_line = f.find_text_in_file("msg")
+        if (error_line != None):
+            raise Exception (f'Upgrade failed in line {error_line}, {error_text}, see details in "{upgrade_log_file}"')
+
         self.logger.info("Upgrade finished successfully!!!")
 
         return upgrade_script
@@ -560,7 +571,7 @@ class Deploy:
                             #================================
                             if (self.execution_mode == DEPLOY_MODE):
                                 # Get list targets
-                                targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, project_targets_sql_text)
+                                targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text)
                                 for target_db in targets_list_js:
                                     deployment_project_js = {}
                                     for deployment_project_column_name in json.loads(deployments_projects_columns_list):
