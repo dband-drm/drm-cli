@@ -169,6 +169,34 @@ class Files:
         except Exception as e:
             error_message = "File deletion failed!!! " + str(e)
 
+    @drm_logger.log_decorator(logger) 
+    def find_text_in_file(self, text_to_find):
+        """ 
+        Find text in a file
+        :param ignore_file_not_found: ignores if a file not found
+        :return:
+        """       
+        error_raised = False
+        try:
+            #=================
+            # Open & Read file
+            #=================
+            file = Files.open_file(self, file_op = 'r')           
+            # read all lines in a list
+            lines = file.readlines()
+            for line in lines:
+                # check if string present on a current line
+                if (line.lower()).find(text_to_find.lower()) != -1:
+                    return (line, lines.index(line) + 1)
+            return (None, None)
+        except Exception as e:
+            error_raised = True
+            error_message = "Find text in file failed!!! " + str(e)
+        finally:
+            Files.close_file(self, file)
+            if (error_raised):
+                raise Exception (error_message)
+
 
 class Folders:
 
