@@ -188,17 +188,12 @@ class MsSql:
         # Check if process exit with a failure
         if result.stderr:
             raise Exception (result.stderr)
-            #raise subprocess.CalledProcessError(
-            #        returncode = result.returncode,
-            #        cmd = result.args,
-            #        stderr = result.stderr
-            #        )
         self.logger.info("Upgrade script generated successfully!!!")
 
         return upgrade_script
                
     @drm_logger.log_decorator(logger) 
-    def run_upgrade_script(self, deploy_file_base_name, solution_id, project_id, project_name, target_name, upgrade_script, connection_string):
+    def run_upgrade_script(self, deploy_file_base_name, solution_id, project_id, project_name, target_name, upgrade_script, connection_string, sql_script_variables_list):
         """ 
         returns the fixed connection string using compare DB
         :param deploy_file_base_name: file base name (prefix)
@@ -208,43 +203,16 @@ class MsSql:
         :param target_name: target database name
         :param upgrade_script: upgrade script name
         :param connection_string: connection string
+        :param sql_script_variables_list: array of pairs of script variables (name, value)
         :return: update script name (String)
         """ 
         upgrade_log_file = os.path.join (current_working_directory, "log", deploy_file_base_name + "_S" + str(solution_id) + "-P" + str(project_id) + "-" + project_name + "-" + target_name + ".log")
         self.logger.info('Running upgrade script against "{target_name}" (log file: "{upgrade_log_file}")...'.format(target_name = target_name, upgrade_log_file = upgrade_log_file))
         
-        # Exctract connection details
-        connection_win_auth = False
-        for param in connection_string.split(";"):
-            if (param.find("=") != -1):
-                [param_name, param_value] = param.split("=")
-                if (param_name.lower() in ['server']):
-                    connection_server = param_value
-                elif (param_name.lower() in ['user id', 'uid']):
-                    connection_username = param_value
-                elif (param_name.lower() in ['password', 'pwd']):
-                    connection_password = param_value
-                elif (param_name.lower() in ['trusted_connection', 'integrated security']) and (param_value.lower() in ['yes', 'true', 'sspi']):
-                    connection_win_auth = True
-
-        #==========================================
-        # Run upgrade script file against target DB
-        #==========================================
-        if not (connection_win_auth):
-            result = subprocess.run([self.run_script_tool_file_name, "-S", connection_server, "-v", "DatabaseName=" + target_name, "-U", connection_username, "-P", connection_password, "-i", upgrade_script, "-o", upgrade_log_file], capture_output=True)
-        else:
-            result = subprocess.run([self.run_script_tool_file_name, "-S", connection_server, "-v", "DatabaseName=" + target_name, "-E", "-i", upgrade_script, "-o", upgrade_log_file], capture_output=True)
-        # Check if process exit with a failure
-        if result.stderr:
-            raise Exception (result.stderr)
-        f = files_and_folders.Files(upgrade_log_file)
-        error_text, error_line = f.find_text_in_file("msg")
-        if (error_line != None):
-            raise Exception (f'Upgrade failed in line {error_line}, {error_text}, see details in "{upgrade_log_file}"')
+        db_obj = mssql.MsSql(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)
+        db_obj.run_script(upgrade_script)
 
         self.logger.info("Upgrade finished successfully!!!")
-
-        return upgrade_script
 
 
 class Deploy:
@@ -509,6 +477,14 @@ class Deploy:
                             crpt = crypto.Crypto(self.encryption_key)
                             connection_string = crpt.decrypt_string(connection_string)
 
+                    #=========================
+                    # Get SQL script variables
+                    #=========================
+                    sql_script_variables_list = []
+                    if "sql_scripts_variables" in js_solution:
+                        for js_sql_script_variable in js_solution['sql_scripts_variables']:
+                            sql_script_variables_list.append((js_sql_script_variable['name'], js_sql_script_variable['value']))
+
                     deployment_solution_js["deployments_projects"] = []
                     #====================
                     # Get active projects
@@ -589,7 +565,7 @@ class Deploy:
                                         elif (deployment_project_column_name == "error_message"):
                                             deployment_project_js[deployment_project_column_name] = None
     
-                                    solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string)
+                                    solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list)
                                     deployment_project_js["end_time"] = datetime.now().isoformat()
                                     deployment_solution_js["deployments_projects"].append(deployment_project_js)
 
