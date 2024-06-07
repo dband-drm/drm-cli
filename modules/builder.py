@@ -150,7 +150,9 @@ class Build:
         build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
         if not(os.path.exists(build_dir)):
             os.mkdir(build_dir)
-        
+        else:
+            folder = files_and_folders.Folders(build_dir)
+            folder.delete_folder_content()
         release_js = {}
         
         #====================

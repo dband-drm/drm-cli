@@ -95,20 +95,25 @@ class MsSql:
                 
 
     @drm_logger.log_decorator(logger) 
-    def get_list_of_targets(self, targets_type_id, targets_list, connection_string, targets_sql_text):
+    def get_list_of_targets(self, targets_type_id, targets_list, connection_string, targets_sql_text, targets_compare_db):
         """ 
         Returns a list of target databases to deploy into
         :param targets_type_id: targets type id (list or query)
         :param targets_list: targets json list
         :param targets_sql_text: SQL query which returns a list of targets
+        :prams targets_compare_db: target compare database name
         :return: List of target databases (json)
         """ 
         try:
+            def custom_sort_key(s):
+                # Define a high priority for "a" to make it come last
+                return (1, s) if s == targets_compare_db else (0, s)
+            
             #==========
             # JSON list
             #==========
             if targets_type_id == 1:
-                return json.loads(targets_list)
+                return sorted(json.loads(targets_list), key=custom_sort_key)
             #==========
             # SQL query
             #==========
@@ -116,7 +121,7 @@ class MsSql:
                 target_db_obj = mssql.MsSql(self.run_script_tool_file_name, connection_string)
                 result = target_db_obj.execute_query(targets_sql_text)
                 names = [entry["name"] for entry in json.loads(result)]
-                return names
+                return sorted(names, key=custom_sort_key)
         except Exception as e:            
             raise Exception (f"failed to get list of targets: {e}")
                
@@ -547,7 +552,7 @@ class Deploy:
                             #================================
                             if (self.execution_mode == DEPLOY_MODE):
                                 # Get list targets
-                                targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text)
+                                targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text, project_targets_compare_db)
                                 for target_db in targets_list_js:
                                     deployment_project_js = {}
                                     for deployment_project_column_name in json.loads(deployments_projects_columns_list):
