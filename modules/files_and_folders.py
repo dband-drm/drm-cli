@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import shutil
 from modules import drm_logger
 
 class Files:
@@ -254,4 +255,35 @@ class Folders:
                     raise Exception ('Folder "' + self.folder_name + '" not exist.' )
         except Exception as e:
             error_message = "Folder deletion failed!!! " + str(e)
+
+    @drm_logger.log_decorator(logger) 
+    def delete_folder_content(self, ignore_if_not_exist = True):
+        """ 
+        Delete folder content recursive
+        :param ignore_if_not_exist: ignores if a folder not exist
+        :return:
+        """       
+        try:
+            #==============
+            # Delete folder
+            #==============
+            if  Folders.check_folder_exists(self):
+                # Iterate over all the items in the folder
+                for item in os.listdir(self.folder_name):
+                    item_path = os.path.join(self.folder_name, item)
+
+                    # Check if the item is a file
+                    if os.path.isfile(item_path) or os.path.islink(item_path):
+                        os.unlink(item_path)  # Delete the file or link
+ 
+                    # Check if the item is a directory
+                    elif os.path.isdir(item_path):
+                        shutil.rmtree(item_path)  # Delete the directory and all its contents
+
+            else:
+                if not ignore_if_not_exist:
+                    raise Exception ('Folder "' + self.folder_name + '" not exist.' )
+        except Exception as e:
+            error_message = "Folder deletion failed!!! " + str(e)
+
 
