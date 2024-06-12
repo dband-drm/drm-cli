@@ -8,14 +8,15 @@ import json
 from datetime import datetime
 from functools import wraps
 import traceback
+import re
 
+#===========
+# Constrants
+#===========
 current_working_directory = Path(__file__).parent.parent.resolve()
-
 BYTES_PER_MB = 1024 * 1024
-
 LOG_DIR = "log"
 LOG_DIR_TRACE = "trace"
-
 INSTALL_LOG_FILE_NAME = "install.log"
 DRM_DEPLOY_LOG_FILE_NAME = "drm_deploy.log"
 DRM_DEPLOY_LOG_FILE_NAME_TRACE = "drm_deploy_trace.log"
@@ -98,45 +99,6 @@ def get_verify_directory(dirname):
             os.mkdir(current_dir)
     return current_dir
 
-def configure_install_logging(logname,loglevel=logging.INFO):
-    """ Configure_install logging
-    :param logname: log name
-    :param loglevel: log level [logging.INFO]
-    :return: logger
-    """
-    #===========================
-    # Define logger [console,file]
-    #===========================
-    # Create a logger
-    logger = logging.getLogger(logname)
-    logger.setLevel(loglevel)  # Set global logging level
-    
-    # Define the format for the log messages
-    #log_format = "%(asctime)s - %(levelname)s - %(message)s"
-    #formatter = logging.Formatter(log_format)
-
-    #logger.setFormatter(CustomFormatter())
-
-    # Create a console handler
-    console_handler = logging.StreamHandler()
-    #console_handler.setFormatter(formatter)
-    console_handler.setFormatter(CustomFormatter())
-    console_handler.setLevel(logging.INFO)  # Only display info and above on console logging.INFO
-    #Get log directory
-    log_dir = get_verify_directory(LOG_DIR)
-    # Create a file handler
-    log_filename = os.path.join(log_dir, INSTALL_LOG_FILE_NAME)
-    file_handler = logging.FileHandler(log_filename)
-    file_handler.setFormatter(CustomFormatter())
-    file_handler.setLevel(loglevel)  # Write all levels to the file
-    
-    # Add the handler to the logger if not already added
-    if not logger.hasHandlers():
-        logger.addHandler(console_handler)
-        logger.addHandler(file_handler)
-
-    return logger
-
 def configure_logging(logname):
     """ Configure_logging
     :param logname: log name
@@ -159,12 +121,6 @@ def configure_logging(logname):
     logger = logging.getLogger(logname)
     # Set global logging level
     logger.setLevel(logging.DEBUG)  
-    # Define the format for the log messages
-        #"%(asctime)s  - %(name)s - %(user)s@%(host)s - %(levelname)s - %(message)s"
-        #formatter = UserHostFormatter(fmt=log_format)
-    #log_format = "%(asctime)s - %(levelname)s - %(message)s"
-    #formatter = logging.Formatter(log_format)
-    #moved to cust format
 
     # Create a console handler
     console_handler = logging.StreamHandler()
@@ -190,7 +146,6 @@ def configure_logging(logname):
     file_r_handler.setFormatter(file_formatter)
     file_r_handler.setLevel(logging.INFO)  # Write all levels to the file 
     
-    #logger = drm_logger.configure_install_logging(__name__,int(level))
     # Create a TimedRotatingFileHandler for Trace
     file_t_handler = None
     if int(level)==logging.DEBUG:
@@ -208,19 +163,6 @@ def configure_logging(logname):
         json_formatter = JSONFormatter()
         file_t_handler.setFormatter(json_formatter)
 
-
-        """"
-        timed_rotating_file_handler = TimedRotatingFileHandler(
-        log_filename_trace,
-        when='d',  # 'w0' means every Monday
-        interval=1,  # Every day
-        backupCount=3,  # Keep last 3 backups
-        atTime=None  # Default is midnight
-        )
-       
-        timed_rotating_file_handler.setLevel(loglevel)  # Write all levels to the file
-        """
-
     # Add the handler to the logger if not already added
     if not logger.hasHandlers():
         logger.addHandler(console_handler)
@@ -230,12 +172,45 @@ def configure_logging(logname):
 
     return logger
 
+# Masking function
+def mask(data):
+    """Mask sensitive data.
+    :param data: data
+    :return: masked data
+    """
+    if isinstance(data, str):
+        # Check if it's a SQL command and mask sensitive information
+        if "insert into" in data.lower() or "update" in data.lower():
+            return mask_sql_command(data.lower())
+        return "****"
+    elif isinstance(data, list):
+        return ["****" if isinstance(item, str) else item for item in data]
+    return data
+
+def mask_sql_command(command):
+    """Mask sensitive information in a SQL command.
+    :param data: command
+    :return: masked command
+    """
+    # Regex patterns to identify and mask sensitive information
+    patterns = [
+        (r"(?i)(password\s*=\s*)('[^']*'|[^;,\s]*)", r"\1'****'"),
+        (r"(?i)(user\s*id\s*=\s*)('[^']*'|[^;,\s]*)", r"\1'****'"),
+        (r"(?i)(server\s*=\s*)('[^']*'|[^;,\s]*)", r"\1'****'"),
+        # Add more patterns as needed
+        
+    ]
+    for pattern, replacement in patterns:
+        command = re.sub(pattern, replacement, command)
+    return command
+
 # Define a decorator for logging and exception handling
 def log_decorator(logger):
     """ Configure log_decorator
     :param logger: logger
     :return: NULL
-    """  
+    """ 
+    SENSITIVE_PARAMS = ['password', 'command', 'columns_values', 'host', 'server']
     def decorator(func):
         """ Configure decorator
         :param func: func
@@ -249,25 +224,29 @@ def log_decorator(logger):
             :return: wrapper
             """ 
             # Log function start with additional information
+            func_args = func.__code__.co_varnames[:func.__code__.co_argcount]
+            args_dict = dict(zip(func_args, args))
+            all_params = {**args_dict, **kwargs}
             
-            logger.debug(f"{func.__name__} start with args={args}, kwargs={kwargs}")
+            # Convert parameter names to lowercase
+            all_params_lower = {k.lower(): v for k, v in all_params.items()}
+            
+            # Mask sensitive parameters
+            masked_params = {
+                k: mask(v) if k in SENSITIVE_PARAMS else v
+                for k, v in all_params_lower.items()
+            }
+            logger.debug(f"{func.__name__} start with params={masked_params}")
+            #logger.debug(f"{func.__name__} start with args={args}, kwargs={kwargs}")
             try:
                 result = func(*args, **kwargs)  # Execute the wrapped function
                 return result  # Return the function's result
             except Exception as e:
                 # Get exception type and message
-                exception_type = type(e).__name__
-                exception_message = str(e)
-                
-                # Get stack trace
-                stack_trace = traceback.format_exc()  # Full stack trace as a string
-                
-                
-                # Output the exception information for debugging
                 logger.debug(f"Exception in {func.__name__}: {e}")
-                logger.debug(f"Exception type: {exception_type}")
-                logger.debug(f"Exception message: {exception_message}")
-                logger.debug(f"Stack trace:   {stack_trace}")
+                logger.debug(f"Exception type: {type(e).__name__}")
+                logger.debug(f"Exception message: {str(e)}")
+                logger.debug(f"Stack trace: {traceback.format_exc()}")
                  
                 raise  # Reraise the exception to maintain the original function behavior
             finally:
@@ -275,3 +254,15 @@ def log_decorator(logger):
                 logger.debug(f"{func.__name__} end")
         return wrapper
     return decorator
+
+    # Example usage
+    if __name__ == "__main__":
+        logger = configure_install_logging("example_logger")
+        
+        @log_decorator(logger)
+        def example_function(param1, param2):
+            if param1 == 'password':
+                raise ValueError('An error occurred')
+            return "Success"
+        
+        example_function('sensitive data', 'another data')
