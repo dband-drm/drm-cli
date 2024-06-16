@@ -53,19 +53,31 @@ class Config():
                     self.sqlcmd_path = location['sqlcmd_path']
 
         f.close()
+
+class EncryptResult:
+    def __init__(self,execution_mode = EXECUTION_MODE_ENCRYPT):
+        self.result = False
+        self.execution_mode = execution_mode
+        self.result_text = ""
+
 class Encrypt:
+
     def __init__(self, deploy_config, encryption_key = "", execution_mode = EXECUTION_MODE_ENCRYPT, phrase = "", new_encryption_key=""): 
         self.deploy_config = deploy_config
         self.encryption_key = encryption_key
         self.execution_mode = execution_mode
         self.phrase = phrase
         self.new_encryption_key = new_encryption_key
+        self.result_obj = EncryptResult(execution_mode) 
         build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
+
     def changepassword(self):
         """ 
         ChangePassword
         :return:
         """ 
+        logger.info(f"EXECUTION: ChangePassword")
+
         # todo 
         # by db type 
         # replace connection_string
@@ -77,23 +89,30 @@ class Encrypt:
         try:
             if (execution_mode == EXECUTION_MODE_ENCRYPT):
                 logger.info(f"EXECUTION_MODE: {EXECUTION_MODE_ENCRYPT}")
-
-                print(EXECUTION_MODE_ENCRYPT)
+               
                 crpt = crypto.Crypto(encryption_key)
                 encrypted_text = crpt.encrypt_string(self.phrase)
-                return encrypted_text
+
+                self.result_obj.result= True
+                self.result_obj.result_text = encrypted_text
             
             elif(execution_mode == EXECUTION_MODE_CHANGEPASSWORD):
                 logger.info(f"EXECUTION_MODE: {EXECUTION_MODE_CHANGEPASSWORD}")
-                changepassword()
+                self.changepassword()
+                self.result_obj.result= True
 
-            print(f"Command: {execution_mode},Encryption_key: {encryption_key},Text:{self.phrase},New_encryption_key {self.new_encryption_key}")
+            #print(f"Command: {execution_mode},Encryption_key: {encryption_key},Text:{self.phrase},New_encryption_key {self.new_encryption_key}")
         except Exception as e:
+            self.result_obj.result_text = e
         # Log any exceptions raised during the  execution
             logger.critical(f"{e}")
             logger.info(f"DRM encrypt failed!!!")
             logger.info('==================================')
+        finally:
+            return self.result_obj
+        
         os.chdir(current_working_directory)
+
 os.system('')
 
 #=======
@@ -106,9 +125,7 @@ copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
 parser.add_argument("-e", "--encrypt", help = "EncryptText", action='store_true', default=False, required = False)
 parser.add_argument("-c", "--changepassword", help = "ChangePassword",action='store_true', default=False, required = False)
-parser.add_argument("-t", "--text", help = "Text", required = False)
 parser.add_argument("-p", "--password", action='store_true', default=False, required = False)
-
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
 args = parser.parse_args()
@@ -194,7 +211,7 @@ try:
     #execution_mode = encrypt
     if (args.encrypt and args.changepassword):
         raise Exception("Error, command supports only single operation mode (--encrypt / --changepassword)")
-
+    
     new_key = None
     if (args.changepassword):
             #todo
@@ -204,9 +221,11 @@ try:
         
     else:
         execution_mode = EXECUTION_MODE_ENCRYPT
-            
+        phrase = input('Please enter phrase to  encrypt: ')
         if(encryption_key == None and not DB_SECURED):
            raise Exception("Error, DB NOT SECURED for operation mode(--encrypt )")
+
+    logger.info("Finished DRM encrypt Validation")
 
     #=========================
     # Get release name from DB
@@ -214,16 +233,25 @@ try:
     logger.info("Starting DRM encryption Operation ")
     
     build = Build(deploy_config)
-
-    print(f" Encrypt: {args.encrypt},Text: {args.text}, Newkey: {new_key}, Execution mode:{execution_mode}, Changepassword:{args.changepassword}")
-    encrypt = Encrypt(deploy_config,encryption_key,execution_mode,args.text,new_key)
-    encryptedText = encrypt.command()
-
-    logger.info(f"Encrypted phrase : {encryptedText}")
-
-    logger.info("Finished DRM encrypt successfully")
+    logger.debug(f"Debug Info Encrypt: {args.encrypt},Text: {phrase}, Newkey: ****, Execution mode:{execution_mode}, Changepassword:{args.changepassword}")
+    
+    #do encrypt operation
+    encrypt = Encrypt(deploy_config,encryption_key,execution_mode,phrase,new_key)
+    result_ = encrypt.command()
+    #result
+    if(result_.result):
+        if(result_.execution_mode == EXECUTION_MODE_ENCRYPT):
+            logger.info(f"Encrypted phrase : {result_.result_text}")
+        elif(result_.execution_mode == EXECUTION_MODE_CHANGEPASSWORD):
+            logger.info(f"Password changed ")
+        logger.info("Finished DRM encrypt successfully")    
+    else:
+        logger.info("DRM encrypt failed")
+        logger.info(f"Details: {result_.result_text}")
+        raise Exception ("DRM encrypt operation failed")
     logger.info("==================================")
     os.chdir(current_working_directory)
+    
     
     
 except Exception as e:
