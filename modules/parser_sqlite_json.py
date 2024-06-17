@@ -28,6 +28,17 @@ class Db:
         sqlite.close_connection(conn)
         return rows
     
+    @drm_logger.log_decorator(logger) 
+    def execute_command(self, command):    
+        """ 
+        Run SQL command 
+        :param command: SQL command
+        :return: result
+        """
+        conn = sqlite.create_connection(self.db_name)
+        sqlite.execute_command(conn, command)
+        sqlite.close_connection(conn)
+
 
 class Releases:
 
@@ -151,7 +162,39 @@ class Connections:
             connection_js = json.loads(json.dumps(connection_obj.__dict__))
             js['connections'].append(connection_js)
         return json.dumps(js)
+    
+    @drm_logger.log_decorator(logger) 
+    def get_connections(db_file_name):
+        """ 
+        Get a Connections
+        :param db_file_name: Database file name
+        :return: Connections
+        """
+        drm_db = Db(db_file_name)
+        #=====================================================
+        # Get Connection info by Solution ID & Connection name
+        #=====================================================
+        sql_command = "select id,connection_string from connections;"
+        rows = drm_db.select_query(sql_command)
+        return rows
+    
+    @drm_logger.log_decorator(logger) 
+    def reencrypt(db_file_name, rows):
+        """ 
+        ReEncrypt
+        :param db_file_name: Database file name
+        :param rows: rows [id][connection_string]
 
+        :return: Result
+        """
+        drm_db = Db(db_file_name)
+
+        for row in rows:
+            update_command += f"set connection_string = '{row[1]}'"
+            sql_command = f"update connections {update_command} where id = {row[0] }"
+            drm_db.execute_command(sql_command)
+        return True
+    
 class SqlScriptsVariables:
 
     logger = drm_logger.configure_logging("parser_sqlite_json.SqlScriptsVariables")

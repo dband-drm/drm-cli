@@ -5,7 +5,7 @@ import json
 import logging
 from pathlib import Path
 from getpass import getpass
-from modules import drm_logger
+from modules import parser_sqlite_json, parser_json_json, files_and_folders, drm_logger
 
 current_working_directory = Path(__file__).parent.resolve()
 drm_directory = Path(__file__).parent.resolve()
@@ -71,16 +71,54 @@ class Encrypt:
         self.result_obj = EncryptResult(execution_mode) 
         build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
 
+    def update_connection_strings(self,data):
+        """ 
+        Update_connection_strings
+        :return:
+        """ 
+        crpt = crypto.Crypto(self.encryption_key)
+        crpt_new = crypto.Crypto(self.new_encryption_key)
+
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if key == "connection_string":
+                 data[key] = crpt_new.encrypt_string( crpt.decrypt_string(value))
+            else:
+                self.update_connection_strings(value)
+        elif isinstance(data, list):
+            for item in data:
+                self.update_connection_strings(item)
+
     def changepassword(self):
         """ 
         ChangePassword
         :return:
         """ 
         logger.info(f"EXECUTION: ChangePassword")
-
-        # todo 
-        # by db type 
-        # replace connection_string
+        #========================================
+        # Choose DB & parser by installation type       
+        #========================================
+        # SQLite 
+        if (self.deploy_config.installation_type == "sqlite"):
+            parser = parser_sqlite_json
+            db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.sqlite_file_ext)
+            rows = parser.Connections.get_connections(db_file_name)
+            crpt = crypto.Crypto(self.encryption_key)
+            crpt_new = crypto.Crypto(self.new_encryption_key)
+            for r in rows:
+                r[1]=crpt_new.encrypt_string( crpt.decrypt_string(r[1]))
+            parser.Connections.reencrypt(db_file_name,rows)
+        # JSON
+        else:
+            #parser = parser_json_json
+            db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.data_file_ext)
+            file = files_and_folders.Files(db_file_name)
+            drm_db_json = file.load_file()
+            self.update_connection_strings(drm_db_json)
+            json_obj = json.dumps(drm_db_json, indent=4)
+            file.write_file(json_obj)
+        return True
+    
     def command(self):
         """ 
         Encrypt_command
