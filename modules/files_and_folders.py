@@ -198,6 +198,33 @@ class Files:
             if (error_raised):
                 raise Exception (error_message)
 
+    @drm_logger.log_decorator(logger) 
+    def get_line_in_file(self, line_number):
+        """ 
+        Get line text in a file by line number
+        :param line_number: line number
+        :return:
+        """       
+        error_raised = False
+        try:          
+            #=================
+            # Open & Read file
+            #=================
+            file = Files.open_file(self, file_op = 'r')           
+            # read all lines in a list
+            for current_line_number, line in enumerate(file, start=1):
+                # check if string present on a current line
+                if current_line_number == line_number:
+                    return (line.strip())
+
+        except Exception as e:
+            error_raised = True
+            error_message = "Find text in file failed!!! " + str(e)
+        finally:
+            Files.close_file(self, file)
+            if (error_raised):
+                raise Exception (error_message)
+
 
 class Folders:
 
