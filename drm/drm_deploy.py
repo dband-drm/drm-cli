@@ -191,7 +191,7 @@ try:
     logger.info("Build finished successfully!!!")
 
     deploy = deploy.Deploy(deploy_config, encryption_key, execution_mode)
-    deploy.deploy_release()
+    deploy.deploy_release()    
 
     logger.info("DRM deployment finished successfully!!!")
     logger.info("==================================")

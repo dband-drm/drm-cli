@@ -2,6 +2,7 @@ import os
 import subprocess
 import json
 import logging
+import asyncio
 from pathlib import Path
 from modules import drm_logger, files_and_folders
 
@@ -143,24 +144,31 @@ class MsSql:
             # Run the command
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         except:
-            # Construct the sqlcmd command without direct database
-            cmd = [
-                'sqlcmd', '-S', self.server,
-                '-U', self.username, '-P', self.password,
-                '-i', script_name, '-s', ',', '-W', '-w', '8192',
-                "-o", self.output_log_file, "-v", "DatabaseName=" + self.database
-            ]
-            if (self.sql_script_variables_list != []):
-                for var_name, var_value in self.sql_script_variables_list:
-                    cmd.append('-v')
-                    cmd.append(f'{var_name}={var_value}')
-            # Run the command
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        
+            try:
+                # Construct the sqlcmd command without direct database
+                cmd = [
+                    'sqlcmd', '-S', self.server,
+                    '-U', self.username, '-P', self.password,
+                    '-i', script_name, '-s', ',', '-W', '-w', '8192',
+                    "-o", self.output_log_file, "-v", "DatabaseName=" + self.database
+                ]
+                if (self.sql_script_variables_list != []):
+                    for var_name, var_value in self.sql_script_variables_list:
+                        cmd.append('-v')
+                        cmd.append(f'{var_name}={var_value}')
+                # Run the command
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            except:
+                pass
+
         # Check if process exit with a failure
-        if result.stderr:
-            raise Exception (result.stderr)
+        #if result.stderr:
+        #    raise Exception (result.stderr)
         f = files_and_folders.Files(self.output_log_file)
         error_text, error_line = f.find_text_in_file("msg")
         if (error_line != None):
-            raise Exception (f'Failed running script "" "", {error_text}, see details in "{self.output_log_file}", line {error_line}, ')
+            error_text = f.get_line_in_file(error_line+1)
+            error_text = error_text.replace("'", '"')
+            raise Exception (f'Failed running script ""{script_name}"", {error_text}, see details in "{self.output_log_file}", line {error_line+1}.')
+
+ 
