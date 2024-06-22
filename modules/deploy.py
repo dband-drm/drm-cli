@@ -377,6 +377,7 @@ class Deploy:
             deployment_id = uuid.uuid4()
             deploy_file_base_name = "{execution_mode}_{deployment_id}".format(execution_mode = self.execution_mode, deployment_id = deployment_id)
             try_num = 0
+            deployment_started = False
             
             #=================
             # Get release info  
@@ -517,6 +518,7 @@ class Deploy:
                             #=================
                             # Get project info
                             #=================
+                            deployment_started = False
                             project_id = js_project['id']
                             project_name = js_project['name']
                             project_targets_compare_db = js_project['targets_compare_db']
@@ -569,11 +571,8 @@ class Deploy:
                                 tasks = []
                                 # Get list targets
                                 targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text, project_targets_compare_db)
-                                for target_db in targets_list_js:
-    
+                                for target_db in targets_list_js:  
                                     tasks.append({"target_db": target_db})
-                                    #deployment_project_js["end_time"] = datetime.now().isoformat()
-                                    #deployment_solution_js["deployments_projects"].append(deployment_project_js)
                                 
                                 task_statuses = {task["target_db"]: {"status_id": "0", "status_name": DEPLOYMENT_PENDING_STATUS, "start_time": None, "end_time": None, "error_message": None} for task in tasks}
                                 task_queue = Queue()
@@ -585,6 +584,7 @@ class Deploy:
                                 def task_wrapper(task: Dict[str, Any]) -> None:
                                     target_db = task["target_db"]
                                     try:
+                                        deployment_started = True
                                         task_statuses[target_db]["start_time"] = datetime.now().isoformat()
                                         result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                         task_statuses[target_db]["status_id"] = 2
@@ -668,43 +668,46 @@ class Deploy:
                 shutil.copy(deployment_file_build_name, deployment_file_deply_name)
 
         except Exception as e:            
-            for task in task_statuses:
-                deployment_project_js = {}
-                for deployment_project_column_name in json.loads(deployments_projects_columns_list):
-                    if (deployment_project_column_name == "id"):
-                        deployment_project_js[deployment_project_column_name] = str(uuid.uuid4())
-                    elif (deployment_project_column_name == "project_id"):
-                        deployment_project_js[deployment_project_column_name] = project_id
-                        deployment_project_js["project_name"] = project_name
-                    elif (deployment_project_column_name == "target_database_name"):
-                        deployment_project_js[deployment_project_column_name] = task
-                    elif (deployment_project_column_name == "start_time"):
-                        deployment_project_js[deployment_project_column_name] = task_statuses[task]['start_time']
-                    elif (deployment_project_column_name == "end_time"):
-                        deployment_project_js[deployment_project_column_name] = task_statuses[task]['end_time']
-                    elif (deployment_project_column_name == "error_message"):
-                        deployment_project_js[deployment_project_column_name] = task_statuses[task]['error_message']
-                deployment_solution_js["deployments_projects"].append(deployment_project_js)
+            if (deployment_started):
+                for task in task_statuses:
+                    deployment_project_js = {}
+                    for deployment_project_column_name in json.loads(deployments_projects_columns_list):
+                        if (deployment_project_column_name == "id"):
+                            deployment_project_js[deployment_project_column_name] = str(uuid.uuid4())
+                        elif (deployment_project_column_name == "project_id"):
+                            deployment_project_js[deployment_project_column_name] = project_id
+                            deployment_project_js["project_name"] = project_name
+                        elif (deployment_project_column_name == "target_database_name"):
+                            deployment_project_js[deployment_project_column_name] = task
+                        elif (deployment_project_column_name == "start_time"):
+                            deployment_project_js[deployment_project_column_name] = task_statuses[task]['start_time']
+                        elif (deployment_project_column_name == "end_time"):
+                            deployment_project_js[deployment_project_column_name] = task_statuses[task]['end_time']
+                        elif (deployment_project_column_name == "error_message"):
+                            deployment_project_js[deployment_project_column_name] = task_statuses[task]['error_message']
+                    deployment_solution_js["deployments_projects"].append(deployment_project_js)
 
-            deployment_solution_js["error_message"] = f"{e}"
-            deployment_solution_js["end_time"] = datetime.now().isoformat()           
-            deployment_try_js["deployments_solutions"].append(deployment_solution_js)
-            deployment_try_js["deployment_status_id"] = 4
-            deployment_try_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
-            deployment_try_js["error_message"] = f"{e}"
-            deployment_try_js["end_time"] = datetime.now().isoformat()
-            deployment_js["deployments_tries"].append(deployment_try_js)
-            deployment_js["deployment_status_id"] = 4
-            deployment_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
-            deployment_js["error_message"] = f"{e}"
-            deployment_js["end_time"] = datetime.now().isoformat()
-            deployment_file.write_file(json.dumps(deployment_js, indent=7))
-            if (self.deploy_config.installation_type == "sqlite"):
-                self.copy_deploy_to_sqlite(deployment_js)
-                raise Exception (f'{e}, see detains in DRM database, Deployment ID {deployment_id}')
+                deployment_solution_js["error_message"] = f"{e}"
+                deployment_solution_js["end_time"] = datetime.now().isoformat()           
+                deployment_try_js["deployments_solutions"].append(deployment_solution_js)
+                deployment_try_js["deployment_status_id"] = 4
+                deployment_try_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
+                deployment_try_js["error_message"] = f"{e}"
+                deployment_try_js["end_time"] = datetime.now().isoformat()
+                deployment_js["deployments_tries"].append(deployment_try_js)
+                deployment_js["deployment_status_id"] = 4
+                deployment_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
+                deployment_js["error_message"] = f"{e}"
+                deployment_js["end_time"] = datetime.now().isoformat()
+                deployment_file.write_file(json.dumps(deployment_js, indent=7))
+                if (self.deploy_config.installation_type == "sqlite"):
+                    self.copy_deploy_to_sqlite(deployment_js)
+                    raise Exception (f'{e}, see detains in DRM database, Deployment ID {deployment_id}')
+                else:
+                    deployment_file_build_name = os.path.join(build_dir, deploy_log_file_name)
+                    deployment_file_deply_name = os.path.join(deploy_dir, deploy_log_file_name)                
+                    shutil.copy(deployment_file_build_name, deployment_file_deply_name)
+                    raise Exception (f'{e}, see detains in "{deployment_file_deply_name}"')
             else:
-                deployment_file_build_name = os.path.join(build_dir, deploy_log_file_name)
-                deployment_file_deply_name = os.path.join(deploy_dir, deploy_log_file_name)                
-                shutil.copy(deployment_file_build_name, deployment_file_deply_name)
-                raise Exception (f'{e}, see detains in "{deployment_file_deply_name}"')
+                raise Exception (f'{e}')
         

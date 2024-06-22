@@ -68,9 +68,9 @@ class MsSql:
         try:
             # Construct the sqlcmd command with direct database
             cmd = [
-                'sqlcmd', '-S', self.server, '-d', self.database,
+                self.run_script_tool_file_name, '-S', self.server, '-d', self.database,
                 '-U', self.username, '-P', self.password,
-                '-Q', query_text, '-y', '0', '-s', ',', '-W', '-w', '8192'
+                '-Q', query_text, '-y', '0', '-s', ',', '-W', '-w', '8192', '-C'
             ]
             if (self.sql_script_variables_list != []):
                 for var_name, var_value in self.sql_script_variables_list:
@@ -81,9 +81,9 @@ class MsSql:
         except:
             # Construct the sqlcmd command without direct database
             cmd = [
-                'sqlcmd', '-S', self.server,
+                self.run_script_tool_file_name, '-S', self.server,
                 '-U', self.username, '-P', self.password,
-                '-Q', query_text, '-s', ',', '-W', '-w', '8192'
+                '-Q', query_text, '-s', ',', '-W', '-w', '8192', '-C'
             ]
             if (self.sql_script_variables_list != []):
                 for var_name, var_value in self.sql_script_variables_list:
@@ -132,9 +132,9 @@ class MsSql:
         try:
             # Construct the sqlcmd command with direct database
             cmd = [
-                'sqlcmd', '-S', self.server, '-d', self.database,
+                self.run_script_tool_file_name, '-S', self.server, '-d', self.database,
                 '-U', self.username, '-P', self.password,
-                '-i', script_name, '-y', '0', '-s', ',', '-W', '-w', '8192',
+                '-i', script_name, '-y', '0', '-s', ',', '-W', '-w', '8192', '-C',
                 '-o', self.output_log_file, "-v", "DatabaseName=" + self.database
             ]
             if (self.sql_script_variables_list != []):
@@ -147,9 +147,9 @@ class MsSql:
             try:
                 # Construct the sqlcmd command without direct database
                 cmd = [
-                    'sqlcmd', '-S', self.server,
+                    self.run_script_tool_file_name, '-S', self.server,
                     '-U', self.username, '-P', self.password,
-                    '-i', script_name, '-s', ',', '-W', '-w', '8192',
+                    '-i', script_name, '-s', ',', '-W', '-w', '8192', '-C',
                     "-o", self.output_log_file, "-v", "DatabaseName=" + self.database
                 ]
                 if (self.sql_script_variables_list != []):
