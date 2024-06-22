@@ -102,7 +102,7 @@
 							"connection_string": "Server=127.0.0.1;User Id=drm;Password=drm;Encrypt=False;"
 						},
 						{
-							"name": "linux",
+							"name": "test",
 							"connection_type_id": 1,
 							"connection_string": "Server=.;User Id=drm;Password=drm;Encrypt=False;"
 						}
