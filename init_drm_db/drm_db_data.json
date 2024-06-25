@@ -100,6 +100,11 @@
 							"name": "dev",
 							"connection_type_id": 1,
 							"connection_string": "Server=127.0.0.1;User Id=drm;Password=drm;Encrypt=False;"
+						},
+						{
+							"name": "test",
+							"connection_type_id": 1,
+							"connection_string": "Server=.;User Id=drm;Password=drm;Encrypt=False;"
 						}
 					],
 					"projects": [
@@ -134,7 +139,7 @@
 						{
 							"name": "test",
 							"connection_type_id": 1,
-							"connection_string": "Server=127.0.0.1;User Id=drm;Password=drm;Encrypt=False;"
+							"connection_string": "Server=.;User Id=drm;Password=drm;Encrypt=False;"
 						}
 					],
 					"sql_scripts_variables": [
