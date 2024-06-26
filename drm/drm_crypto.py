@@ -163,7 +163,9 @@ copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
 parser.add_argument("-e", "--encrypt", help = "EncryptText", action='store_true', default=False, required = False)
 parser.add_argument("-c", "--changepassword", help = "ChangePassword",action='store_true', default=False, required = False)
-parser.add_argument("-p", "--password", action='store_true', default=False, required = False)
+parser.add_argument("-p", "--password", default=False, required = False)
+parser.add_argument("-m", "--newpassword", default=False, required = False)
+parser.add_argument("-t", "--text", default=False, required = False)
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
 args = parser.parse_args()
@@ -233,8 +235,6 @@ try:
         else:
             encryption_key = args.password
             
-        if encryption_key is None:
-            raise Exception ("Encryption key not provided!!!")
 
         security_text = "This drm cli was developed by d-band and it is amazing!!!"
 
@@ -242,7 +242,7 @@ try:
         encrypted_text = crpt.encrypt_string(security_text)
         if (encrypted_text != SECURITY_TEXT):
             raise Exception ("Wrong encryption key!!!")
-
+        
     #=========================
     # Determine execution mode
     #=========================
@@ -252,16 +252,26 @@ try:
     
     new_key = None
     if (args.changepassword):
-            #todo
-            #remove text from arguments
-            execution_mode = EXECUTION_MODE_CHANGEPASSWORD
-            new_key = getpass(prompt='Please enter new encryption key: ')    
-        
+        execution_mode = EXECUTION_MODE_CHANGEPASSWORD
+        if not (args.newpassword):
+            new_key = getpass(prompt='Please enter new encryption key: ') 
+        else:
+            new_key = args.newpassword
+        if new_key is None:
+            raise Exception ("New Encryption key not provided!!!")
     else:
         execution_mode = EXECUTION_MODE_ENCRYPT
-        phrase = input('Please enter phrase to  encrypt: ')
+
         if(encryption_key == None and not DB_SECURED):
            raise Exception("Error, DB NOT SECURED for operation mode(--encrypt )")
+
+        if not (args.text):
+            phrase = input('Please enter phrase to  encrypt: ')
+        else:
+            phrase = args.text
+
+        if phrase is None:
+            raise Exception ("Phrase not provided!!!")
 
     logger.info("Finished DRM encrypt Validation")
 
