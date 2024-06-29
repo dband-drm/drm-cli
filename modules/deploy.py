@@ -669,22 +669,23 @@ class Deploy:
         except Exception as e:  
             if (deployment_started):
                 for task in task_statuses:
-                    deployment_project_js = {}
-                    for deployment_project_column_name in json.loads(deployments_projects_columns_list):
-                        if (deployment_project_column_name == "id"):
-                            deployment_project_js[deployment_project_column_name] = str(uuid.uuid4())
-                        elif (deployment_project_column_name == "project_id"):
-                            deployment_project_js[deployment_project_column_name] = project_id
-                            deployment_project_js["project_name"] = project_name
-                        elif (deployment_project_column_name == "target_database_name"):
-                            deployment_project_js[deployment_project_column_name] = task
-                        elif (deployment_project_column_name == "start_time"):
-                            deployment_project_js[deployment_project_column_name] = task_statuses[task]['start_time']
-                        elif (deployment_project_column_name == "end_time"):
-                            deployment_project_js[deployment_project_column_name] = task_statuses[task]['end_time']
-                        elif (deployment_project_column_name == "error_message"):
-                            deployment_project_js[deployment_project_column_name] = task_statuses[task]['error_message']
-                    deployment_solution_js["deployments_projects"].append(deployment_project_js)
+                    if (task_statuses[task]['status_id'] != 0):
+                        deployment_project_js = {}
+                        for deployment_project_column_name in json.loads(deployments_projects_columns_list):
+                            if (deployment_project_column_name == "id"):
+                                deployment_project_js[deployment_project_column_name] = str(uuid.uuid4())
+                            elif (deployment_project_column_name == "project_id"):
+                                deployment_project_js[deployment_project_column_name] = project_id
+                                deployment_project_js["project_name"] = project_name
+                            elif (deployment_project_column_name == "target_database_name"):
+                                deployment_project_js[deployment_project_column_name] = task
+                            elif (deployment_project_column_name == "start_time"):
+                                deployment_project_js[deployment_project_column_name] = task_statuses[task]['start_time']
+                            elif (deployment_project_column_name == "end_time"):
+                                deployment_project_js[deployment_project_column_name] = task_statuses[task]['end_time']
+                            elif (deployment_project_column_name == "error_message"):
+                                deployment_project_js[deployment_project_column_name] = task_statuses[task]['error_message']
+                        deployment_solution_js["deployments_projects"].append(deployment_project_js)
 
                 deployment_solution_js["error_message"] = f"{e}"
                 deployment_solution_js["end_time"] = datetime.now().isoformat()           
