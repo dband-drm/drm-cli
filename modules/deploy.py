@@ -373,11 +373,11 @@ class Deploy:
         Deploy release
         :return:
         """ 
+        deployment_started = False
         try:
             deployment_id = uuid.uuid4()
             deploy_file_base_name = "{execution_mode}_{deployment_id}".format(execution_mode = self.execution_mode, deployment_id = deployment_id)
             try_num = 0
-            deployment_started = False
             
             #=================
             # Get release info  
@@ -518,7 +518,6 @@ class Deploy:
                             #=================
                             # Get project info
                             #=================
-                            deployment_started = False
                             project_id = js_project['id']
                             project_name = js_project['name']
                             project_targets_compare_db = js_project['targets_compare_db']
@@ -584,7 +583,6 @@ class Deploy:
                                 def task_wrapper(task: Dict[str, Any]) -> None:
                                     target_db = task["target_db"]
                                     try:
-                                        deployment_started = True
                                         task_statuses[target_db]["start_time"] = datetime.now().isoformat()
                                         result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                         task_statuses[target_db]["status_id"] = 2
@@ -600,6 +598,7 @@ class Deploy:
 
                                 with concurrent.futures.ThreadPoolExecutor(max_workers=project_max_degree_in_parallel) as executor:
                                     futures = []
+                                    deployment_started = True
                                     for _ in range(project_max_degree_in_parallel):
                                         if not task_queue.empty():
                                             task = task_queue.get()
@@ -667,7 +666,7 @@ class Deploy:
                 deployment_file_deply_name = os.path.join(deploy_dir, deploy_log_file_name)                
                 shutil.copy(deployment_file_build_name, deployment_file_deply_name)
 
-        except Exception as e:            
+        except Exception as e:  
             if (deployment_started):
                 for task in task_statuses:
                     deployment_project_js = {}
