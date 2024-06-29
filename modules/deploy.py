@@ -368,333 +368,409 @@ class Deploy:
 
 
     @drm_logger.log_decorator(logger) 
+    def generate_deployment_json(self, release_id, release_name, release_max_retries, deployment_id):
+        """ 
+        Generates deployment json
+        :param release_id: Release ID
+        :param release_name: Release name
+        :param release_max_retries: Max number of retries
+        :param deployment_id: Deployment ID
+        :return: json
+        """
+        deployment_js = {}
+        deployments_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, "deployments")
+        for deployment_column_name in json.loads(deployments_columns_list):
+            if (deployment_column_name == "id"):
+                deployment_js[deployment_column_name] = str(deployment_id)
+            elif (deployment_column_name == "release_id"):
+                deployment_js[deployment_column_name] = release_id
+                deployment_js["release_name"] = release_name
+            elif (deployment_column_name == "user_id"):
+                deployment_js[deployment_column_name] = 1
+            elif (deployment_column_name == "deployment_type_id"):
+                if (self.execution_mode == DEPLOY_MODE):
+                    deployment_js[deployment_column_name] = 2
+                else:
+                    deployment_js[deployment_column_name] = 1
+                deployment_js["deployment_type_name"] = self.execution_mode
+            elif (deployment_column_name == "start_time"):
+                deployment_js[deployment_column_name] = datetime.now().isoformat()
+            elif (deployment_column_name == "end_time"):
+                deployment_js[deployment_column_name] = None
+            elif (deployment_column_name == "deployment_status_id"):
+                deployment_js[deployment_column_name] = 1
+                deployment_js["deployment_status_name"] = DEPLOYMENT_IN_PROGRESS_STATUS
+            elif (deployment_column_name == "error_message"):
+                deployment_js[deployment_column_name] = None
+        deployment_js["max_retries"] = release_max_retries
+        deployment_js["deployments_tries"] = []
+        
+        return (deployment_js)
+
+    @drm_logger.log_decorator(logger) 
+    def generate_try_json(self, try_num):
+        """ 
+        Generates try json
+        :param try_num: Try number
+        :return: json
+        """
+        deployment_try_js = {}
+        deployments_tries_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, "deployments_tries")
+        for deployment_try_column_name in json.loads(deployments_tries_columns_list):
+            if (deployment_try_column_name == "id"):
+                deployment_try_js[deployment_try_column_name] = str(uuid.uuid4())
+            elif (deployment_try_column_name == "try_num"):
+                deployment_try_js[deployment_try_column_name] = try_num
+            elif (deployment_try_column_name == "start_time"):
+                deployment_try_js[deployment_try_column_name] = datetime.now().isoformat()
+            elif (deployment_try_column_name == "end_time"):
+                deployment_try_js[deployment_try_column_name] = None
+            elif (deployment_try_column_name == "error_message"):
+                deployment_try_js[deployment_try_column_name] = None
+            elif (deployment_try_column_name == "deployment_status_id"):
+                deployment_try_js[deployment_try_column_name] = 1
+                deployment_try_js["deployment_status_name"] = DEPLOYMENT_IN_PROGRESS_STATUS
+
+        deployment_try_js["deployments_solutions"] = []
+
+        return (deployment_try_js)
+
+    @drm_logger.log_decorator(logger) 
+    def generate_solution_json(self, solution_id, solution_name):
+        """ 
+        Generates solution json
+        :param solution_id: Solution ID
+        :param solution_name: Solution name
+        :return: json
+        """
+        deployment_solution_js = {}
+        deployments_solutions_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, "deployments_solutions")
+        for deployment_solution_column_name in json.loads(deployments_solutions_columns_list):
+            if (deployment_solution_column_name == "id"):
+                deployment_solution_js[deployment_solution_column_name] = str(uuid.uuid4())
+            elif (deployment_solution_column_name == "solution_id"):
+                deployment_solution_js[deployment_solution_column_name] = solution_id
+                deployment_solution_js["solution_name"] = solution_name
+            elif (deployment_solution_column_name == "start_time"):
+                deployment_solution_js[deployment_solution_column_name] = datetime.now().isoformat()
+            elif (deployment_solution_column_name == "end_time"):
+                deployment_solution_js[deployment_solution_column_name] = None
+            elif (deployment_solution_column_name == "error_message"):
+                deployment_solution_js[deployment_solution_column_name] = None
+        
+        deployment_solution_js["deployments_projects"] = []
+        
+        return (deployment_solution_js)
+
+    @drm_logger.log_decorator(logger) 
+    def generate_project_json(self, project_id, project_name):
+        """ 
+        Generates project json
+        :param project_id: Project ID
+        :param project_name: Project name
+        :return: json
+        """
+        deployments_projects_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, "deployments_projects")
+        deployment_project_js = {}
+        for deployment_project_column_name in json.loads(deployments_projects_columns_list):
+            if (deployment_project_column_name == "id"):
+                deployment_project_js[deployment_project_column_name] = str(uuid.uuid4())
+            elif (deployment_project_column_name == "project_id"):
+                deployment_project_js[deployment_project_column_name] = project_id
+                deployment_project_js["project_name"] = project_name
+            elif (deployment_project_column_name == "target_database_name"):
+                deployment_project_js[deployment_project_column_name] = None
+            elif (deployment_project_column_name == "start_time"):
+                deployment_project_js[deployment_project_column_name] = None
+            elif (deployment_project_column_name == "end_time"):
+                deployment_project_js[deployment_project_column_name] = None
+            elif (deployment_project_column_name == "error_message"):
+                deployment_project_js[deployment_project_column_name] = None
+        
+        return (deployment_project_js)
+
+    @drm_logger.log_decorator(logger) 
     def deploy_release(self):
         """ 
         Deploy release
         :return:
         """ 
         deployment_started = False
+
+        deployment_id = uuid.uuid4()
+        deploy_file_base_name = "{execution_mode}_{deployment_id}".format(execution_mode = self.execution_mode, deployment_id = deployment_id)
+        try_num = 0
+        deployment_succeeded = False
+        
+        #=================
+        # Get release info  
+        #=================
+        js_release = self.release
+        release_id = js_release['id']
+        release_name = js_release['name']
+        if "max_retries" in js_release:
+            release_max_retries = js_release['max_retries']
+        else:
+            release_max_retries = 0
+
+        deploy_file_base_name = "{execution_mode}_{deployment_id}_R{release_id}".format(execution_mode = self.execution_mode, deployment_id = deployment_id, release_id = release_id)
+        deploy_log_file_name = "{deploy_file_base_name}.json".format(deploy_file_base_name = deploy_file_base_name)
+        deploy_dir = os.path.join(current_working_directory, DEPLOY_DIR)
+        if (self.deploy_config.installation_type == "json") and not(os.path.exists(deploy_dir)):
+            os.mkdir(deploy_dir)
+        build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
+        deployment_file = files_and_folders.Files(os.path.join(build_dir, deploy_log_file_name))
+
+        #=========================
+        # Generate Deployment JSON
+        #=========================
+        deployment_js = Deploy.generate_deployment_json(self, release_id, release_name, release_max_retries, deployment_id)
+        deployment_file.write_file(json.dumps(deployment_js, indent=7))
+        deployment_js = deployment_file.load_file()
+            
         try:
-            deployment_id = uuid.uuid4()
-            deploy_file_base_name = "{execution_mode}_{deployment_id}".format(execution_mode = self.execution_mode, deployment_id = deployment_id)
-            try_num = 0
-            
-            #=================
-            # Get release info  
-            #=================
-            js_release = self.release
-            release_id = js_release['id']
-            release_name = js_release['name']
-            if "max_retries" in js_release:
-                release_max_retries = js_release['max_retries']
-            else:
-                release_max_retries = 0
 
-            deploy_file_base_name = "{execution_mode}_{deployment_id}_R{release_id}".format(execution_mode = self.execution_mode, deployment_id = deployment_id, release_id = release_id)
-            deploy_log_file_name = "{deploy_file_base_name}.json".format(deploy_file_base_name = deploy_file_base_name)
-            deploy_dir = os.path.join(current_working_directory, DEPLOY_DIR)
-            if (self.deploy_config.installation_type == "json") and not(os.path.exists(deploy_dir)):
-                os.mkdir(deploy_dir)
-            build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
-            deployment_file = files_and_folders.Files(os.path.join(build_dir, deploy_log_file_name))
-
-            deployment_js = {}
-            deployments_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, "deployments")
-            for deployment_column_name in json.loads(deployments_columns_list):
-                if (deployment_column_name == "id"):
-                    deployment_js[deployment_column_name] = str(deployment_id)
-                elif (deployment_column_name == "release_id"):
-                    deployment_js[deployment_column_name] = release_id
-                    deployment_js["release_name"] = release_name
-                elif (deployment_column_name == "user_id"):
-                    deployment_js[deployment_column_name] = 1
-                elif (deployment_column_name == "deployment_type_id"):
-                    if (self.execution_mode == DEPLOY_MODE):
-                        deployment_js[deployment_column_name] = 2
-                    else:
-                        deployment_js[deployment_column_name] = 1
-                    deployment_js["deployment_type_name"] = self.execution_mode
-                elif (deployment_column_name == "start_time"):
-                    deployment_js[deployment_column_name] = datetime.now().isoformat()
-                elif (deployment_column_name == "end_time"):
-                    deployment_js[deployment_column_name] = None
-                elif (deployment_column_name == "deployment_status_id"):
-                    deployment_js[deployment_column_name] = 1
-                    deployment_js["deployment_status_name"] = DEPLOYMENT_IN_PROGRESS_STATUS
-                elif (deployment_column_name == "error_message"):
-                    deployment_js[deployment_column_name] = None
-            deployment_js["max_retries"] = release_max_retries
-            deployment_js["deployments_tries"] = []
-            deployment_file.write_file(json.dumps(deployment_js, indent=7))
-            
-            try_num += 1
-            deployment_js = deployment_file.load_file()
-            deployment_try_js = {}
-            deployments_tries_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, "deployments_tries")
-            for deployment_try_column_name in json.loads(deployments_tries_columns_list):
-                if (deployment_try_column_name == "id"):
-                    deployment_try_js[deployment_try_column_name] = str(uuid.uuid4())
-                elif (deployment_try_column_name == "try_num"):
-                    deployment_try_js[deployment_try_column_name] = try_num
-                elif (deployment_try_column_name == "start_time"):
-                    deployment_try_js[deployment_try_column_name] = datetime.now().isoformat()
-                elif (deployment_try_column_name == "end_time"):
-                    deployment_try_js[deployment_try_column_name] = None
-                elif (deployment_try_column_name == "error_message"):
-                    deployment_try_js[deployment_try_column_name] = None
-                elif (deployment_try_column_name == "deployment_status_id"):
-                    deployment_try_js[deployment_try_column_name] = 1
-                    deployment_try_js["deployment_status_name"] = DEPLOYMENT_IN_PROGRESS_STATUS
-
-            deployment_try_js["deployments_solutions"] = []        
-            #=====================
-            # Get active solutions  
-            #=====================
-            for js_solution in js_release['solutions']:
-                if "is_active" in js_solution:
-                    solution_is_active = js_solution['is_active']
-                else:
-                    solution_is_active = 1
-                
-                if (solution_is_active):
+            while try_num <= release_max_retries and not(deployment_succeeded):
+                try:
+                    try_num += 1
                     #==================
-                    # Get solution info
+                    # Generate Try JSON
                     #==================
-                    solution_id = js_solution['id']
-                    solution_name = js_solution['name']
-                    solution_type_id = js_solution['solution_type_id']
-                    solution_path = js_solution['path']
+                    deployment_try_js = Deploy.generate_try_json(self, try_num)
 
-                    deployment_solution_js = {}
-                    deployments_solutions_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, "deployments_solutions")
-                    for deployment_solution_column_name in json.loads(deployments_solutions_columns_list):
-                        if (deployment_solution_column_name == "id"):
-                            deployment_solution_js[deployment_solution_column_name] = str(uuid.uuid4())
-                        elif (deployment_solution_column_name == "solution_id"):
-                            deployment_solution_js[deployment_solution_column_name] = solution_id
-                            deployment_solution_js["solution_name"] = solution_name
-                        elif (deployment_solution_column_name == "start_time"):
-                            deployment_solution_js[deployment_solution_column_name] = datetime.now().isoformat()
-                        elif (deployment_solution_column_name == "end_time"):
-                            deployment_solution_js[deployment_solution_column_name] = None
-                        elif (deployment_solution_column_name == "error_message"):
-                            deployment_solution_js[deployment_solution_column_name] = None
-                    
-
-                    if (solution_type_id == 1): #mssql
-                        solution_obj = MsSql(self.deploy_config)
-
-                    #====================
-                    # Get connection info
-                    #====================
-                    for js_connection in js_solution['connections']:
-                        connection_id = js_connection['id']
-                        connection_name = js_connection['name']
-                        connection_type_id = js_connection['connection_type_id']
-                        connection_string = js_connection['connection_string']
-                        if self.deploy_config.db_secured:
-                            crpt = crypto.Crypto(self.encryption_key)
-                            connection_string = crpt.decrypt_string(connection_string)
-
-                    #=========================
-                    # Get SQL script variables
-                    #=========================
-                    sql_script_variables_list = []
-                    if "sql_scripts_variables" in js_solution:
-                        for js_sql_script_variable in js_solution['sql_scripts_variables']:
-                            sql_script_variables_list.append((js_sql_script_variable['name'], js_sql_script_variable['value']))
-
-                    deployment_solution_js["deployments_projects"] = []
-                    #====================
-                    # Get active projects
-                    #====================
-                    for js_project in js_solution['projects']:
-                        if "is_active" in js_project:
-                            project_is_active = js_project['is_active']
+                    #=====================
+                    # Get active solutions  
+                    #=====================
+                    for js_solution in js_release['solutions']:
+                        if "is_active" in js_solution:
+                            solution_is_active = js_solution['is_active']
                         else:
-                            project_is_active = 1
+                            solution_is_active = 1
+                        
+                        if (solution_is_active):
+                            #==================
+                            # Get solution info
+                            #==================
+                            solution_id = js_solution['id']
+                            solution_name = js_solution['name']
+                            solution_type_id = js_solution['solution_type_id']
+                            solution_path = js_solution['path']
 
-                        if (project_is_active):
-                            #=================
-                            # Get project info
-                            #=================
-                            project_id = js_project['id']
-                            project_name = js_project['name']
-                            project_targets_compare_db = js_project['targets_compare_db']
-                            project_targets_type_id = js_project['targets_type_id']
-                            project_targets_list = js_project['targets_list']
-                            project_targets_sql_script_id = js_project['targets_sql_script_id']
-                            project_targets_sql_text = js_project['targets_sql_text']
-                            project_max_degree_in_parallel = js_project['max_degree_in_parallel']
-                            project_timeout_in_min = js_project['timeout_in_min']
-                            project_sleep_time_in_sec = js_project['sleep_time_in_sec']
-                            project_deployment_properties = js_project['deployment_properties']
-                            project_fail_on_error = js_project['fail_on_error']
+                            #=======================
+                            # Generate Solution JSON
+                            #=======================
+                            deployment_solution_js = Deploy.generate_solution_json(self, solution_id, solution_name)                            
 
-                            deployments_projects_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, "deployments_projects")
+                            if (solution_type_id == 1): #mssql
+                                solution_obj = MsSql(self.deploy_config)
 
-                            #========================
-                            # Generate upgrade script
-                            #========================
-                            source_file = solution_obj.get_source_file(solution_path, project_name)
-                            target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
-                            if (self.execution_mode == DRYRUN_MODE):
-                                deployment_project_js = {}
-                                for deployment_project_column_name in json.loads(deployments_projects_columns_list):
-                                    if (deployment_project_column_name == "id"):
-                                        deployment_project_js[deployment_project_column_name] = str(uuid.uuid4())
-                                    elif (deployment_project_column_name == "project_id"):
-                                        deployment_project_js[deployment_project_column_name] = project_id
-                                        deployment_project_js["project_name"] = project_name
-                                    elif (deployment_project_column_name == "target_database_name"):
-                                        deployment_project_js[deployment_project_column_name] = project_targets_compare_db
-                                    elif (deployment_project_column_name == "start_time"):
-                                        deployment_project_js[deployment_project_column_name] = datetime.now().isoformat()
-                                    elif (deployment_project_column_name == "end_time"):
-                                        deployment_project_js[deployment_project_column_name] = None
-                                    elif (deployment_project_column_name == "error_message"):
-                                        deployment_project_js[deployment_project_column_name] = None
-                            
-                            upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties)
-                            
-                            if (self.execution_mode == DRYRUN_MODE):
-                                deployment_project_js["end_time"] = datetime.now().isoformat()
-                                deployment_solution_js["deployments_projects"].append(deployment_project_js)
+                            #====================
+                            # Get connection info
+                            #====================
+                            for js_connection in js_solution['connections']:
+                                connection_id = js_connection['id']
+                                connection_name = js_connection['name']
+                                connection_type_id = js_connection['connection_type_id']
+                                connection_string = js_connection['connection_string']
+                                if self.deploy_config.db_secured:
+                                    crpt = crypto.Crypto(self.encryption_key)
+                                    connection_string = crpt.decrypt_string(connection_string)
 
-                            #================================
-                            # Deploy mode (Not a DryRun mode)
-                            #================================
-                            if (self.execution_mode == DEPLOY_MODE):
-                                if project_max_degree_in_parallel == None:
-                                    project_max_degree_in_parallel = 1
-                                tasks = []
-                                # Get list targets
-                                targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text, project_targets_compare_db)
-                                for target_db in targets_list_js:  
-                                    tasks.append({"target_db": target_db})
-                                
-                                task_statuses = {task["target_db"]: {"status_id": "0", "status_name": DEPLOYMENT_PENDING_STATUS, "start_time": None, "end_time": None, "error_message": None} for task in tasks}
-                                task_queue = Queue()
-                                for task in tasks:
-                                    task_queue.put(task)
+                            #=========================
+                            # Get SQL script variables
+                            #=========================
+                            sql_script_variables_list = []
+                            if "sql_scripts_variables" in js_solution:
+                                for js_sql_script_variable in js_solution['sql_scripts_variables']:
+                                    sql_script_variables_list.append((js_sql_script_variable['name'], js_sql_script_variable['value']))
 
-                                failed = False
+                            #====================
+                            # Get active projects
+                            #====================
+                            for js_project in js_solution['projects']:
+                                if "is_active" in js_project:
+                                    project_is_active = js_project['is_active']
+                                else:
+                                    project_is_active = 1
 
-                                def task_wrapper(task: Dict[str, Any]) -> None:
-                                    target_db = task["target_db"]
-                                    try:
-                                        task_statuses[target_db]["start_time"] = datetime.now().isoformat()
-                                        result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
-                                        task_statuses[target_db]["status_id"] = 2
-                                        task_statuses[target_db]["status_name"] = DEPLOYMENT_SUCCESS_STATUS
-                                    except Exception as e:
-                                        task_statuses[target_db]["status_id"] = 4
-                                        task_statuses[target_db]["status_name"] = DEPLOYMENT_FAILED_STATUS
-                                        task_statuses[target_db]["error_message"] = f"{str(e)}"
-                                        nonlocal failed
-                                        failed = True
-                                    finally:
-                                        task_statuses[target_db]["end_time"] = datetime.now().isoformat()
+                                if (project_is_active):
+                                    #=================
+                                    # Get project info
+                                    #=================
+                                    project_id = js_project['id']
+                                    project_name = js_project['name']
+                                    project_targets_compare_db = js_project['targets_compare_db']
+                                    project_targets_type_id = js_project['targets_type_id']
+                                    project_targets_list = js_project['targets_list']
+                                    project_targets_sql_script_id = js_project['targets_sql_script_id']
+                                    project_targets_sql_text = js_project['targets_sql_text']
+                                    project_max_degree_in_parallel = js_project['max_degree_in_parallel']
+                                    project_timeout_in_min = js_project['timeout_in_min']
+                                    project_sleep_time_in_sec = js_project['sleep_time_in_sec']
+                                    project_deployment_properties = js_project['deployment_properties']
+                                    project_fail_on_error = js_project['fail_on_error']
 
-                                with concurrent.futures.ThreadPoolExecutor(max_workers=project_max_degree_in_parallel) as executor:
-                                    futures = []
-                                    deployment_started = True
-                                    for _ in range(project_max_degree_in_parallel):
-                                        if not task_queue.empty():
-                                            task = task_queue.get()
-                                            futures.append(executor.submit(task_wrapper, task))
+                                    #========================
+                                    # Generate upgrade script
+                                    #========================
+                                    source_file = solution_obj.get_source_file(solution_path, project_name)
+                                    target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
+                                    upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties)
 
-                                    while futures:
-                                        done, _ = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
-                                        for future in done:
-                                            futures.remove(future)
-                                            future.result()  # Re-raise exceptions if any
+                                    #============
+                                    # DryRun mode
+                                    #============
+                                    if (self.execution_mode == DRYRUN_MODE):
+                                        
+                                        #======================
+                                        # Generate Project JSON
+                                        #======================
+                                        deployment_project_js = Deploy.generate_project_json(self, project_id, project_name)
 
-                                        if failed and project_fail_on_error:
-                                            break
+                                        deployment_project_js["target_database_name"] = project_targets_compare_db
+                                        deployment_project_js["start_time"] = datetime.now().isoformat()
+                                        deployment_project_js["end_time"] = datetime.now().isoformat()
+                                        
+                                        deployment_solution_js["deployments_projects"].append(deployment_project_js)
 
-                                        if not task_queue.empty() and not (failed and project_fail_on_error):
-                                            task = task_queue.get()
-                                            futures.append(executor.submit(task_wrapper, task))
+                                    #================================
+                                    # Deploy mode (Not a DryRun mode)
+                                    #================================
+                                    if (self.execution_mode == DEPLOY_MODE):
+                                        if project_max_degree_in_parallel == None:
+                                            project_max_degree_in_parallel = 1
+                                        tasks = []
+                                        # Get list targets
+                                        targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text, project_targets_compare_db)
+                                        for target_db in targets_list_js:  
+                                            tasks.append({"target_db": target_db})
+                                        
+                                        task_statuses = {task["target_db"]: {"status_id": "0", "status_name": DEPLOYMENT_PENDING_STATUS, "start_time": None, "end_time": None, "error_message": None} for task in tasks}
+                                        task_queue = Queue()
+                                        for task in tasks:
+                                            task_queue.put(task)
 
-                                # Mark remaining tasks as not started if there was a failure and project_fail_on_error is True
-                                if project_fail_on_error and failed:
-                                    while not task_queue.empty():
-                                        task = task_queue.get()
-                                        task_statuses[task["target_db"]]["status_id"] = 0
-                                        task_statuses[task["target_db"]]["status_name"] = DEPLOYMENT_PENDING_STATUS
-                                    raise Exception ('One or more projects deployment failed.')
+                                        failed = False
 
-                                for task in task_statuses:
-                                    deployment_project_js = {}
-                                    for deployment_project_column_name in json.loads(deployments_projects_columns_list):
-                                        if (deployment_project_column_name == "id"):
-                                            deployment_project_js[deployment_project_column_name] = str(uuid.uuid4())
-                                        elif (deployment_project_column_name == "project_id"):
-                                            deployment_project_js[deployment_project_column_name] = project_id
-                                            deployment_project_js["project_name"] = project_name
-                                        elif (deployment_project_column_name == "target_database_name"):
-                                            deployment_project_js[deployment_project_column_name] = task
-                                        elif (deployment_project_column_name == "start_time"):
-                                            deployment_project_js[deployment_project_column_name] = task_statuses[task]['start_time']
-                                        elif (deployment_project_column_name == "end_time"):
-                                            deployment_project_js[deployment_project_column_name] = task_statuses[task]['end_time']
-                                        elif (deployment_project_column_name == "error_message"):
-                                            deployment_project_js[deployment_project_column_name] = task_statuses[task]['error_message']
-                                    deployment_solution_js["deployments_projects"].append(deployment_project_js)
+                                        def task_wrapper(task: Dict[str, Any]) -> None:
+                                            target_db = task["target_db"]
+                                            try:
+                                                task_statuses[target_db]["start_time"] = datetime.now().isoformat()
+                                                result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
+                                                task_statuses[target_db]["status_id"] = 2
+                                                task_statuses[target_db]["status_name"] = DEPLOYMENT_SUCCESS_STATUS
+                                            except Exception as e:
+                                                task_statuses[target_db]["status_id"] = 4
+                                                task_statuses[target_db]["status_name"] = DEPLOYMENT_FAILED_STATUS
+                                                task_statuses[target_db]["error_message"] = f"{str(e)}"
+                                                nonlocal failed
+                                                failed = True
+                                            finally:
+                                                task_statuses[target_db]["end_time"] = datetime.now().isoformat()
+
+                                        with concurrent.futures.ThreadPoolExecutor(max_workers=project_max_degree_in_parallel) as executor:
+                                            futures = []
+                                            deployment_started = True
+                                            for _ in range(project_max_degree_in_parallel):
+                                                if not task_queue.empty():
+                                                    task = task_queue.get()
+                                                    futures.append(executor.submit(task_wrapper, task))
+
+                                            while futures:
+                                                done, _ = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
+                                                for future in done:
+                                                    futures.remove(future)
+                                                    future.result()  # Re-raise exceptions if any
+
+                                                if failed and project_fail_on_error:
+                                                    break
+
+                                                if not task_queue.empty() and not (failed and project_fail_on_error):
+                                                    task = task_queue.get()
+                                                    futures.append(executor.submit(task_wrapper, task))
+
+                                        # Mark remaining tasks as not started if there was a failure and project_fail_on_error is True
+                                        if project_fail_on_error and failed:
+                                            while not task_queue.empty():
+                                                task = task_queue.get()
+                                                task_statuses[task["target_db"]]["status_id"] = 0
+                                                task_statuses[task["target_db"]]["status_name"] = DEPLOYMENT_PENDING_STATUS
+                                            raise Exception ('One or more projects deployment failed.')
+
+                                        for task in task_statuses:
+                                            #======================
+                                            # Generate Project JSON
+                                            #======================
+                                            deployment_project_js = Deploy.generate_project_json(self, project_id, project_name)
+
+                                            deployment_project_js["target_database_name"] = task
+                                            deployment_project_js["start_time"] = task_statuses[task]['start_time']
+                                            deployment_project_js["end_time"] = task_statuses[task]['end_time']
+                                            deployment_project_js["error_message"] = task_statuses[task]['error_message']
+                                            
+                                            deployment_solution_js["deployments_projects"].append(deployment_project_js)
 
 
-                    deployment_solution_js["end_time"] = datetime.now().isoformat()
+                            deployment_solution_js["end_time"] = datetime.now().isoformat()
+                    
+                    deployment_try_js["deployments_solutions"].append(deployment_solution_js)
+                    deployment_try_js["deployment_status_id"] = 2
+                    deployment_try_js["deployment_status_name"] = DEPLOYMENT_SUCCESS_STATUS
+                    deployment_try_js["end_time"] = datetime.now().isoformat()
+
+
+
+                    deployment_js["deployments_tries"].append(deployment_try_js)
+                    deployment_js["deployment_status_id"] = 2
+                    deployment_js["deployment_status_name"] = DEPLOYMENT_SUCCESS_STATUS
+                    deployment_js["end_time"] = datetime.now().isoformat()
+                    deployment_file.write_file(json.dumps(deployment_js, indent=7))
             
-            deployment_try_js["deployments_solutions"].append(deployment_solution_js)
-            deployment_try_js["deployment_status_id"] = 2
-            deployment_try_js["deployment_status_name"] = DEPLOYMENT_SUCCESS_STATUS
-            deployment_try_js["end_time"] = datetime.now().isoformat()
+                    if (self.deploy_config.installation_type == "sqlite"):
+                        self.copy_deploy_to_sqlite(deployment_js)
+                    else:
+                        deployment_file_build_name = os.path.join(build_dir, deploy_log_file_name)
+                        deployment_file_deply_name = os.path.join(deploy_dir, deploy_log_file_name)                
+                        shutil.copy(deployment_file_build_name, deployment_file_deply_name)
+
+                    deployment_succeeded = True
+
+                except Exception as e: 
+                    if (deployment_started):
+                        for task in task_statuses:
+                            if (task_statuses[task]['status_id'] != 0):
+                                #======================
+                                # Generate Project JSON
+                                #======================
+                                deployment_project_js = Deploy.generate_project_json(self, project_id, project_name)
+
+                                deployment_project_js["target_database_name"] = task
+                                deployment_project_js["start_time"] = task_statuses[task]['start_time']
+                                deployment_project_js["end_time"] = task_statuses[task]['end_time']
+                                deployment_project_js["error_message"] = task_statuses[task]['error_message']
+                                
+                                deployment_solution_js["deployments_projects"].append(deployment_project_js)
+                                                                
+                        deployment_solution_js["error_message"] = f"{e}"
+                        deployment_solution_js["end_time"] = datetime.now().isoformat()           
+                        deployment_try_js["deployments_solutions"].append(deployment_solution_js)
+                        deployment_try_js["deployment_status_id"] = 4
+                        deployment_try_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
+                        deployment_try_js["error_message"] = f"{e}"
+                        deployment_try_js["end_time"] = datetime.now().isoformat()
+                        deployment_js["deployments_tries"].append(deployment_try_js)
+                        
+                        if (try_num <= release_max_retries):
+                            self.logger.warning(f'Deployment try failed, {e}, queue retry #{try_num} (out of max {release_max_retries} retries)')
+                        else:
+                            raise Exception (f'{e}')
+                    
+                    else:
+                        raise Exception (f'{e}')                                    
 
 
-
-            deployment_js["deployments_tries"].append(deployment_try_js)
-            deployment_js["deployment_status_id"] = 2
-            deployment_js["deployment_status_name"] = DEPLOYMENT_SUCCESS_STATUS
-            deployment_js["end_time"] = datetime.now().isoformat()
-            deployment_file.write_file(json.dumps(deployment_js, indent=7))
-    
-            if (self.deploy_config.installation_type == "sqlite"):
-                self.copy_deploy_to_sqlite(deployment_js)
-            else:
-                deployment_file_build_name = os.path.join(build_dir, deploy_log_file_name)
-                deployment_file_deply_name = os.path.join(deploy_dir, deploy_log_file_name)                
-                shutil.copy(deployment_file_build_name, deployment_file_deply_name)
-
-        except Exception as e:  
+        except Exception as e: 
             if (deployment_started):
-                for task in task_statuses:
-                    if (task_statuses[task]['status_id'] != 0):
-                        deployment_project_js = {}
-                        for deployment_project_column_name in json.loads(deployments_projects_columns_list):
-                            if (deployment_project_column_name == "id"):
-                                deployment_project_js[deployment_project_column_name] = str(uuid.uuid4())
-                            elif (deployment_project_column_name == "project_id"):
-                                deployment_project_js[deployment_project_column_name] = project_id
-                                deployment_project_js["project_name"] = project_name
-                            elif (deployment_project_column_name == "target_database_name"):
-                                deployment_project_js[deployment_project_column_name] = task
-                            elif (deployment_project_column_name == "start_time"):
-                                deployment_project_js[deployment_project_column_name] = task_statuses[task]['start_time']
-                            elif (deployment_project_column_name == "end_time"):
-                                deployment_project_js[deployment_project_column_name] = task_statuses[task]['end_time']
-                            elif (deployment_project_column_name == "error_message"):
-                                deployment_project_js[deployment_project_column_name] = task_statuses[task]['error_message']
-                        deployment_solution_js["deployments_projects"].append(deployment_project_js)
-
-                deployment_solution_js["error_message"] = f"{e}"
-                deployment_solution_js["end_time"] = datetime.now().isoformat()           
-                deployment_try_js["deployments_solutions"].append(deployment_solution_js)
-                deployment_try_js["deployment_status_id"] = 4
-                deployment_try_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
-                deployment_try_js["error_message"] = f"{e}"
-                deployment_try_js["end_time"] = datetime.now().isoformat()
-                deployment_js["deployments_tries"].append(deployment_try_js)
                 deployment_js["deployment_status_id"] = 4
                 deployment_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
                 deployment_js["error_message"] = f"{e}"
