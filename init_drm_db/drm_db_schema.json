@@ -671,6 +671,12 @@
 					"data_type": "string",
 					"length": 200,
 					"is_nullable": true
+				},				
+				{
+					"name": "deployment_status_id",
+					"data_type": "integer",
+					"is_nullable": false,
+					"default": 0
 				}				
 			],
 			"constraints": [
@@ -691,6 +697,13 @@
 					"type": "FK",
 					"columns": "solution_id",
 					"ref_table": "solutions",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_deployments_solutions__deployment_status_id",
+					"type": "FK",
+					"columns": "deployment_status_id",
+					"ref_table": "deployment_statuses",
 					"ref_columns": "id"
 				}
 			]	
@@ -734,7 +747,13 @@
 					"data_type": "string",
 					"length": 200,
 					"is_nullable": true
-				}				
+				},			
+				{
+					"name": "deployment_status_id",
+					"data_type": "integer",
+					"is_nullable": false,
+					"default": 0
+				}
 			],
 			"constraints": [
 				{
@@ -754,6 +773,13 @@
 					"type": "FK",
 					"columns": "project_id",
 					"ref_table": "projects",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_deployments_projects__deployment_status_id",
+					"type": "FK",
+					"columns": "deployment_status_id",
+					"ref_table": "deployment_statuses",
 					"ref_columns": "id"
 				}
 			]	

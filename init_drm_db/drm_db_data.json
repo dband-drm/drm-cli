@@ -81,6 +81,10 @@
 				{
 					"id": "4",
 					"name": "Failed"
+				},
+				{
+					"id": "5",
+					"name": "Already deployed"
 				}
 			]
 		}

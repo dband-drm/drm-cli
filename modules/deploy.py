@@ -31,6 +31,7 @@ DEPLOYMENT_IN_PROGRESS_STATUS = "In progress"
 DEPLOYMENT_SUCCESS_STATUS = "Finished successfully"
 DEPLOYMENT_CANCELED_STATUS = "Canceled"
 DEPLOYMENT_FAILED_STATUS = "Failed"
+DEPLOYMENT_ALREADY_DEPLOYED_STATUS = "Already deployed"
 
 class MsSql:
 
@@ -303,6 +304,7 @@ class Deploy:
             if table_name in deployment_js:
                 deployments_tries_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, table_name)
                 for deployment_try_js in deployment_js[table_name]:
+                    table_name = "deployments_tries"
                     columns = []
                     values = []
                     for deployment_try_column_name in json.loads(deployments_tries_columns_list):
@@ -326,6 +328,7 @@ class Deploy:
                         if table_name in deployment_try_js:
                             deployments_solutions_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, table_name)
                             for deployment_solution_js in deployment_try_js[table_name]:
+                                table_name = "deployments_solutions"
                                 columns = []
                                 values = []
                                 for deployment_solution_column_name in json.loads(deployments_solutions_columns_list):
@@ -349,6 +352,7 @@ class Deploy:
                                     if table_name in deployment_solution_js:
                                         deployments_projects_columns_list = self.schema_parser.Generic.get_table_columns_list(self.schema_file_name, table_name)
                                         for deployment_project_js in deployment_solution_js[table_name]:
+                                            table_name = "deployments_projects"
                                             columns = []
                                             values = []
                                             insert_record = True
@@ -397,11 +401,11 @@ class Deploy:
                 deployment_js[deployment_column_name] = datetime.now().isoformat()
             elif (deployment_column_name == "end_time"):
                 deployment_js[deployment_column_name] = None
+            elif (deployment_column_name == "error_message"):
+                deployment_js[deployment_column_name] = None
             elif (deployment_column_name == "deployment_status_id"):
                 deployment_js[deployment_column_name] = 1
                 deployment_js["deployment_status_name"] = DEPLOYMENT_IN_PROGRESS_STATUS
-            elif (deployment_column_name == "error_message"):
-                deployment_js[deployment_column_name] = None
         deployment_js["max_retries"] = release_max_retries
         deployment_js["deployments_tries"] = []
         
@@ -457,6 +461,9 @@ class Deploy:
                 deployment_solution_js[deployment_solution_column_name] = None
             elif (deployment_solution_column_name == "error_message"):
                 deployment_solution_js[deployment_solution_column_name] = None
+            elif (deployment_solution_column_name == "deployment_status_id"):
+                deployment_solution_js[deployment_solution_column_name] = 1
+                deployment_solution_js["deployment_status_name"] = DEPLOYMENT_IN_PROGRESS_STATUS
         
         deployment_solution_js["deployments_projects"] = []
         
@@ -486,6 +493,9 @@ class Deploy:
                 deployment_project_js[deployment_project_column_name] = None
             elif (deployment_project_column_name == "error_message"):
                 deployment_project_js[deployment_project_column_name] = None
+            elif (deployment_project_column_name == "deployment_status_id"):
+                deployment_project_js[deployment_project_column_name] = 1
+                deployment_project_js["deployment_status_name"] = DEPLOYMENT_IN_PROGRESS_STATUS
         
         return (deployment_project_js)
 
@@ -530,6 +540,8 @@ class Deploy:
             
         try:
 
+            task_statuses = {}
+            
             while try_num <= release_max_retries and not(deployment_succeeded):
                 try:
                     try_num += 1
@@ -610,18 +622,19 @@ class Deploy:
                                     project_deployment_properties = js_project['deployment_properties']
                                     project_fail_on_error = js_project['fail_on_error']
 
-                                    #========================
-                                    # Generate upgrade script
-                                    #========================
-                                    source_file = solution_obj.get_source_file(solution_path, project_name)
-                                    target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
-                                    upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties)
+                                    source_file = solution_obj.get_source_file(solution_path, project_name)                                    
 
                                     #============
                                     # DryRun mode
                                     #============
                                     if (self.execution_mode == DRYRUN_MODE):
                                         
+                                        #========================
+                                        # Generate upgrade script
+                                        #========================
+                                        target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
+                                        upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties)
+    
                                         #======================
                                         # Generate Project JSON
                                         #======================
@@ -639,64 +652,127 @@ class Deploy:
                                     if (self.execution_mode == DEPLOY_MODE):
                                         if project_max_degree_in_parallel == None:
                                             project_max_degree_in_parallel = 1
-                                        tasks = []
+                                        pending_tasks = []
+                                        failed_tasks = []
+
+                                        target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
+
                                         # Get list targets
                                         targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text, project_targets_compare_db)
-                                        for target_db in targets_list_js:  
-                                            tasks.append({"target_db": target_db})
+
+                                        if (task_statuses != {}):
+                                            for target_db in targets_list_js:  
+                                                # If did not deploy in former run within the same deployment --> run it now
+                                                if(task_statuses[target_db]['status_id'] == 0):
+                                                    pending_tasks.append({"target_db": target_db})
+                                                    task_statuses[target_db] = {"status_id": task_statuses[target_db]['status_id'], "status_name": task_statuses[target_db]['status_name'], "start_time": None, "end_time": None, "error_message": None}
+                                                # If deployed successfully in former run within the same deployment --> mark it as already deployed
+                                                elif(task_statuses[target_db]['status_id'] == 2):
+                                                    task_statuses[target_db] = {"status_id": 5, "status_name": DEPLOYMENT_ALREADY_DEPLOYED_STATUS, "start_time": task_statuses[target_db]['start_time'], "end_time": task_statuses[target_db]['end_time'], "error_message": task_statuses[target_db]['error_message']}
+                                                else:
+                                                    task_statuses[target_db] = {"status_id": task_statuses[target_db]['status_id'], "status_name": task_statuses[target_db]['status_name'], "start_time": task_statuses[target_db]['start_time'], "end_time": task_statuses[target_db]['end_time'], "error_message": task_statuses[target_db]['error_message']}
+                                                    # Former failed deployment
+                                                    if(task_statuses[target_db]['status_id'] == 4):
+                                                        failed_tasks.append({"target_db": target_db})
+                                        else:
+                                            # New deployment --> deploy all target databases
+                                            for target_db in targets_list_js:  
+                                                pending_tasks.append({"target_db": target_db})
+                                                task_statuses[target_db] = {"status_id": "0", "status_name": DEPLOYMENT_PENDING_STATUS, "start_time": None, "end_time": None, "error_message": None}                                                                              
                                         
-                                        task_statuses = {task["target_db"]: {"status_id": "0", "status_name": DEPLOYMENT_PENDING_STATUS, "start_time": None, "end_time": None, "error_message": None} for task in tasks}
-                                        task_queue = Queue()
-                                        for task in tasks:
-                                            task_queue.put(task)
-
-                                        failed = False
-
-                                        def task_wrapper(task: Dict[str, Any]) -> None:
+                                        #===================================
+                                        # Resolve former deployment failures
+                                        #===================================
+                                        for task in failed_tasks:
+                                            
                                             target_db = task["target_db"]
+                                            #========================
+                                            # Generate upgrade script
+                                            #========================
+                                            target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)                                              
+                                            upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties)
                                             try:
                                                 task_statuses[target_db]["start_time"] = datetime.now().isoformat()
                                                 result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                                 task_statuses[target_db]["status_id"] = 2
                                                 task_statuses[target_db]["status_name"] = DEPLOYMENT_SUCCESS_STATUS
+                                                task_statuses[target_db]["error_message"] = None
                                             except Exception as e:
                                                 task_statuses[target_db]["status_id"] = 4
                                                 task_statuses[target_db]["status_name"] = DEPLOYMENT_FAILED_STATUS
                                                 task_statuses[target_db]["error_message"] = f"{str(e)}"
-                                                nonlocal failed
-                                                failed = True
+                                                if project_fail_on_error and failed:
+                                                    raise Exception ('One or more projects deployment failed.')
+
                                             finally:
                                                 task_statuses[target_db]["end_time"] = datetime.now().isoformat()
+                                        
+                                        #==============================
+                                        # Run pending tasks in parallel
+                                        #==============================
+                                        if(len(pending_tasks) > 0):
+                                        
+                                            #========================
+                                            # Generate upgrade script
+                                            #========================
+                                            target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
+                                            upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties)
 
-                                        with concurrent.futures.ThreadPoolExecutor(max_workers=project_max_degree_in_parallel) as executor:
-                                            futures = []
-                                            deployment_started = True
-                                            for _ in range(project_max_degree_in_parallel):
-                                                if not task_queue.empty():
+                                            # Queue pending tasks in parallel
+                                            task_queue = Queue()
+                                            for task in pending_tasks:
+                                                task_queue.put(task)
+
+                                            failed = False
+
+                                            def task_wrapper(task: Dict[str, Any]) -> None:
+                                                target_db = task["target_db"]
+                                                try:
+                                                    task_statuses[target_db]["start_time"] = datetime.now().isoformat()
+                                                    result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
+                                                    task_statuses[target_db]["status_id"] = 2
+                                                    task_statuses[target_db]["status_name"] = DEPLOYMENT_SUCCESS_STATUS
+                                                except Exception as e:
+                                                    task_statuses[target_db]["status_id"] = 4
+                                                    task_statuses[target_db]["status_name"] = DEPLOYMENT_FAILED_STATUS
+                                                    task_statuses[target_db]["error_message"] = f"{str(e)}"
+                                                    nonlocal failed
+                                                    failed = True
+                                                finally:
+                                                    task_statuses[target_db]["end_time"] = datetime.now().isoformat()
+
+                                            with concurrent.futures.ThreadPoolExecutor(max_workers=project_max_degree_in_parallel) as executor:
+                                                futures = []
+                                                deployment_started = True
+                                                for _ in range(project_max_degree_in_parallel):
+                                                    if not task_queue.empty():
+                                                        task = task_queue.get()
+                                                        futures.append(executor.submit(task_wrapper, task))
+
+                                                while futures:
+                                                    done, _ = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
+                                                    for future in done:
+                                                        futures.remove(future)
+                                                        future.result()  # Re-raise exceptions if any
+
+                                                    if failed and project_fail_on_error:
+                                                        break
+
+                                                    if not task_queue.empty() and not (failed and project_fail_on_error):
+                                                        task = task_queue.get()
+                                                        futures.append(executor.submit(task_wrapper, task))
+
+                                            # Mark remaining pending_tasks as not started if there was a failure and project_fail_on_error is True
+                                            if project_fail_on_error and failed:
+                                                while not task_queue.empty():
                                                     task = task_queue.get()
-                                                    futures.append(executor.submit(task_wrapper, task))
+                                                    task_statuses[task["target_db"]]["status_id"] = 0
+                                                    task_statuses[task["target_db"]]["status_name"] = DEPLOYMENT_PENDING_STATUS
+                                                raise Exception ('One or more projects deployment failed.')
 
-                                            while futures:
-                                                done, _ = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
-                                                for future in done:
-                                                    futures.remove(future)
-                                                    future.result()  # Re-raise exceptions if any
-
-                                                if failed and project_fail_on_error:
-                                                    break
-
-                                                if not task_queue.empty() and not (failed and project_fail_on_error):
-                                                    task = task_queue.get()
-                                                    futures.append(executor.submit(task_wrapper, task))
-
-                                        # Mark remaining tasks as not started if there was a failure and project_fail_on_error is True
-                                        if project_fail_on_error and failed:
-                                            while not task_queue.empty():
-                                                task = task_queue.get()
-                                                task_statuses[task["target_db"]]["status_id"] = 0
-                                                task_statuses[task["target_db"]]["status_name"] = DEPLOYMENT_PENDING_STATUS
-                                            raise Exception ('One or more projects deployment failed.')
-
+                                        #============================================
+                                        # Summaries all projects deployments statuses
+                                        #============================================
                                         for task in task_statuses:
                                             #======================
                                             # Generate Project JSON
@@ -707,10 +783,14 @@ class Deploy:
                                             deployment_project_js["start_time"] = task_statuses[task]['start_time']
                                             deployment_project_js["end_time"] = task_statuses[task]['end_time']
                                             deployment_project_js["error_message"] = task_statuses[task]['error_message']
+                                            deployment_project_js["deployment_status_id"] = task_statuses[task]['status_id']
+                                            deployment_project_js["deployment_status_name"] = task_statuses[task]['status_name']
                                             
                                             deployment_solution_js["deployments_projects"].append(deployment_project_js)
 
 
+                            deployment_solution_js["deployment_status_id"] = 2
+                            deployment_solution_js["deployment_status_name"] = DEPLOYMENT_SUCCESS_STATUS
                             deployment_solution_js["end_time"] = datetime.now().isoformat()
                     
                     deployment_try_js["deployments_solutions"].append(deployment_solution_js)
@@ -748,11 +828,15 @@ class Deploy:
                                 deployment_project_js["start_time"] = task_statuses[task]['start_time']
                                 deployment_project_js["end_time"] = task_statuses[task]['end_time']
                                 deployment_project_js["error_message"] = task_statuses[task]['error_message']
-                                
+                                deployment_project_js["deployment_status_id"] = task_statuses[task]['status_id']
+                                deployment_project_js["deployment_status_name"] = task_statuses[task]['status_name']
+                                            
                                 deployment_solution_js["deployments_projects"].append(deployment_project_js)
                                                                 
-                        deployment_solution_js["error_message"] = f"{e}"
                         deployment_solution_js["end_time"] = datetime.now().isoformat()           
+                        deployment_solution_js["error_message"] = f"{e}"
+                        deployment_solution_js["deployment_status_id"] = 4
+                        deployment_solution_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
                         deployment_try_js["deployments_solutions"].append(deployment_solution_js)
                         deployment_try_js["deployment_status_id"] = 4
                         deployment_try_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
@@ -761,7 +845,7 @@ class Deploy:
                         deployment_js["deployments_tries"].append(deployment_try_js)
                         
                         if (try_num <= release_max_retries):
-                            self.logger.warning(f'Deployment try failed, {e}, queue retry #{try_num} (out of max {release_max_retries} retries)')
+                            self.logger.error(f'Deployment try failed, {e}, queue retry #{try_num} (out of max {release_max_retries} retries)')
                         else:
                             raise Exception (f'{e}')
                     
