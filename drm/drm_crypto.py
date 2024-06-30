@@ -5,7 +5,7 @@ import json
 import logging
 from pathlib import Path
 from getpass import getpass
-from modules import parser_sqlite_json, parser_json_json, files_and_folders, drm_logger
+from modules import drm_logger
 
 current_working_directory = Path(__file__).parent.resolve()
 drm_directory = Path(__file__).parent.resolve()
@@ -70,6 +70,12 @@ class Encrypt:
         self.new_encryption_key = new_encryption_key
         self.result_obj = EncryptResult(execution_mode) 
         build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
+        # SQLite to JSON
+        if (deploy_config.installation_type == "sqlite"):
+            self.parser = parser_sqlite_json
+        else:
+            self.parser = parser_json_json
+        
 
     def update_connection_strings(self,data):
         """ 
@@ -98,19 +104,19 @@ class Encrypt:
         #========================================
         # Choose DB & parser by installation type       
         #========================================
-        # SQLite 
+        # Move to parser  reencrypt
+        # TODO ADD update config after reencrypt
+        #SQLite
         if (self.deploy_config.installation_type == "sqlite"):
-            parser = parser_sqlite_json
             db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.sqlite_file_ext)
-            rows = parser.Connections.get_connections(db_file_name)
+            rows = self.parser.Connections.get_connections(db_file_name)
             crpt = crypto.Crypto(self.encryption_key)
             crpt_new = crypto.Crypto(self.new_encryption_key)
             for r in rows:
                 r[1]=crpt_new.encrypt_string( crpt.decrypt_string(r[1]))
-            parser.Connections.reencrypt(db_file_name,rows)
+            self.parser.Connections.reencrypt(db_file_name,rows)
         # JSON
         else:
-            #parser = parser_json_json
             db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.data_file_ext)
             file = files_and_folders.Files(db_file_name)
             drm_db_json = file.load_file()
@@ -161,11 +167,16 @@ description = "This is a DRM CLI, developed by d-band that deploys releases conf
 copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
  
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
-parser.add_argument("-e", "--encrypt", help = "EncryptText", action='store_true', default=False, required = False)
-parser.add_argument("-c", "--changepassword", help = "ChangePassword",action='store_true', default=False, required = False)
-parser.add_argument("-p", "--password", default=False, required = False)
-parser.add_argument("-m", "--newpassword", default=False, required = False)
-parser.add_argument("-t", "--text", default=False, required = False)
+# Create a mutually exclusive group for the flags
+group = parser.add_mutually_exclusive_group(required=True)
+
+# Add the flags to the group
+group.add_argument("-e", "--encrypt", help = "EncryptText", action='store_true')
+group.add_argument("-c", "--changepassword", help = "ChangePassword",action='store_true')
+
+parser.add_argument("-p", "--password", required = False)
+parser.add_argument("-n", "--newpassword", required = False)
+parser.add_argument("-t", "--text" , required = False)
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
 args = parser.parse_args()
@@ -220,8 +231,7 @@ try:
     #===============
     from modules.builder import Build
     from modules.validator import Validate
-    from modules import crypto, deploy
-    
+    from modules import crypto, parser_sqlite_json,parser_json_json, files_and_folders
     #======================
     # Verify encryption key
     #======================
@@ -246,11 +256,9 @@ try:
     #=========================
     # Determine execution mode
     #=========================
-    #execution_mode = encrypt
-    if (args.encrypt and args.changepassword):
-        raise Exception("Error, command supports only single operation mode (--encrypt / --changepassword)")
-    
+
     new_key = None
+    phrase =None
     if (args.changepassword):
         execution_mode = EXECUTION_MODE_CHANGEPASSWORD
         if not (args.newpassword):
@@ -259,7 +267,8 @@ try:
             new_key = args.newpassword
         if new_key is None:
             raise Exception ("New Encryption key not provided!!!")
-    else:
+        
+    if (args.encrypt):
         execution_mode = EXECUTION_MODE_ENCRYPT
 
         if(encryption_key == None and not DB_SECURED):
