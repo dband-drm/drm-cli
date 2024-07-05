@@ -179,15 +179,23 @@ def mask(data):
     :return: masked data
     """
     if isinstance(data, str):
-        # Check if it's a SQL command and mask sensitive information
-        if "insert into" in data.lower() or "update" in data.lower():
-            return mask_sql_command(data.lower())
+        # Create a list of values
+        values_list = [ "insert into", "update", "delete","connections","server=","create","drop","pragma"]
+        # Define the string to check
+        input_string = data.lower()
+        # Convert the input string to a list of words
+        input_list = input_string.split()
+        # Check if any value in values_list exists in input_list
+        exists = any(value in input_list for value in values_list)
+        # Check if it's a  command and mask sensitive information
+        if exists :
+            return mask_command(data.lower())
         return "****"
     elif isinstance(data, list):
         return ["****" if isinstance(item, str) else item for item in data]
     return data
 
-def mask_sql_command(command):
+def mask_command(command):
     """Mask sensitive information in a SQL command.
     :param data: command
     :return: masked command
@@ -197,6 +205,8 @@ def mask_sql_command(command):
         (r"(?i)(password\s*=\s*)('[^']*'|[^;,\s]*)", r"\1'****'"),
         (r"(?i)(user\s*id\s*=\s*)('[^']*'|[^;,\s]*)", r"\1'****'"),
         (r"(?i)(server\s*=\s*)('[^']*'|[^;,\s]*)", r"\1'****'"),
+        (r"(?i)(connection_string\s*=\s*)('[^']*'|[^;,=\s]*)", r"\1'****'"), 
+        (r"(?i)(connection_string\s*:\s*)('[^']*'|[^;,\s]*)", r"\1'****'"),
         # Add more patterns as needed
         
     ]
@@ -210,7 +220,8 @@ def log_decorator(logger):
     :param logger: logger
     :return: NULL
     """ 
-    SENSITIVE_PARAMS = ['password', 'command', 'columns_values', 'host', 'server']
+    #SENSITIVE_PARAMS
+    SENSITIVE_PARAMS = ['plaintext','data','password', 'command', 'columns_values', 'host', 'server','connection_string','query','encryption_key','connections']
     def decorator(func):
         """ Configure decorator
         :param func: func
@@ -236,14 +247,14 @@ def log_decorator(logger):
                 k: mask(v) if k in SENSITIVE_PARAMS else v
                 for k, v in all_params_lower.items()
             }
-            logger.debug(f"{func.__name__} start with params={masked_params}")
+            logger.debug(f"{func.__qualname__} start with params={masked_params}")
             #logger.debug(f"{func.__name__} start with args={args}, kwargs={kwargs}")
             try:
                 result = func(*args, **kwargs)  # Execute the wrapped function
                 return result  # Return the function's result
             except Exception as e:
                 # Get exception type and message
-                logger.debug(f"Exception in {func.__name__}: {e}")
+                logger.debug(f"Exception in {func.__qualname__}: {e}")
                 logger.debug(f"Exception type: {type(e).__name__}")
                 logger.debug(f"Exception message: {str(e)}")
                 logger.debug(f"Stack trace: {traceback.format_exc()}")
@@ -251,7 +262,7 @@ def log_decorator(logger):
                 raise  # Reraise the exception to maintain the original function behavior
             finally:
                 # Log function end, regardless of whether an exception occurred
-                logger.debug(f"{func.__name__} end")
+                logger.debug(f"{func.__qualname__} end")
         return wrapper
     return decorator
 
