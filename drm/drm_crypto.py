@@ -87,8 +87,13 @@ class Encrypt:
 
         if isinstance(data, dict):
             for key, value in data.items():
-                if key == "connection_string":
-                 data[key] = crpt_new.encrypt_string( crpt.decrypt_string(value))
+                if key == "connections":#"connection_string":
+                 conn = value
+                 for item in conn:
+                    for key, value in item.items():
+                        if key == "connection_string":
+                            item[key] = crpt_new.encrypt_string( crpt.decrypt_string(value))
+                       # data[key] = crpt_new.encrypt_string( crpt.decrypt_string(value))
             else:
                 self.update_connection_strings(value)
         elif isinstance(data, list):
@@ -112,9 +117,13 @@ class Encrypt:
             rows = self.parser.Connections.get_connections(db_file_name)
             crpt = crypto.Crypto(self.encryption_key)
             crpt_new = crypto.Crypto(self.new_encryption_key)
+            new_rows = list()
+
             for r in rows:
-                r[1]=crpt_new.encrypt_string( crpt.decrypt_string(r[1]))
-            self.parser.Connections.reencrypt(db_file_name,rows)
+                tuple_element = ((r[0],crpt_new.encrypt_string( crpt.decrypt_string(r[1]))))
+                new_rows.append(tuple_element)
+            new_rows = tuple(new_rows)
+            self.parser.Connections.reencrypt(db_file_name,new_rows)
         # JSON
         else:
             db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.data_file_ext)
@@ -123,6 +132,25 @@ class Encrypt:
             self.update_connection_strings(drm_db_json)
             json_obj = json.dumps(drm_db_json, indent=4)
             file.write_file(json_obj)
+
+        #update config
+        ##TODO
+        logger.info("Updating Configuration")
+
+        js = self.deploy_config.full_config
+        security_text = "This drm cli was developed by d-band and it is amazing!!!"
+        crpt = crypto.Crypto(self.new_encryption_key)
+        encrypted_text = crpt.encrypt_string(security_text)
+        installation_info = js['installation_info']
+        installation_info['security_text'] = encrypted_text
+        
+        json_obj = json.dumps(js, indent=4)
+
+        file = files_and_folders.Files( os.path.join(current_working_directory, DEPLOY_CONFIG_FILE_NAME))
+        file.write_file(json_obj)
+
+        logger.info("Configuration Updated")
+
         return True
     
     def command(self):

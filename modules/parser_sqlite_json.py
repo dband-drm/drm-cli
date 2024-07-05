@@ -190,7 +190,7 @@ class Connections:
         drm_db = Db(db_file_name)
 
         for row in rows:
-            update_command += f"set connection_string = '{row[1]}'"
+            update_command = f"set connection_string = '{row[1]}'"
             sql_command = f"update connections {update_command} where id = {row[0] }"
             drm_db.execute_command(sql_command)
         return True
