@@ -137,3 +137,25 @@ class ParserJsonSqlite:
 		
 		sql_command = "insert into {table_name} ({columns_names}) values ({columns_values})".format(table_name = table_name, columns_names = columns_names_list, columns_values = columns_values_list)
 		return sql_command
+
+	@drm_logger.log_decorator(logger) 
+	def update_row (self, table_name, columns_names, columns_values, where_query):
+		""" 
+        Generate an update record in a table command
+        :param table_name: Table name
+        :param columns_names: list of columns
+        :param columns_values: List of values respectively
+        :return: SQL Command (string)
+        """
+		columns_names_list = ", ".join(columns_names)
+		columns_values_list = ", ".join([f"'{value}'" if isinstance(value, str) else str(value) for value in columns_values])
+		update_command = " set "
+		for c in columns_names:
+			for value in columns_values:
+				update_command += f"{c} = '{value if isinstance(value, str) else str(value)}',"
+		#remove last ,
+		if(update_command != " set "):
+			update_command = update_command[:-1]
+
+		sql_command = f"update {table_name} {update_command} where {where_query}"
+		return sql_command
