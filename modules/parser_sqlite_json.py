@@ -338,6 +338,7 @@ class Deployments:
         """
         task_statuses = {}
         last_deployment_id = None
+        deployment_status_id = None
          
         #=============================
         # Check last deployment status
@@ -347,6 +348,7 @@ class Deployments:
         for row in rows:
             last_deployment_id = row[0]
             deployment_status_id = row[1]
+
         
         #========================================================================================
         # If last deployment did not fully succeeded --> get last status for each target database
