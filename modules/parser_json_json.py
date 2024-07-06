@@ -385,6 +385,7 @@ class Deployments:
         """
         task_statuses = {}
         last_deployment_id = None
+        deployment_status_id = None
         
         if (self.latest_deployment_file != None):
             #=============================
@@ -392,7 +393,8 @@ class Deployments:
             #=============================
             file = files_and_folders.Files(self.latest_deployment_file)
             deployment_js = file.load_file()
-            deployment_status_id = deployment_js['deployment_status_id']
+            if ('deployment_status_id' in deployment_js):
+                deployment_status_id = deployment_js['deployment_status_id']
             
             #========================================================================================
             # If last deployment did not fully succeeded --> get last status for each target database

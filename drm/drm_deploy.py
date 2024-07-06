@@ -15,6 +15,7 @@ drm_directory = Path(__file__).parent.resolve()
 #===========
 DRYRUN_MODE = "DryRun"
 DEPLOY_MODE = "Deploy"
+ALIGN_MODE = "Align"
 DEPLOY_CONFIG_FILE_NAME = "drm_deploy.config"
 		
 #================
@@ -88,6 +89,7 @@ parser.add_argument("-r", "--release", help = "Release ID", required = True)
 parser.add_argument("--password", action='store_true', default=False, required = False)
 parser.add_argument("--dryrun", action='store_true', default=False, required = False)
 parser.add_argument("--deploy", action='store_true', default=False, required = False)
+parser.add_argument("--align", action='store_true', default=False, required = False)
 
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
@@ -170,18 +172,28 @@ try:
     # Determine execution mode
     #=========================
     execution_mode = DRYRUN_MODE
-    if (args.dryrun and args.deploy):
-        raise Exception("Error, command supports only single operation mode (--dryrun / --deploy)")
+    methods_count = 0
+    if (args.dryrun):
+        methods_count += 1
+    if (args.deploy):
+        methods_count += 1
+    if (args.align):
+        methods_count += 1
+
+    if (methods_count > 1):
+        raise Exception("Error, command supports only single operation mode (--dryrun / --deploy / --align)")
 
     if (args.deploy):
         execution_mode = DEPLOY_MODE
+    if (args.align):
+        execution_mode = ALIGN_MODE
     else:
         execution_mode = DRYRUN_MODE
 
     #=========================
     # Get release name from DB
     #=========================
-    logger.info('Starting DRM deployment (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(release_id = args.release, connection_name = args.connection))
+    logger.info('Starting DRM {execution_mode} (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(execution_mode = execution_mode, release_id = args.release, connection_name = args.connection))
     
     logger.info("Building release...")   
     build = Build(deploy_config)
@@ -193,7 +205,7 @@ try:
     deploy = deploy.Deploy(deploy_config, encryption_key, execution_mode, args.connection)
     deploy.deploy_release()    
 
-    logger.info("DRM deployment finished successfully!!!")
+    logger.info(f"DRM {execution_mode} finished successfully!!!")
     logger.info("==================================")
     os.chdir(current_working_directory)
     
@@ -201,6 +213,6 @@ try:
 except Exception as e:
     # Log any exceptions raised during the  execution
     logger.critical(f"{e}")
-    logger.info(f"DRM deployment failed!!!")
+    logger.info(f"DRM {execution_mode} failed!!!")
     logger.info('==================================')
     os.chdir(current_working_directory)

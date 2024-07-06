@@ -26,6 +26,7 @@ BUILD_FILE_NAME = "drm_deploy.json"
 PACK_FILE_NAME = "deploy.drmpac"
 DRYRUN_MODE = "DryRun"
 DEPLOY_MODE = "Deploy"
+ALIGN_MODE = "Align"
 DEPLOY_DIR = "deployments"
 DEPLOYMENT_PENDING_STATUS = "Pending"
 DEPLOYMENT_IN_PROGRESS_STATUS = "In progress"
@@ -398,7 +399,7 @@ class Deploy:
             elif (deployment_column_name == "user_id"):
                 deployment_js[deployment_column_name] = 1
             elif (deployment_column_name == "deployment_type_id"):
-                if (self.execution_mode == DEPLOY_MODE):
+                if (self.execution_mode in (DEPLOY_MODE, ALIGN_MODE)):
                     deployment_js[deployment_column_name] = 2
                 else:
                     deployment_js[deployment_column_name] = 1
@@ -681,9 +682,11 @@ class Deploy:
                                     #================================
                                     # Deploy mode (Not a DryRun mode)
                                     #================================
-                                    if (self.execution_mode == DEPLOY_MODE):
+                                    if (self.execution_mode in (DEPLOY_MODE, ALIGN_MODE)):
                                         if project_max_degree_in_parallel == None:
                                             project_max_degree_in_parallel = 1
+                                        if (self.execution_mode == ALIGN_MODE and project_max_degree_in_parallel > 5):
+                                            project_max_degree_in_parallel = 5
                                         pending_tasks = []
                                         failed_tasks = []
 
@@ -751,8 +754,9 @@ class Deploy:
                                             #========================
                                             # Generate upgrade script
                                             #========================
-                                            target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
-                                            upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties)
+                                            if (self.execution_mode == DEPLOY_MODE):
+                                                target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)
+                                                upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties)
 
                                             # Queue pending tasks in parallel
                                             task_queue = Queue()
@@ -765,6 +769,9 @@ class Deploy:
                                                 target_db = task["target_db"]
                                                 try:
                                                     task_statuses[target_db]["start_time"] = datetime.now().isoformat()
+                                                    if (self.execution_mode == ALIGN_MODE):
+                                                        target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)
+                                                        upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties)
                                                     result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                                     task_statuses[target_db]["status_id"] = 2
                                                     task_statuses[target_db]["status_name"] = DEPLOYMENT_SUCCESS_STATUS
