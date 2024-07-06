@@ -676,6 +676,8 @@ class Deploy:
                                         deployment_project_js["target_database_name"] = project_targets_compare_db
                                         deployment_project_js["start_time"] = datetime.now().isoformat()
                                         deployment_project_js["end_time"] = datetime.now().isoformat()
+                                        deployment_project_js["status_id"] = 2
+                                        deployment_project_js["status_name"] = DEPLOYMENT_SUCCESS_STATUS
                                         
                                         deployment_solution_js["deployments_projects"].append(deployment_project_js)
 
@@ -751,6 +753,9 @@ class Deploy:
                                         #==============================
                                         if(len(pending_tasks) > 0):
                                         
+                                            upgrade_script = None
+                                            target_connection_string = None
+                                            
                                             #========================
                                             # Generate upgrade script
                                             #========================
@@ -764,17 +769,19 @@ class Deploy:
                                                 task_queue.put(task)
 
                                             failed = False
-
-                                            def task_wrapper(task: Dict[str, Any]) -> None:
+                                            
+                                            def task_wrapper(task: Dict[str, Any], upgrade_script, target_connection_string) -> None:
                                                 target_db = task["target_db"]
                                                 try:
-                                                    task_statuses[target_db]["start_time"] = datetime.now().isoformat()
-                                                    if (self.execution_mode == ALIGN_MODE):
-                                                        target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)
-                                                        upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties)
-                                                    result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
-                                                    task_statuses[target_db]["status_id"] = 2
-                                                    task_statuses[target_db]["status_name"] = DEPLOYMENT_SUCCESS_STATUS
+                                                    if (target_db != project_targets_compare_db):
+                                                        task_statuses[target_db]["start_time"] = datetime.now().isoformat()
+                                                        if (self.execution_mode == ALIGN_MODE):
+                                                            target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)
+                                                            upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties)
+                                            
+                                                        result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
+                                                        task_statuses[target_db]["status_id"] = 2
+                                                        task_statuses[target_db]["status_name"] = DEPLOYMENT_SUCCESS_STATUS
                                                 except Exception as e:
                                                     task_statuses[target_db]["status_id"] = 4
                                                     task_statuses[target_db]["status_name"] = DEPLOYMENT_FAILED_STATUS
@@ -790,7 +797,7 @@ class Deploy:
                                                 for _ in range(project_max_degree_in_parallel):
                                                     if not task_queue.empty():
                                                         task = task_queue.get()
-                                                        futures.append(executor.submit(task_wrapper, task))
+                                                        futures.append(executor.submit(task_wrapper, task, upgrade_script, target_connection_string))
 
                                                 while futures:
                                                     done, _ = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
@@ -803,7 +810,7 @@ class Deploy:
 
                                                     if not task_queue.empty() and not (failed and project_fail_on_error):
                                                         task = task_queue.get()
-                                                        futures.append(executor.submit(task_wrapper, task))
+                                                        futures.append(executor.submit(task_wrapper, task, upgrade_script, target_connection_string))
 
                                             # Mark remaining pending_tasks as not started if there was a failure and project_fail_on_error is True
                                             if project_fail_on_error and failed:
@@ -813,6 +820,24 @@ class Deploy:
                                                     task_statuses[task["target_db"]]["status_name"] = DEPLOYMENT_PENDING_STATUS
                                                 raise Exception ('One or more projects deployment failed.')
 
+                                            if (project_targets_compare_db in targets_list_js):
+                                                target_db = project_targets_compare_db
+                                                try:
+                                                    task_statuses[target_db]["start_time"] = datetime.now().isoformat()
+                                                    if (self.execution_mode == ALIGN_MODE):
+                                                        target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)
+                                                        upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties)
+                                                    result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
+                                                    task_statuses[target_db]["status_id"] = 2
+                                                    task_statuses[target_db]["status_name"] = DEPLOYMENT_SUCCESS_STATUS
+                                                except Exception as e:
+                                                    task_statuses[target_db]["status_id"] = 4
+                                                    task_statuses[target_db]["status_name"] = DEPLOYMENT_FAILED_STATUS
+                                                    task_statuses[target_db]["error_message"] = f"{str(e)}"
+                                                    failed = True
+                                                finally:
+                                                    task_statuses[target_db]["end_time"] = datetime.now().isoformat()
+                                        
                                         #============================================
                                         # Summaries all projects deployments statuses
                                         #============================================

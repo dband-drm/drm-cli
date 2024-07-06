@@ -185,7 +185,7 @@ try:
 
     if (args.deploy):
         execution_mode = DEPLOY_MODE
-    if (args.align):
+    elif (args.align):
         execution_mode = ALIGN_MODE
     else:
         execution_mode = DRYRUN_MODE
