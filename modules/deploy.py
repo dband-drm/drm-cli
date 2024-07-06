@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 import json
 import zipfile
@@ -236,8 +237,10 @@ class Deploy:
     logger = drm_logger.configure_logging("deploy.Deploy")
 
     @drm_logger.log_decorator(logger) 
-    def __init__(self, deploy_config, encryption_key = False, execution_mode = DRYRUN_MODE): 
+    def __init__(self, deploy_config, encryption_key = False, execution_mode = DRYRUN_MODE, connection = None): 
         self.deploy_config = deploy_config
+
+        self.connection = connection
 
         build_dir = os.path.join(current_working_directory, self.deploy_config.build_folder_name)
         pack_file_name = os.path.join(build_dir, PACK_FILE_NAME)
@@ -389,6 +392,9 @@ class Deploy:
             elif (deployment_column_name == "release_id"):
                 deployment_js[deployment_column_name] = release_id
                 deployment_js["release_name"] = release_name
+            elif (deployment_column_name == "connection_id"):
+                deployment_js[deployment_column_name] = None
+                deployment_js["connection_name"] = None
             elif (deployment_column_name == "user_id"):
                 deployment_js[deployment_column_name] = 1
             elif (deployment_column_name == "deployment_type_id"):
@@ -470,6 +476,28 @@ class Deploy:
         return (deployment_solution_js)
 
     @drm_logger.log_decorator(logger) 
+    def get_last_deployment_statuses(self, release_id, solution_id, project_id, targets_list_js, deploy_dir, db_file_name):
+        """ 
+        Get last deployment statuses results
+        :param release_id: Release ID
+        :param solution_id: Solution ID
+        :param project_id: Project ID
+        :param targets_list_js: List of target databases
+        :param deploy_dir: Deployments directory
+        :return: json
+        """
+        task_statuses = {}
+        last_deployment_id = None
+        
+        deployment_obj = self.parser.Deployments(release_id, self.connection, self.execution_mode, deploy_dir, db_file_name)
+        last_deployment_id, task_statuses = deployment_obj.get_last_deployment_restuls (solution_id, project_id, targets_list_js)
+        
+        if (last_deployment_id != None):
+            self.logger.info(f'Continue last failed deployment ID "{last_deployment_id}"')
+
+        return task_statuses
+
+    @drm_logger.log_decorator(logger) 
     def generate_project_json(self, project_id, project_name):
         """ 
         Generates project json
@@ -523,7 +551,7 @@ class Deploy:
         else:
             release_max_retries = 0
 
-        deploy_file_base_name = "{execution_mode}_{deployment_id}_R{release_id}".format(execution_mode = self.execution_mode, deployment_id = deployment_id, release_id = release_id)
+        deploy_file_base_name = "{execution_mode}_{deployment_id}_C{connection}_R{release_id}".format(execution_mode = self.execution_mode, deployment_id = deployment_id, release_id = release_id, connection = self.connection)
         deploy_log_file_name = "{deploy_file_base_name}.json".format(deploy_file_base_name = deploy_file_base_name)
         deploy_dir = os.path.join(current_working_directory, DEPLOY_DIR)
         if (self.deploy_config.installation_type == "json") and not(os.path.exists(deploy_dir)):
@@ -584,6 +612,10 @@ class Deploy:
                                 connection_name = js_connection['name']
                                 connection_type_id = js_connection['connection_type_id']
                                 connection_string = js_connection['connection_string']
+                                if (deployment_js["connection_id"] == None):
+                                    deployment_js["connection_id"] = connection_id
+                                if (deployment_js["connection_name"] == None):
+                                    deployment_js["connection_name"] = connection_name
                                 if self.deploy_config.db_secured:
                                     crpt = crypto.Crypto(self.encryption_key)
                                     connection_string = crpt.decrypt_string(connection_string)
@@ -659,6 +691,10 @@ class Deploy:
 
                                         # Get list targets
                                         targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text, project_targets_compare_db)
+                                        
+                                        # First try --> Check former deployment if failed
+                                        if try_num == 1:
+                                            task_statuses = Deploy.get_last_deployment_statuses(self, release_id, solution_id, project_id, targets_list_js, deploy_dir, self.db_file_name)     
 
                                         if (task_statuses != {}):
                                             for target_db in targets_list_js:  

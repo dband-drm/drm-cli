@@ -513,6 +513,11 @@
 					"is_nullable": false
 				},				
 				{
+					"name": "connection_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},				
+				{
 					"name": "user_id",
 					"data_type": "integer",
 					"is_nullable": false,
