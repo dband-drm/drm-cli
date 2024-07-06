@@ -1,6 +1,8 @@
 import sys
 import json
 import logging
+import glob
+import os
 from modules import files_and_folders, drm_logger
 
 class Generic:
@@ -339,3 +341,89 @@ class Projects:
                                     js['projects'].append(project_js)
         return json.dumps(js)
 
+class Deployments:
+
+    logger = drm_logger.configure_logging("parser_json_json.Deployments")
+
+    DEPLOYMENT_PENDING_STATUS = "Pending"
+    DEPLOYMENT_IN_PROGRESS_STATUS = "In progress"
+    DEPLOYMENT_SUCCESS_STATUS = "Finished successfully"
+    DEPLOYMENT_CANCELED_STATUS = "Canceled"
+    DEPLOYMENT_FAILED_STATUS = "Failed"
+    DEPLOYMENT_ALREADY_DEPLOYED_STATUS = "Already deployed"
+
+    @drm_logger.log_decorator(logger) 
+    def __init__(self, release_id, connection, execution_mode, deploy_dir, db_file_name = None): 
+        """ 
+        :param release_id: Release ID
+        :param connection: Connection name
+        :param execution_mode: Execution mode
+        :param deploy_dir: Directory of all deployments files
+        :param db_file_name: DRM database file name (Not in use)
+        :return:
+        """
+        file_pattern = f"{execution_mode}_*_C{connection}_R{release_id}.json"
+        search_pattern = os.path.join(deploy_dir, file_pattern)
+        list_of_files = glob.glob(search_pattern)
+        
+        if not list_of_files:
+            self.latest_deployment_file = None
+    
+        else:
+            # Sort files by creation time (most recent first)
+            list_of_files.sort(key=lambda x: os.path.getctime(x), reverse=True)
+    
+            # Return the most recent file
+            self.latest_deployment_file = list_of_files[0]
+
+    @drm_logger.log_decorator(logger) 
+    def get_last_deployment_restuls(self, solution_id, project_id, targets_list_js): 
+        """ 
+        Return last deployment results for each target database
+        :param targets_list_js: List of target databases
+        :return: Last failed deployment ID (Integer) & List of target databases followed by deployment status (JSON)
+        """
+        task_statuses = {}
+        last_deployment_id = None
+        
+        if (self.latest_deployment_file != None):
+            #=============================
+            # Check last deployment status
+            #=============================
+            file = files_and_folders.Files(self.latest_deployment_file)
+            deployment_js = file.load_file()
+            deployment_status_id = deployment_js['deployment_status_id']
+            
+            #========================================================================================
+            # If last deployment did not fully succeeded --> get last status for each target database
+            #========================================================================================
+            if (deployment_status_id != 2):
+                
+                last_deployment_id = deployment_js['id']
+                
+                # Search against all tries
+                for deployment_try_js in deployment_js['deployments_tries']:
+                    
+                    # Search against all solutions of try
+                    for deployment_solution_js in deployment_try_js['deployments_solutions']:
+                        
+                        # If solution match --> get results
+                        if (deployment_solution_js['solution_id'] == solution_id):
+                            
+                            # Search against all projects of the solution
+                            for deployment_project_js in deployment_solution_js['deployments_projects']:
+                                
+                                # If project match --> get results
+                                if (deployment_project_js['project_id'] == project_id):
+                                    
+                                    # Get target databases results
+                                    for target_db in targets_list_js:
+                                        if(deployment_project_js['target_database_name'] == target_db):
+                                            task_statuses[target_db] = {"status_id": deployment_project_js['deployment_status_id'], "status_name": deployment_project_js['deployment_status_name'], "start_time": deployment_project_js['start_time'], "end_time": deployment_project_js['end_time'], "error_message": None}
+            
+                # mark all other rest pending target databases
+                for target_db in targets_list_js:
+                    if target_db not in task_statuses:
+                        task_statuses[target_db] = {"status_id": 0, "status_name": Deployments.DEPLOYMENT_PENDING_STATUS, "start_time": None, "end_time": None, "error_message": None}
+                        
+        return last_deployment_id, task_statuses

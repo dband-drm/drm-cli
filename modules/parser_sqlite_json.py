@@ -295,3 +295,73 @@ class Projects:
             project_js = json.loads(json.dumps(project_obj.__dict__))
             js['projects'].append(project_js)
         return json.dumps(js)
+
+
+class Deployments:
+
+    logger = drm_logger.configure_logging("parser_sqlite_json.Deployments")
+
+    DEPLOYMENT_PENDING_STATUS = "Pending"
+    DEPLOYMENT_IN_PROGRESS_STATUS = "In progress"
+    DEPLOYMENT_SUCCESS_STATUS = "Finished successfully"
+    DEPLOYMENT_CANCELED_STATUS = "Canceled"
+    DEPLOYMENT_FAILED_STATUS = "Failed"
+    DEPLOYMENT_ALREADY_DEPLOYED_STATUS = "Already deployed"
+    DRYRUN_MODE = "DryRun"
+    DEPLOY_MODE = "Deploy"
+
+    @drm_logger.log_decorator(logger) 
+    def __init__(self, release_id, connection, execution_mode, deploy_dir = None, db_file_name = None): 
+        """ 
+        :param release_id: Release ID
+        :param connection: Connection name
+        :param execution_mode: Execution mode
+        :param deploy_dir: Directory of all deployments files
+        :param db_file_name: DRM database file name (Not in use)
+        :return:
+        """
+        self.release_id = release_id
+        self.connection = connection
+        self.drm_db = Db(db_file_name)
+        
+        if(execution_mode == Deployments.DEPLOY_MODE):
+            self.deployment_type_id = 2
+        else:
+            self.deployment_type_id = 1                     
+
+    @drm_logger.log_decorator(logger) 
+    def get_last_deployment_restuls(self, solution_id, project_id, targets_list_js): 
+        """ 
+        Return last deployment results for each target database
+        :param targets_list_js: List of target databases
+        :return: Last failed deployment ID (Integer) & List of target databases followed by deployment status (JSON)
+        """
+        task_statuses = {}
+        last_deployment_id = None
+         
+        #=============================
+        # Check last deployment status
+        #=============================
+        sql_command = f"select d.id, d.deployment_status_id from deployments as d inner join connections as c on c.id = d.connection_id where release_id = {self.release_id} and c.name = '{self.connection}' and d.deployment_type_id = {self.deployment_type_id} order by d.start_time desc limit 1"
+        rows = self.drm_db.select_query(sql_command)
+        for row in rows:
+            last_deployment_id = row[0]
+            deployment_status_id = row[1]
+        
+        #========================================================================================
+        # If last deployment did not fully succeeded --> get last status for each target database
+        #========================================================================================
+        if (deployment_status_id != 2):
+            
+            sql_command = f"with deployment_try_cte as (select max(id) as id from deployments_tries as dt where deployment_id = '{last_deployment_id}') select dp.target_database_name, dp.deployment_status_id, dst.name, dp.start_time, dp.end_time from deployment_try_cte as dt inner join deployments_solutions as ds on ds.deployment_try_id = dt.id inner join deployments_projects as dp on dp.deployment_solution_id = ds.id inner join deployment_statuses as dst on dst.id = dp.deployment_status_id where ds.solution_id = {solution_id} and dp.project_id = {project_id} order by dp.start_time"
+            rows2 = self.drm_db.select_query(sql_command)
+            for row2 in rows2:         
+                task_statuses[row2[0]] = {"status_id": row2[1], "status_name": row2[2], "start_time": row2[3], "end_time": row2[4], "error_message": None}
+        
+            # mark all other rest pending target databases
+            for target_db in targets_list_js:
+                if target_db not in task_statuses:
+                    task_statuses[target_db] = {"status_id": 0, "status_name": Deployments.DEPLOYMENT_PENDING_STATUS, "start_time": None, "end_time": None, "error_message": None}
+                        
+        return last_deployment_id, task_statuses
+        

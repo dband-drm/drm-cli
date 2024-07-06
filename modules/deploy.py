@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 import json
 import zipfile
@@ -475,14 +476,26 @@ class Deploy:
         return (deployment_solution_js)
 
     @drm_logger.log_decorator(logger) 
-    def get_last_deployment_statuses(self, release_id):
+    def get_last_deployment_statuses(self, release_id, solution_id, project_id, targets_list_js, deploy_dir, db_file_name):
         """ 
         Get last deployment statuses results
         :param release_id: Release ID
-        :param solution_name: Solution name
+        :param solution_id: Solution ID
+        :param project_id: Project ID
+        :param targets_list_js: List of target databases
+        :param deploy_dir: Deployments directory
         :return: json
         """
-        return {}
+        task_statuses = {}
+        last_deployment_id = None
+        
+        deployment_obj = self.parser.Deployments(release_id, self.connection, self.execution_mode, deploy_dir, db_file_name)
+        last_deployment_id, task_statuses = deployment_obj.get_last_deployment_restuls (solution_id, project_id, targets_list_js)
+        
+        if (last_deployment_id != None):
+            self.logger.info(f'Continue last failed deployment ID "{last_deployment_id}"')
+
+        return task_statuses
 
     @drm_logger.log_decorator(logger) 
     def generate_project_json(self, project_id, project_name):
@@ -681,7 +694,7 @@ class Deploy:
                                         
                                         # First try --> Check former deployment if failed
                                         if try_num == 1:
-                                           task_statuses = Deploy.get_last_deployment_statuses(self, release_id)     
+                                            task_statuses = Deploy.get_last_deployment_statuses(self, release_id, solution_id, project_id, targets_list_js, deploy_dir, self.db_file_name)     
 
                                         if (task_statuses != {}):
                                             for target_db in targets_list_js:  
