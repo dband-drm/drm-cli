@@ -178,23 +178,6 @@ class Connections:
         rows = drm_db.select_query(sql_command)
         return rows
     
-    @drm_logger.log_decorator(logger) 
-    def reencrypt(db_file_name, rows):
-        """ 
-        ReEncrypt
-        :param db_file_name: Database file name
-        :param rows: rows [id][connection_string]
-
-        :return: Result
-        """
-        drm_db = Db(db_file_name)
-
-        for row in rows:
-            update_command = f"set connection_string = '{row[1]}'"
-            sql_command = f"update connections {update_command} where id = {row[0] }"
-            drm_db.execute_command(sql_command)
-        return True
-    
 class SqlScriptsVariables:
 
     logger = drm_logger.configure_logging("parser_sqlite_json.SqlScriptsVariables")
@@ -365,3 +348,63 @@ class Deployments:
                         
         return last_deployment_id, task_statuses
         
+class ChangePassword:
+    
+    logger = drm_logger.configure_logging("parser_sqlite_json.ChangePassword")
+
+    @drm_logger.log_decorator(logger) 
+    def __init__(self, db_file_name = "",encryption_key = "",new_encryption_key = ""):   
+        """ 
+        Constructor
+        :param db_file_name:  databae name
+        :param encryption_key: encryption_key
+        :param new_encryption_key: new_encryption_key
+        :return:
+        """
+        self.db_file_name = db_file_name
+        self.encryption_key = encryption_key
+        self.new_encryption_key = new_encryption_key
+
+    @drm_logger.log_decorator(logger)     
+    def execute_command(self):
+        """ 
+        Run ChangePassword command 
+        :return: result
+        """
+        db_file_name = self.db_file_name
+        rows = Connections.get_connections(db_file_name)
+        from modules import crypto
+        crpt = crypto.Crypto(self.encryption_key)
+        crpt_new = crypto.Crypto(self.new_encryption_key)
+        new_rows = list()
+
+        for r in rows:
+            #verify encyption key
+            if (self.encryption_key != None and self.new_encryption_key != None):
+                value = crpt_new.encrypt_string( crpt.decrypt_string(r[1]))
+            elif (self.encryption_key == None and self.new_encryption_key != None):
+                value = crpt_new.encrypt_string( r[1])
+            elif (self.new_encryption_key == None and self.encryption_key != None):
+                value = crpt.decrypt_string(r[1])
+            else:
+                raise Exception('Failed ChangePassword, No Encyption keys supplied')
+            tuple_element = ((r[0],value))
+            new_rows.append(tuple_element)
+        new_rows = tuple(new_rows)
+        self.reencrypt(db_file_name,new_rows)
+
+    @drm_logger.log_decorator(logger) 
+    def reencrypt(self,db_file_name, rows):
+        """ 
+        ReEncrypt
+        :param db_file_name: Database file name
+        :param rows: rows [id][connection_string]
+        :return: Result
+        """
+        drm_db = Db(db_file_name)
+
+        for row in rows:
+            update_command = f"set connection_string = '{row[1]}'"
+            sql_command = f"update connections {update_command} where id = {row[0] }"
+            drm_db.execute_command(sql_command)
+        return True

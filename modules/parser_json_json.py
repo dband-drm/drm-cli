@@ -427,3 +427,69 @@ class Deployments:
                         task_statuses[target_db] = {"status_id": 0, "status_name": Deployments.DEPLOYMENT_PENDING_STATUS, "start_time": None, "end_time": None, "error_message": None}
                         
         return last_deployment_id, task_statuses
+class ChangePassword:
+    
+    logger = drm_logger.configure_logging("parser_json_json.ChangePassword")
+
+    @drm_logger.log_decorator(logger) 
+    def __init__(self, db_file_name = "",encryption_key = "",new_encryption_key = ""):   
+        """ 
+        Constructor
+        :param db_file_name:  databae name
+        :param encryption_key: encryption_key
+        :param new_encryption_key: new_encryption_key
+        :return:
+        """
+        self.db_file_name = db_file_name
+        self.encryption_key = encryption_key
+        self.new_encryption_key = new_encryption_key
+
+    @drm_logger.log_decorator(logger)     
+    def execute_command(self):
+        """ 
+        Run ChangePassword command 
+        :return: result
+        """
+        db_file_name = self.db_file_name
+
+        file = files_and_folders.Files(db_file_name)
+        drm_db_json = file.load_file()
+        self.update_connection_strings(drm_db_json)
+        json_obj = json.dumps(drm_db_json, indent=4)
+        file.write_file(json_obj)
+
+
+    def update_connection_strings(self,data):
+        """ 
+        Update_connection_strings
+        :return:
+        """ 
+        from modules import crypto
+
+        crpt = crypto.Crypto(self.encryption_key)
+        crpt_new = crypto.Crypto(self.new_encryption_key)
+
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if key == "connections":#"connection_string":
+                 conn = value
+                 for item in conn:
+                    for key, value in item.items():
+                        if key == "connection_string":
+                            
+                            #verify encyption key
+                            if (self.encryption_key != None and self.new_encryption_key != None):
+                                value_ = crpt_new.encrypt_string( crpt.decrypt_string(value))
+                            elif (self.encryption_key == None and self.new_encryption_key != None):
+                                value_ = crpt_new.encrypt_string( value)
+                            elif (self.new_encryption_key == None and self.encryption_key != None):
+                                value_ = crpt.decrypt_string(value)
+                            else:
+                                raise Exception('Failed ChangePassword, No Encyption keys supplied')
+                            item[key] = value_
+                       # data[key] = crpt_new.encrypt_string( crpt.decrypt_string(value))
+            else:
+                self.update_connection_strings(value)
+        elif isinstance(data, list):
+            for item in data:
+                self.update_connection_strings(item)

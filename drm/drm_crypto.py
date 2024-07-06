@@ -77,29 +77,6 @@ class Encrypt:
             self.parser = parser_json_json
         
 
-    def update_connection_strings(self,data):
-        """ 
-        Update_connection_strings
-        :return:
-        """ 
-        crpt = crypto.Crypto(self.encryption_key)
-        crpt_new = crypto.Crypto(self.new_encryption_key)
-
-        if isinstance(data, dict):
-            for key, value in data.items():
-                if key == "connections":#"connection_string":
-                 conn = value
-                 for item in conn:
-                    for key, value in item.items():
-                        if key == "connection_string":
-                            item[key] = crpt_new.encrypt_string( crpt.decrypt_string(value))
-                       # data[key] = crpt_new.encrypt_string( crpt.decrypt_string(value))
-            else:
-                self.update_connection_strings(value)
-        elif isinstance(data, list):
-            for item in data:
-                self.update_connection_strings(item)
-
     def changepassword(self):
         """ 
         ChangePassword
@@ -113,36 +90,34 @@ class Encrypt:
         # TODO ADD update config after reencrypt
         #SQLite
         if (self.deploy_config.installation_type == "sqlite"):
-            db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.sqlite_file_ext)
-            rows = self.parser.Connections.get_connections(db_file_name)
-            crpt = crypto.Crypto(self.encryption_key)
-            crpt_new = crypto.Crypto(self.new_encryption_key)
-            new_rows = list()
+            ext = self.deploy_config.sqlite_file_ext
+        elif(self.deploy_config.installation_type == "json"):
+            ext = self.deploy_config.data_file_ext
 
-            for r in rows:
-                tuple_element = ((r[0],crpt_new.encrypt_string( crpt.decrypt_string(r[1]))))
-                new_rows.append(tuple_element)
-            new_rows = tuple(new_rows)
-            self.parser.Connections.reencrypt(db_file_name,new_rows)
-        # JSON
-        else:
-            db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + self.deploy_config.data_file_ext)
-            file = files_and_folders.Files(db_file_name)
-            drm_db_json = file.load_file()
-            self.update_connection_strings(drm_db_json)
-            json_obj = json.dumps(drm_db_json, indent=4)
-            file.write_file(json_obj)
+        db_file_name = os.path.join(current_working_directory, self.deploy_config.db_folder_name, self.deploy_config.db_file_name + "." + ext)
+        changepassword = self.parser.ChangePassword(db_file_name,self.encryption_key,self.new_encryption_key)
+        changepassword.execute_command()
+            
+        
 
         #update config
-        ##TODO
+        #todo ADD Ath. module to const security_text
         logger.info("Updating Configuration")
 
-        js = self.deploy_config.full_config
         security_text = "This drm cli was developed by d-band and it is amazing!!!"
-        crpt = crypto.Crypto(self.new_encryption_key)
-        encrypted_text = crpt.encrypt_string(security_text)
+        js = self.deploy_config.full_config
         installation_info = js['installation_info']
+        
+        if (self.new_encryption_key != None):
+            db_secured = True
+            crpt = crypto.Crypto(self.new_encryption_key)
+            encrypted_text = crpt.encrypt_string(security_text)
+        else:
+            db_secured = False
+            encrypted_text = security_text
+
         installation_info['security_text'] = encrypted_text
+        installation_info['db_secured'] = db_secured
         
         json_obj = json.dumps(js, indent=4)
 
@@ -280,7 +255,7 @@ try:
         encrypted_text = crpt.encrypt_string(security_text)
         if (encrypted_text != SECURITY_TEXT):
             raise Exception ("Wrong encryption key!!!")
-        
+      
     #=========================
     # Determine execution mode
     #=========================
@@ -289,13 +264,17 @@ try:
     phrase =None
     if (args.changepassword):
         execution_mode = EXECUTION_MODE_CHANGEPASSWORD
-        if not (args.newpassword):
-            new_key = getpass(prompt='Please enter new encryption key: ') 
-        else:
+        if  (args.newpassword):
             new_key = args.newpassword
-        if new_key is None:
-            raise Exception ("New Encryption key not provided!!!")
         
+        #todo
+        #add validation for password
+        
+        if(encryption_key == None and new_key == None):
+            raise Exception('Failed ChangePassword, None Encyption keys supplied')
+        if(encryption_key ==  new_key):
+            raise Exception('Failed ChangePassword, No changes, same password')
+   
     if (args.encrypt):
         execution_mode = EXECUTION_MODE_ENCRYPT
 
@@ -309,6 +288,8 @@ try:
 
         if phrase is None:
             raise Exception ("Phrase not provided!!!")
+
+
 
     logger.info("Finished DRM encrypt Validation")
 
