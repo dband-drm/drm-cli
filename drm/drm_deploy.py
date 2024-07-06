@@ -190,7 +190,7 @@ try:
     validate.validate_release(args.connection)
     logger.info("Build finished successfully!!!")
 
-    deploy = deploy.Deploy(deploy_config, encryption_key, execution_mode)
+    deploy = deploy.Deploy(deploy_config, encryption_key, execution_mode, args.connection)
     deploy.deploy_release()    
 
     logger.info("DRM deployment finished successfully!!!")
