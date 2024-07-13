@@ -152,14 +152,14 @@ try:
     #======================
     encryption_key = None
     if (DB_SECURED):
-        if not (args.password):
+        if not (args.p):
             if ("DRM_SECRET" in os.environ):
                 encryption_key = os.environ["DRM_SECRET"]
             else:
                 encryption_key = auth.set_password()
                 #getpass(prompt='Please enter encryption key: ')
         else:
-            encryption_key = args.password
+            encryption_key = args.p
             
         auth_valid =  auth.validate_password(encryption_key,SECURITY_TEXT)
 

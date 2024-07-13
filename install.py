@@ -395,30 +395,30 @@ try:
 	#======================================
 	auth = auth.Auth
 
-	if not (args.install_type):
+	if not (args.d):
 		install_type = get_installation_type()	   
 	else:
-		install_type = args.install_type 
+		install_type = args.d 
 		if(install_type not in ("json", "sqlite", "")):
-			raise(" Not supported install_type: {type}".format(type = install_type))
+			raise(" Not supported install_type: {type}".format(type = args.install_type))
 		if install_type == "":
 			install_type = "sqlite"
 	
-	if not(args.password):
+	if not(args.p):
 		encryption_key = auth.set_password()
 		#get_encryption_key()
 	else:
-		auth_valid =  auth.validate_password_policy(args.password)
+		auth_valid =  auth.validate_password_policy(auth,password=args.p)
 		if(auth_valid):
-			encryption_key = args.password
+			encryption_key = args.p
 		else:
-			raise(" Not valid encryption key: {key}".format(key = args.password))
+			raise(" Not valid encryption key: {key}".format(key = args.p))
 			encryption_key = auth.set_password()
 	
-	if not (args.install_path):
+	if not (args.f):
 		drm_path = get_drm_path()
 	else:
-		drm_path = args.install_path
+		drm_path = args.f
 	#============
 	# Install DRM
 	#============
