@@ -86,7 +86,7 @@ copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
 parser.add_argument("-c", "--connection", help = "Connection name", required = True)
 parser.add_argument("-r", "--release", help = "Release ID", required = True)
-parser.add_argument("--password", action='store_true', default=False, required = False)
+parser.add_argument("-p", "-password", required = False)
 parser.add_argument("--dryrun", action='store_true', default=False, required = False)
 parser.add_argument("--deploy", action='store_true', default=False, required = False)
 parser.add_argument("--align", action='store_true', default=False, required = False)
@@ -145,7 +145,7 @@ try:
     #===============
     from modules.builder import Build
     from modules.validator import Validate
-    from modules import crypto, deploy
+    from modules import crypto, deploy,auth
     
     #======================
     # Verify encryption key
@@ -155,17 +155,15 @@ try:
         if not (args.password):
             if ("DRM_SECRET" in os.environ):
                 encryption_key = os.environ["DRM_SECRET"]
+            else:
+                encryption_key = auth.set_password()
+                #getpass(prompt='Please enter encryption key: ')
         else:
-            encryption_key = getpass(prompt='Please enter encryption key: ')
+            encryption_key = args.password
+            
+        auth_valid =  auth.validate_password(encryption_key,SECURITY_TEXT)
 
-        if encryption_key is None:
-            raise Exception ("Encryption key not provided!!!")
-
-        security_text = "This drm cli was developed by d-band and it is amazing!!!"
-
-        crpt = crypto.Crypto(encryption_key)
-        encrypted_text = crpt.encrypt_string(security_text)
-        if (encrypted_text != SECURITY_TEXT):
+        if (auth_valid == False):
             raise Exception ("Wrong encryption key!!!")
 
     #=========================
