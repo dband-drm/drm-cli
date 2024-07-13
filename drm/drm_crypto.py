@@ -174,12 +174,12 @@ parser = argparse.ArgumentParser(prog = program, description = description, epil
 group = parser.add_mutually_exclusive_group(required=True)
 
 # Add the flags to the group
-group.add_argument("-e", "--encrypt", help = "EncryptText", action='store_true')
-group.add_argument("-c", "--changepassword", help = "ChangePassword",action='store_true')
+group.add_argument("--e", "--encrypt", help = "EncryptText", action='store_true')
+group.add_argument("--c", "--changepassword", help = "ChangePassword",action='store_true')
 
-parser.add_argument("-p", "--password", required = False)
-parser.add_argument("-n", "--newpassword", required = False)
-parser.add_argument("-t", "--text" , required = False)
+parser.add_argument("-p", "-password", required = False)
+parser.add_argument("-n", "-newpassword", required = False)
+parser.add_argument("-t", "-text" , required = False)
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
 args = parser.parse_args()
@@ -234,26 +234,26 @@ try:
     #===============
     from modules.builder import Build
     from modules.validator import Validate
-    from modules import crypto, parser_sqlite_json,parser_json_json, files_and_folders
+    from modules import crypto, parser_sqlite_json,parser_json_json, files_and_folders,auth
     #======================
     # Verify encryption key
     #======================
     encryption_key = None
+    auth = auth.Auth()
+    
     if (DB_SECURED):
-        if not (args.password):
+        if not (args.p):
             if ("DRM_SECRET" in os.environ):
                 encryption_key = os.environ["DRM_SECRET"]
             else:
-                encryption_key = getpass(prompt='Please enter encryption key: ')
+                encryption_key = auth.set_password()
+                #getpass(prompt='Please enter encryption key: ')
         else:
-            encryption_key = args.password
+            encryption_key = args.p
             
+        auth_valid =  auth.validate_password(encryption_key,SECURITY_TEXT)
 
-        security_text = "This drm cli was developed by d-band and it is amazing!!!"
-
-        crpt = crypto.Crypto(encryption_key)
-        encrypted_text = crpt.encrypt_string(security_text)
-        if (encrypted_text != SECURITY_TEXT):
+        if (auth_valid == False):
             raise Exception ("Wrong encryption key!!!")
       
     #=========================
@@ -266,9 +266,10 @@ try:
         execution_mode = EXECUTION_MODE_CHANGEPASSWORD
         if  (args.newpassword):
             new_key = args.newpassword
-        
-        #todo
         #add validation for password
+        auth_valid_policy = auth.validate_password_policy(new_key)
+        if(auth_valid_policy==False):
+            new_key = auth.set_password()
         
         if(encryption_key == None and new_key == None):
             raise Exception('Failed ChangePassword, None Encyption keys supplied')

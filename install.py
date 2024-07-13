@@ -75,6 +75,10 @@ description = "This is a DRM Installer CLI, developed by d-band for Data deploym
 copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
 
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
+parser.add_argument("-p", "-password", required = False)
+parser.add_argument("-d", "-install_type", required = False)
+parser.add_argument("-f", "-install_path", required = False)
+
 parser.add_argument("--trace", action='store_true', default=False, required = False)
 args = parser.parse_args()
 
@@ -100,7 +104,7 @@ except (ImportError, AttributeError):
 #===============
 # Import modules
 #===============
-from modules import init_db, crypto, files_and_folders
+from modules import init_db, crypto, files_and_folders,auth
 	
 
 #==========
@@ -126,64 +130,6 @@ def get_installation_type():
 		return install_type
 	except Exception as e:
 		raise Exception ("failed to get installation type, " + str(e)) 
-
-
-@drm_logger.log_decorator(logger) 
-def get_encryption_key():
-	"""
-	This function returns the encryption key entered by the user
-	:return: Encryption key (string)
-	"""
-	try:
-
-		flag = -1
-		while flag == -1:
-			validate_policy = True
-			#=====================
-			# Enter encryption key
-			#=====================
-			encryption_key = input("Enter encryption key or enter '?' to see encryption key policy (Default, empty is not encrypted): ")
-			
-			# If user chooses clean text (not encrypted)
-			if (encryption_key == "" or encryption_key == None):
-				# Verify with the user
-				user_choice = input(style.YELLOW + "Are you sure you want to keep sensitive Data as clear text? Enter [Y]/N to keep unsecured Data: " + style.RESET)
-				if (user_choice.lower() == "y"):
-					flag = 0
-				else:
-					validate_policy = False
-					flag = -1
-
-			# Encryption rules helper
-			elif (encryption_key == "?"):
-				flag = -1
-				print("1. Minimum 8 characters.")
-				print("2. The alphabet must be between [a-z]")
-				print("3. At least one alphabet should be of Upper Case [A-Z]")
-				print("4. At least 1 number or digit between [0-9].")
-				print("5. At least 1 special character suc as !@#...")
-
-			# Verify key policy
-			elif (len(encryption_key)<=8):
-				flag = -1
-			elif not re.search("[a-z]", encryption_key):
-				flag = -1
-			elif not re.search("[A-Z]", encryption_key):
-				flag = -1
-			elif not re.search("[0-9]", encryption_key):
-				flag = -1
-			elif not re.search("[~`!@#$%^&*()-_=+,<.>/?;:]" , encryption_key):
-				flag = -1
-			else:
-				flag = 0
-			
-			# selected key does not meet with policy
-			if flag == -1 and encryption_key != "?" and validate_policy:
-				logger.warning('The encryption key does not meet with validation policy!')
-		return encryption_key
-	except Exception as e:
-				raise Exception ("failed to get encryption key, " + str(e))
-
 
 @drm_logger.log_decorator(logger) 
 def get_drm_path():
@@ -447,13 +393,32 @@ try:
 	#======================================
 	# Get installation definition from user
 	#======================================
+	auth = auth.Auth
+
+	if not (args.d):
+		install_type = get_installation_type()	   
+	else:
+		install_type = args.d 
+		if(install_type not in ("json", "sqlite", "")):
+			raise(" Not supported install_type: {type}".format(type = args.install_type))
+		if install_type == "":
+			install_type = "sqlite"
 	
-	install_type = get_installation_type()	    
+	if not(args.p):
+		encryption_key = auth.set_password()
+		#get_encryption_key()
+	else:
+		auth_valid =  auth.validate_password_policy(auth,password=args.p)
+		if(auth_valid):
+			encryption_key = args.p
+		else:
+			raise(" Not valid encryption key: {key}".format(key = args.p))
+			encryption_key = auth.set_password()
 	
-	encryption_key = get_encryption_key()
-	
-	drm_path = get_drm_path()
-	
+	if not (args.f):
+		drm_path = get_drm_path()
+	else:
+		drm_path = args.f
 	#============
 	# Install DRM
 	#============
