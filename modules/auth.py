@@ -117,12 +117,12 @@ class Auth:
         if (encryption_key == None or encryption_key == ""):
             user_choice = input(style.YELLOW + "Are you sure you want to keep sensitive Data as clear text? Enter [Y]/N to keep unsecured Data: " + style.RESET)
             if (user_choice.lower() == "n"):
-                self.set_passwordset_password(self)
+                self.set_password(self)
             else:
                 password = None
         else:
             validate_policy =False
-            validate_policy  = self.validate_password(encryption_key)
+            validate_policy  = self.validate_password_policy(encryption_key)
             while validate_policy == False:
                 
                 #=====================
