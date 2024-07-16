@@ -231,7 +231,7 @@ def create_drm_config(drm_path, install_type, encryption_key):
 		security_text = "This drm cli was developed by d-band and it is amazing!!!"
 		encrypted = False
 		# If user chose encryption key --> encrypt the security_text
-		if (encryption_key != ""):
+		if (encryption_key != "" and encryption_key !=None):
 			crpt = crypto.Crypto(encryption_key)
 			security_text = crpt.encrypt_string(security_text)
 			encrypted = True
@@ -405,7 +405,7 @@ try:
 			install_type = "sqlite"
 	
 	if not(args.p):
-		encryption_key = auth.set_password()
+		encryption_key = auth.set_password(auth)
 		#get_encryption_key()
 	else:
 		auth_valid =  auth.validate_password_policy(auth,password=args.p)
