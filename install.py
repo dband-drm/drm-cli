@@ -396,7 +396,7 @@ try:
 	auth = auth.Auth
 
 	if not (args.d):
-		install_type = get_installation_type()	   
+		install_type = get_installation_type()
 	else:
 		install_type = args.d 
 		if(install_type not in ("json", "sqlite", "")):
@@ -407,6 +407,8 @@ try:
 	if not(args.p):
 		encryption_key = auth.set_password(auth)
 		#get_encryption_key()
+	elif  ((args.p) and ((args.p=="")or (args.p.lower()=="none"))):
+		encryption_key = None
 	else:
 		auth_valid =  auth.validate_password_policy(auth,password=args.p)
 		if(auth_valid):

@@ -36,42 +36,48 @@ class Config():
     def __init__(self,path = None):
 		# Read file
         if (path == None):
-            file = os.path.join(current_working_directory, DEPLOY_CONFIG_FILE_NAME)
-        else:
-            file = os.path.join(path, DEPLOY_CONFIG_FILE_NAME)
-        f = open(file)
-        js = json.load(f)
+            path = current_working_directory
 
-        self.full_config = js
+        file = os.path.join(path, DEPLOY_CONFIG_FILE_NAME)
+        try:
 
-		# Extract variables values configured
-        self.drm_version = js['drm_version']
+            f = open(file)
+            js = json.load(f)
+
+            self.full_config = js
+
+            # Extract variables values configured
+            self.drm_version = js['drm_version']
+            
+            installation_info_js = js['installation_info']
+            self.installation_type = installation_info_js['installation_type']
+            self.db_secured = installation_info_js['db_secured']
+            self.security_text = installation_info_js['security_text']
+            
+            config_js = js['config']
+            self.build_folder_name = config_js['build_folder_name']
+            self.db_folder_name = config_js['db_folder_name']
+            self.db_file_name = config_js['db_file_name']
+            self.data_file_ext = config_js['data_file_ext']
+            self.sqlite_file_ext = config_js['sqlite_file_ext']
+            
+            log_js = js['log']
+            self.log_folder_name = log_js['folder_name']
+            self.log_max_size_mb = log_js['max_size_mb']
+            self.log_backup_count = log_js['backup_count']
+
+            if 'locations' in js:
+                for location in js['locations']:
+                    if 'sqlpackage_path' in location:
+                        self.sqlpackage_path = location['sqlpackage_path']
+                    if 'sqlcmd_path' in location:
+                        self.sqlcmd_path = location['sqlcmd_path']
         
-        installation_info_js = js['installation_info']
-        self.installation_type = installation_info_js['installation_type']
-        self.db_secured = installation_info_js['db_secured']
-        self.security_text = installation_info_js['security_text']
-        
-        config_js = js['config']
-        self.build_folder_name = config_js['build_folder_name']
-        self.db_folder_name = config_js['db_folder_name']
-        self.db_file_name = config_js['db_file_name']
-        self.data_file_ext = config_js['data_file_ext']
-        self.sqlite_file_ext = config_js['sqlite_file_ext']
-        
-        log_js = js['log']
-        self.log_folder_name = log_js['folder_name']
-        self.log_max_size_mb = log_js['max_size_mb']
-        self.log_backup_count = log_js['backup_count']
-
-        if 'locations' in js:
-            for location in js['locations']:
-                if 'sqlpackage_path' in location:
-                    self.sqlpackage_path = location['sqlpackage_path']
-                if 'sqlcmd_path' in location:
-                    self.sqlcmd_path = location['sqlcmd_path']
-
-        f.close()
+            f.close()
+        except FileNotFoundError as e:
+            raise Exception(f"File not found: {file} in path: {path}")
+        except Exception as e:
+            raise Exception(f"An unexpected error occurred: {e}")
 
 
 #=================
@@ -113,7 +119,7 @@ def uninstall(path :str,retry_attempts=5, delay=2):
             raise Exception(f"An unexpected error occurred: {e}")
 
 os.system('')
-
+logger = None
 #=======
 # Helper
 #=======
@@ -125,7 +131,7 @@ parser = argparse.ArgumentParser(prog = program, description = description, epil
 
 parser.add_argument("-p", "-password", required = False)
 parser.add_argument("-f", "-path", required = False)
-
+parser.add_argument("--F","--Force", action='store_true', default=False, required = False)
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
 args = parser.parse_args()
@@ -200,9 +206,12 @@ try:
             raise Exception ("Wrong encryption key!!!")
         logger.info("==================================")
     
-    user_choice = input(style.YELLOW + "Are you sure you want to uninstall DRM? Enter [Y]/N : " + style.RESET)
+    user_choice ="y"
+    if not (args.F):
+        user_choice = input(style.YELLOW + "Are you sure you want to uninstall DRM? Enter [Y]/N : " + style.RESET)
+
     if (user_choice.lower() == "n"):
-        logger.info("Bye Bye ...")
+            logger.info("Bye Bye ...")
 
     else:
         uninstall(args.f)
@@ -211,8 +220,10 @@ try:
     
 except Exception as e:
     # Log any exceptions raised during the  execution
-    logger.critical(f"{e}")
-    logger.info(f"DRM uninstall failed!!!")
-    logger.info('==================================')
-    os.chdir(current_working_directory)
-
+    if  (logger != None):
+        logger.critical(f"{e}")
+        logger.info(f"DRM uninstall failed!!!")
+        logger.info('==================================')
+        os.chdir(current_working_directory)
+    else:
+        print(f"Error: {e}")
