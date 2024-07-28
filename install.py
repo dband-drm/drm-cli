@@ -414,8 +414,15 @@ try:
 		if(auth_valid):
 			encryption_key = args.p
 		else:
-			raise(" Not valid encryption key: {key}".format(key = args.p))
-			encryption_key = auth.set_password()
+			
+			while auth_valid == False :
+				logger.info(" Not valid encryption key: {key}".format(key = args.p))
+
+				encryption_key = auth.set_password(auth)
+				auth_valid =  auth.validate_password_policy(auth,encryption_key)
+			if(auth_valid == False ):
+				raise ValueError(" Not valid encryption key: {key}".format(key = encryption_key))
+			
 	
 	if not (args.f):
 		drm_path = get_drm_path()
