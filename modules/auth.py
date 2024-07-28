@@ -122,8 +122,10 @@ class Auth:
                 password = None
         else:
             validate_policy =False
-            validate_policy  = self.validate_password_policy(encryption_key)
-            while validate_policy == False:
+            validate_policy  = self.validate_password_policy(self,encryption_key)
+            #5 valid option to chouse password
+            valid_counter = 4
+            while validate_policy == False and valid_counter > 0:
                 
                 #=====================
                 # Enter encryption key
@@ -134,7 +136,9 @@ class Auth:
                 self.logger.info("4. At least 1 number or digit between [0-9].")
                 self.logger.info("5. At least 1 special character suc as !@#...")
                 encryption_key = input("Enter encryption key: ")
-                validate_policy  = self.validate_password_policy(encryption_key)
+                validate_policy  = self.validate_password_policy(self,encryption_key)
+                valid_counter -= 1
+
             if(validate_policy ==True):
                 password = encryption_key
                 if(password==""):
@@ -142,7 +146,7 @@ class Auth:
             else:
                 #self.logger.warning('The encryption key does not meet with validation policy!')
                 self.logger.debug('{key}: The encryption key does not meet with validation policy!'.format(key=encryption_key))
-                raise ('The encryption key does not meet with validation policy!')
+                raise ValueError('The encryption key does not meet with validation policy!,after all tries')
 
         return password
  
