@@ -46,7 +46,8 @@ class Auth:
                 flag = False
             elif not re.search("[0-9]", password):
                 flag = False
-            elif not re.search("[~`!@#$%^&*()-_=+,<.>/?;:]" , password):
+            #elif not re.search("[~`!@#$%^&*()-_=+,<.>/?;:]" , password):
+            elif not re.search(r"[~`!@#$%^&*()\-=+\[\]{};:'\",.<>?/]", password):
                 flag = False
             else:
                 flag = True
@@ -113,6 +114,7 @@ class Auth:
         :param password: Password
         :return:  Password (String)
         """    
+        password = None
         encryption_key = input("Enter encryption key (Default, empty is not encrypted): ")        
         if (encryption_key == None or encryption_key == ""):
             user_choice = input(style.YELLOW + "Are you sure you want to keep sensitive Data as clear text? Enter [Y]/N to keep unsecured Data: " + style.RESET)
