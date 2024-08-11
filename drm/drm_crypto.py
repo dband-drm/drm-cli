@@ -177,8 +177,8 @@ group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("--e", "--encrypt", help = "EncryptText", action='store_true')
 group.add_argument("--c", "--changepassword", help = "ChangePassword",action='store_true')
 
-parser.add_argument("-p", "-password", required = False)
-parser.add_argument("-n", "-newpassword", required = False)
+parser.add_argument("-p", "-encryption_key", required = False)
+parser.add_argument("-n", "-new_encryption_key", required = False)
 parser.add_argument("-t", "-text" , required = False)
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
