@@ -285,7 +285,8 @@ try:
         execution_mode = EXECUTION_MODE_ENCRYPT
 
         if(encryption_key == None and not DB_SECURED):
-           raise Exception("Error, DB NOT SECURED for operation mode(--encrypt )")
+           raise Exception("The encrypt option is optional only when drm is encrypted. \
+                           Change password to encrypt the drm database & to enable the encrypt option")
 
         if not (args.t):
             phrase = input('Please enter phrase to  encrypt: ')
