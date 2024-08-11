@@ -129,8 +129,8 @@ copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
  
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
 
-parser.add_argument("-p", "-encryption_key", required = False)
-parser.add_argument("-f", "-install_path", required = False)
+parser.add_argument("-p", "-encryption_key(Specify encryption_key, none is not encrypted)", required = False)
+parser.add_argument("-f", "-install_path(Specify install folder path)", required = False)
 parser.add_argument("--F","--Force", action='store_true', default=False, required = False)
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     

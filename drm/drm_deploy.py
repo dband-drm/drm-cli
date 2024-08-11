@@ -84,12 +84,13 @@ description = "This is a DRM CLI, developed by d-band that deploys releases conf
 copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
  
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
-parser.add_argument("-c", "--connection", help = "Connection name", required = True)
-parser.add_argument("-r", "--release", help = "Release ID", required = True)
-parser.add_argument("-p", "-encryption_key", required = False)
-parser.add_argument("--dryrun", action='store_true', default=False, required = False)
-parser.add_argument("--deploy", action='store_true', default=False, required = False)
-parser.add_argument("--align", action='store_true', default=False, required = False)
+
+parser.add_argument("-c", "-connection(Specify connection name)", required = True)
+parser.add_argument("-r", "-release(Specify release id)", required = True)
+parser.add_argument("-p", "-encryption_key(Specify encryption_key, none is not encrypted)", required = False)
+parser.add_argument("--dryrun", "--dryrun(Optional operation to generate scripts only)", action='store_true', default=False, required = False)
+parser.add_argument("--deploy", "--deploy(Optional operation to generate and execute scripts)", action='store_true', default=False, required = False)
+parser.add_argument("--align", "--align(Optional operation to align db)", action='store_true', default=False, required = False)
 
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
