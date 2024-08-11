@@ -37,8 +37,8 @@ class Auth:
         :return:  Password Valid(Bool)
         """       
         # Verify key policy
-        if(password!=None and password!=""):
-            if (len(password)<=8):
+        if(password != None and password != "" ):
+            if (len(password) <= 8):
                 flag = False
             elif not re.search("[a-z]", password):
                 flag = False
@@ -83,30 +83,6 @@ class Auth:
         else:
             return (security_text == security_text_config)
           
-        # Verify key policy
-        if(password!=None and password!=""):
-            if (len(password)<=8):
-                flag = False
-            elif not re.search("[a-z]", password):
-                flag = False
-            elif not re.search("[A-Z]", password):
-                flag = False
-            elif not re.search("[0-9]", password):
-                flag = False
-            elif not re.search("[~`!@#$%^&*()-_=+,<.>/?;:]" , password):
-                flag = False
-            else:
-                flag = True
-        else:
-            flag = True
-
-        if (flag==False):
-            self.logger.debug("{password} ,The encryption key does not meet with validation policy!".format(password = password))
-            self.logger.warning("The encryption key does not meet with validation policy!")
-        else:
-            self.logger.info("The encryption meet with validation policy!")
-        return flag
-
     @drm_logger.log_decorator(logger) 
     def set_password(self) -> str:
         """ 
