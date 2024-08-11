@@ -98,7 +98,7 @@ def uninstall(path :str,retry_attempts=5, delay=2):
         # Get the current directory of this script
         #current_dir = os.path.dirname(os.path.abspath(__file__))
         current_dir = path
-        logger.info("install dir: {path}".format(path=path))
+        logger.info("Install dir: {path}".format(path=path))
         # Delete the directory and all its contents
 
         try:
