@@ -219,11 +219,11 @@ try:
             raise Exception ("Wrong encryption key!!!")
         logger.info("==================================")
     
-    user_choice ="y"
+    user_choice ="n"
     if not (args.F):
         user_choice = input(style.YELLOW + "Are you sure you want to uninstall DRM? Enter [Y]/N : " + style.RESET)
 
-    if (user_choice.lower() == "n"):
+    if (user_choice.lower() == "n" or user_choice ==''):
             logger.info("Bye Bye ...")
 
     else:
