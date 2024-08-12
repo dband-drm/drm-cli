@@ -35,10 +35,8 @@ class style():
 class Config():
     def __init__(self,path = None):
 		# Read file
-        if (path == None):
-            path = current_working_directory
-
         file = os.path.join(path, DEPLOY_CONFIG_FILE_NAME)
+
         try:
 
             f = open(file)
@@ -98,7 +96,7 @@ def uninstall(path :str,retry_attempts=5, delay=2):
         # Get the current directory of this script
         #current_dir = os.path.dirname(os.path.abspath(__file__))
         current_dir = path
-        logger.info("install dir: {path}".format(path=path))
+        logger.info("Install dir: {path}".format(path=path))
         # Delete the directory and all its contents
 
         try:
@@ -129,8 +127,8 @@ copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
  
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
 
-parser.add_argument("-p", "-password", required = False)
-parser.add_argument("-f", "-path", required = False)
+parser.add_argument("-p", "-encryption_key(Specify encryption_key, none is not encrypted)", required = False)
+parser.add_argument("-f", "-install_path(Specify install folder path)", required = False)
 parser.add_argument("--F","--Force", action='store_true', default=False, required = False)
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
@@ -146,7 +144,22 @@ try:
 	#==================================
 	# Create constants by configuration 
 	#==================================
-    deploy_config = Config(args.f)
+    result = False
+    if(args.f != None):
+        file = os.path.join(args.f, DEPLOY_CONFIG_FILE_NAME)
+        result = os.path.exists(file)
+    while(result ==  False):
+        try:
+            path = input('Please enter folder path for configuration ,q for exit:')
+            if(path.lower() == "q"):
+                raise Exception ("Wrong configuration folder path!!!")
+            file = os.path.join(path, DEPLOY_CONFIG_FILE_NAME)
+            result = os.path.exists(file)
+        except Exception as e:
+             raise Exception ("Wrong configuration folder path!!!")
+
+
+    deploy_config = Config(path)
     DRM_VERSION = deploy_config.drm_version
     INSTALLATION_TYPE = deploy_config.installation_type
     DB_SECURED= deploy_config.db_secured
@@ -206,15 +219,15 @@ try:
             raise Exception ("Wrong encryption key!!!")
         logger.info("==================================")
     
-    user_choice ="y"
+    user_choice ="n"
     if not (args.F):
         user_choice = input(style.YELLOW + "Are you sure you want to uninstall DRM? Enter [Y]/N : " + style.RESET)
 
-    if (user_choice.lower() == "n"):
+    if (user_choice.lower() == "n" or user_choice ==''):
             logger.info("Bye Bye ...")
 
     else:
-        uninstall(args.f)
+        uninstall(path)
     
     
     

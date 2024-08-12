@@ -75,9 +75,9 @@ description = "This is a DRM Installer CLI, developed by d-band for Data deploym
 copyrights = "Copyright (C) 2023 d-band - All Rights Reserved"
 
 parser = argparse.ArgumentParser(prog = program, description = description, epilog = copyrights)
-parser.add_argument("-p", "-password", required = False)
-parser.add_argument("-d", "-install_type", required = False)
-parser.add_argument("-f", "-install_path", required = False)
+parser.add_argument("-p", "-encryption_key(Specify encryption_key, none is not encrypted)", required = False)
+parser.add_argument("-d", "-install_type(Specify data structure)", required = False)
+parser.add_argument("-f", "-install_path(Specify install folder path)", required = False)
 
 parser.add_argument("--trace", action='store_true', default=False, required = False)
 args = parser.parse_args()
@@ -193,8 +193,11 @@ def copy_drm_content(drm_path, modules_js):
 			# At least one content already exists in destination directory --> Request to overwrite
 			#======================================================================================
 			if (e.errno == 17):
-				user_choice = input(style.YELLOW + "Content already exists in given directory. Enter [Y]/N to overwrite content: " + style.RESET)
-				if (user_choice.lower() == "y"):
+				emptyfolder = files_and_folders.Folders.is_folder_empty(drm_path)
+				user_choice = "n"
+				if(emptyfolder == False):
+					user_choice = input(style.YELLOW + "Content already exists in given directory. Enter [Y]/N to overwrite content: " + style.RESET)
+				if (user_choice.lower() == "y" or emptyfolder == True):
 					if (drm_source_path != drm_path):
 						shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=True, ignore=ignore_patterns('*.pyc', '__pycache__'))
 						for module in modules_js:

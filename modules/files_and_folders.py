@@ -235,6 +235,14 @@ class Folders:
         self.folder_name = folder_name     
   
     @drm_logger.log_decorator(logger) 
+    def is_folder_empty(folder_path):
+        """ 
+        Checks if folder is empty
+        :return: Folder is empty or not (Boolean)
+        """     
+        return not os.listdir(folder_path)
+
+    @drm_logger.log_decorator(logger) 
     def check_folder_exists(self):
         """ 
         Checks if folder exists
