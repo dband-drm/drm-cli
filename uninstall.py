@@ -35,10 +35,8 @@ class style():
 class Config():
     def __init__(self,path = None):
 		# Read file
-        if (path == None):
-            path = current_working_directory
-
         file = os.path.join(path, DEPLOY_CONFIG_FILE_NAME)
+
         try:
 
             f = open(file)
@@ -146,7 +144,22 @@ try:
 	#==================================
 	# Create constants by configuration 
 	#==================================
-    deploy_config = Config(args.f)
+    result = False
+    if(args.f != None):
+        file = os.path.join(args.f, DEPLOY_CONFIG_FILE_NAME)
+        result = os.path.exists(file)
+    while(result ==  False):
+        try:
+            path = input('Please enter folder path for configuration ,q for exit:')
+            if(path.lower() == "q"):
+                raise Exception ("Wrong configuration folder path!!!")
+            file = os.path.join(path, DEPLOY_CONFIG_FILE_NAME)
+            result = os.path.exists(file)
+        except Exception as e:
+             raise Exception ("Wrong configuration folder path!!!")
+
+
+    deploy_config = Config(path)
     DRM_VERSION = deploy_config.drm_version
     INSTALLATION_TYPE = deploy_config.installation_type
     DB_SECURED= deploy_config.db_secured
@@ -214,7 +227,7 @@ try:
             logger.info("Bye Bye ...")
 
     else:
-        uninstall(args.f)
+        uninstall(path)
     
     
     
