@@ -55,7 +55,7 @@ class MsSql:
                 f = files_and_folders.Files("{app_name}.exe".format(app_name = app_name))
                 file_name = f.find_file_in_dir("/")
             if (file_name == None):
-                raise ('{file_name} utility not found!!!'.format(file_name = file_name))
+                raise Exception ('{app_name} utility not found!!!'.format(app_name = app_name))
             else:
                 return (file_name.replace("\\", "/"))
 
@@ -186,11 +186,13 @@ class MsSql:
         # Output log file
         args_list.append("/OutputPath:" + upgrade_script)
         # Deployment properties
-        if (deployment_properties == None):
+        
+        if (deployment_properties == None or len(deployment_properties)==0):
             deployment_properties = '[]'
-        js_deployment_properties = json.loads(deployment_properties)
-        for property in js_deployment_properties:
-            args_list.append("/p:" + property)
+        else:
+            js_deployment_properties = json.loads(deployment_properties)
+            for property in js_deployment_properties:
+                args_list.append("/p:" + property)
 
         #=============================
         # Generate upgrade script file
