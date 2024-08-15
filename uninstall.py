@@ -146,15 +146,16 @@ try:
 	#==================================
     result = False
     if(args.f != None):
-        file = os.path.join(args.f, DEPLOY_CONFIG_FILE_NAME)
-        result = os.path.exists(file)
+        path = args.f
+        file_path = os.path.join(path, DEPLOY_CONFIG_FILE_NAME)
+        result = os.path.exists(file_path)
     while(result ==  False):
         try:
             path = input('Please enter folder path for configuration ,q for exit:')
             if(path.lower() == "q"):
                 raise Exception ("Wrong configuration folder path!!!")
-            file = os.path.join(path, DEPLOY_CONFIG_FILE_NAME)
-            result = os.path.exists(file)
+            file_path = os.path.join(path, DEPLOY_CONFIG_FILE_NAME)
+            result = os.path.exists(file_path)
         except Exception as e:
              raise Exception ("Wrong configuration folder path!!!")
 
@@ -220,11 +221,12 @@ try:
         logger.info("==================================")
     
     user_choice ="n"
+    skip = True
     if not (args.F):
         user_choice = input(style.YELLOW + "Are you sure you want to uninstall DRM? Enter [Y]/N : " + style.RESET)
-
-    if (user_choice.lower() == "n" or user_choice ==''):
-            logger.info("Bye Bye ...")
+        skip = False
+    if (user_choice.lower() == "n" or user_choice =='') and not(skip):
+        logger.info("Bye Bye ...")
 
     else:
         uninstall(path)

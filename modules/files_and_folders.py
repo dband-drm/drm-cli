@@ -3,6 +3,7 @@ import json
 import logging
 import shutil
 from modules import drm_logger
+import fnmatch
 
 class Files:
 
@@ -20,8 +21,9 @@ class Files:
         :return: First file absolute name (String)
         """       
         for root, dirs, files in os.walk(dir):
-            if self.file_name in files:
-                return os.path.join(root, self.file_name)
+            for name in files:
+                if fnmatch.fnmatchcase(name.lower(), self.file_name.lower()):
+                    return os.path.join(root, name)
 
     @drm_logger.log_decorator(logger) 
     def check_file_exists(self):

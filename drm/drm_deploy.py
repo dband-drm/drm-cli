@@ -192,16 +192,16 @@ try:
     #=========================
     # Get release name from DB
     #=========================
-    logger.info('Starting DRM {execution_mode} (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(execution_mode = execution_mode, release_id = args.release, connection_name = args.connection))
+    logger.info('Starting DRM {execution_mode} (Release ID: "{release_id}", Connection name: "{connection_name}")'.format(execution_mode = execution_mode, release_id = args.r, connection_name = args.c))
     
     logger.info("Building release...")   
     build = Build(deploy_config)
-    build.generate_release_full_details(args.release, args.connection)    
+    build.generate_release_full_details(args.r, args.c)    
     validate = Validate(deploy_config)
-    validate.validate_release(args.connection)
+    validate.validate_release(args.c)
     logger.info("Build finished successfully!!!")
 
-    deploy = deploy.Deploy(deploy_config, encryption_key, execution_mode, args.connection)
+    deploy = deploy.Deploy(deploy_config, encryption_key, execution_mode, args.c)
     deploy.deploy_release()    
 
     logger.info(f"DRM {execution_mode} finished successfully!!!")

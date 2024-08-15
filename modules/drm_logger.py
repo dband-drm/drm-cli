@@ -139,7 +139,7 @@ def configure_logging(logname):
     else:
         log_r_filename = os.path.join(log_dir ,DRM_DEPLOY_LOG_FILE_NAME)
     
-    file_r_handler = RotatingFileHandler(log_r_filename, mode='a', maxBytes=max_bytes, backupCount=backup_count, encoding=None, delay=False, errors=None)
+    file_r_handler = RotatingFileHandler(log_r_filename, mode='a', maxBytes=max_bytes, backupCount=backup_count, encoding=None, delay=False)
     # Define the format for the log messages
     file_log_format = "%(asctime)s - %(levelname)s - %(message)s"
     file_formatter = logging.Formatter(file_log_format)
