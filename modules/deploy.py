@@ -62,7 +62,8 @@ class MsSql:
 
         js = deploy_config.full_config
         missing_object = False
-
+        self.default_data_path = None
+        self.default_log_path = None 
         #============================
         # Identify SqlPackage utility
         #============================
@@ -193,6 +194,16 @@ class MsSql:
             js_deployment_properties = json.loads(deployment_properties)
             for property in js_deployment_properties:
                 args_list.append("/p:" + property)
+                if (property=="CommentOutSetVarDeclarations=True"):
+                    target_db_obj = mssql.MsSql(self.run_script_tool_file_name, connection_string)
+                    defaults_sql_text="SELECT SERVERPROPERTY('InstanceDefaultDataPath') AS DefaultDataPath,SERVERPROPERTY('InstanceDefaultLogPath') AS DefaultLogPath;"
+                    result = target_db_obj.execute_query(defaults_sql_text)
+                    js_result = json.loads(result)
+                    if len(js_result)>0:
+                        self.default_data_path = js_result[0]["DefaultDataPath"]
+                        self.default_log_path = js_result[0]["DefaultLogPath"]
+
+
 
         #=============================
         # Generate upgrade script file
@@ -225,6 +236,11 @@ class MsSql:
         self.logger.info('Running upgrade script against "{target_name}" (log file: "{upgrade_log_file}")...'.format(target_name = target_name, upgrade_log_file = upgrade_log_file))
         
         db_obj = mssql.MsSql(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)
+        
+        if(self.default_data_path != None):
+            db_obj.default_data_path = self.default_data_path
+            db_obj.default_log_path = self.default_log_path
+
         try:
             result = db_obj.run_script(upgrade_script)
             self.logger.info(f'Upgrade "{target_name}" finished successfully!!!')
@@ -260,6 +276,9 @@ class Deploy:
         self.execution_mode = execution_mode
         self.schema_file_name = os.path.join(current_working_directory, deploy_config.db_folder_name, DRM_SCHEM_JSON_FILE_NAME)
         self.schema_parser = parser_json_json
+
+        self.default_data_path = None
+        self.default_log_path = None 
 
         #=====================================
         # Get DB & parser by installation type       
@@ -829,6 +848,7 @@ class Deploy:
                                                     if (self.execution_mode == ALIGN_MODE):
                                                         target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)
                                                         upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties)
+                                                        
                                                     result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                                     task_statuses[target_db]["status_id"] = 2
                                                     task_statuses[target_db]["status_name"] = DEPLOYMENT_SUCCESS_STATUS

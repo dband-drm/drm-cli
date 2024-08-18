@@ -56,6 +56,8 @@ class MsSql:
             self.database = database_name
         if(self.database == None):
             self.database = "master"
+        self.default_data_path = None
+        self.default_log_path = None
         
 
     @drm_logger.log_decorator(logger) 
@@ -137,13 +139,19 @@ class MsSql:
                 '-i', script_name, '-y', '0', '-s', ',', '-W', '-w', '8192', '-C',
                 '-o', self.output_log_file, "-v", "DatabaseName=" + self.database
             ]
+            if (self.default_data_path != None):
+                cmd.append('-v')
+                cmd.append(f'"DefaultDataPath"={self.default_data_path}')
+            if (self.default_log_path != None):
+                cmd.append('-v')
+                cmd.append(f'"DefaultLogPath"={self.default_log_path}')
             if (self.sql_script_variables_list != []):
                 for var_name, var_value in self.sql_script_variables_list:
                     cmd.append('-v')
                     cmd.append(f'{var_name}={var_value}')
             # Run the command
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        except:
+        except Exception as e: 
             try:
                 # Construct the sqlcmd command without direct database
                 cmd = [
@@ -152,23 +160,41 @@ class MsSql:
                     '-i', script_name, '-s', ',', '-W', '-w', '8192', '-C',
                     "-o", self.output_log_file, "-v", "DatabaseName=" + self.database
                 ]
+                if (self.default_data_path != None):
+                    cmd.append('-v')
+                    cmd.append(f'DefaultDataPath={self.default_data_path}')
+                if (self.default_log_path != None):
+                    cmd.append('-v')
+                    cmd.append(f'DefaultLogPath={self.default_log_path}')
                 if (self.sql_script_variables_list != []):
                     for var_name, var_value in self.sql_script_variables_list:
                         cmd.append('-v')
                         cmd.append(f'{var_name}={var_value}')
                 # Run the command
+                x = ''.join([str(item) for item in cmd])
+                self.logger.info(x)
+                
                 result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            except:
+            except Exception as e: 
                 pass
 
         # Check if process exit with a failure
         #if result.stderr:
         #    raise Exception (result.stderr)
         f = files_and_folders.Files(self.output_log_file)
-        error_text, error_line = f.find_text_in_file("msg")
+        if(f != None):
+            error_text, error_line = f.find_text_in_file("msg")
         if (error_line != None):
             error_text = f.get_line_in_file(error_line+1)
             error_text = error_text.replace("'", '"')
             raise Exception (f'Failed running script ""{script_name}"", {error_text}, see details in "{self.output_log_file}", line {error_line+1}.')
+        #    raise Exception (scripting variable not defined)
+        error_text, error_line = f.find_text_in_file("scripting variable not defined")
+        if (error_line != None):
+            error_text = f.get_line_in_file(error_line)
+            error_text = error_text.replace("'", '"')
+            raise Exception (f'Failed running script ""{script_name}"", {error_text}, see details in "{self.output_log_file}", line {error_line+1}.')
+
+
 
  
