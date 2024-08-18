@@ -58,6 +58,7 @@ class MsSql:
             self.database = "master"
         self.default_data_path = None
         self.default_log_path = None
+        self.default_file_prefix = database_name
         
 
     @drm_logger.log_decorator(logger) 
@@ -139,12 +140,15 @@ class MsSql:
                 '-i', script_name, '-y', '0', '-s', ',', '-W', '-w', '8192', '-C',
                 '-o', self.output_log_file, "-v", "DatabaseName=" + self.database
             ]
+            if (self.default_file_prefix != None):
+                cmd.append('-v')
+                cmd.append(f'DefaultFilePrefix={self.default_file_prefix}')
             if (self.default_data_path != None):
                 cmd.append('-v')
-                cmd.append(f'"DefaultDataPath"={self.default_data_path}')
+                cmd.append(f'DefaultDataPath="{self.default_data_path}"')
             if (self.default_log_path != None):
                 cmd.append('-v')
-                cmd.append(f'"DefaultLogPath"={self.default_log_path}')
+                cmd.append(f'DefaultLogPath="{self.default_log_path}"')
             if (self.sql_script_variables_list != []):
                 for var_name, var_value in self.sql_script_variables_list:
                     cmd.append('-v')
@@ -160,12 +164,15 @@ class MsSql:
                     '-i', script_name, '-s', ',', '-W', '-w', '8192', '-C',
                     "-o", self.output_log_file, "-v", "DatabaseName=" + self.database
                 ]
+                if (self.default_file_prefix != None):
+                    cmd.append('-v')
+                    cmd.append(f'DefaultFilePrefix={self.default_file_prefix}')
                 if (self.default_data_path != None):
                     cmd.append('-v')
-                    cmd.append(f'DefaultDataPath={self.default_data_path}')
+                    cmd.append(f'DefaultDataPath="{self.default_data_path}"')
                 if (self.default_log_path != None):
                     cmd.append('-v')
-                    cmd.append(f'DefaultLogPath={self.default_log_path}')
+                    cmd.append(f'DefaultLogPath="{self.default_log_path}"')
                 if (self.sql_script_variables_list != []):
                     for var_name, var_value in self.sql_script_variables_list:
                         cmd.append('-v')

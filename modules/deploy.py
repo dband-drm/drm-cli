@@ -202,6 +202,7 @@ class MsSql:
                     if len(js_result)>0:
                         self.default_data_path = js_result[0]["DefaultDataPath"]
                         self.default_log_path = js_result[0]["DefaultLogPath"]
+                        
 
 
 
@@ -240,6 +241,7 @@ class MsSql:
         if(self.default_data_path != None):
             db_obj.default_data_path = self.default_data_path
             db_obj.default_log_path = self.default_log_path
+            
 
         try:
             result = db_obj.run_script(upgrade_script)
@@ -279,7 +281,7 @@ class Deploy:
 
         self.default_data_path = None
         self.default_log_path = None 
-
+        
         #=====================================
         # Get DB & parser by installation type       
         #=====================================
