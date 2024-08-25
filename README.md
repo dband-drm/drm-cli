@@ -11,6 +11,7 @@ Use the [README.md](https://github.com/dband-drm/drm-cli/readme.md) file for a q
 - [Whats is drm-cli](#what-is-drm-cli)
 - [License](#license)
 - [Releases versions](#releases-versions)
+- [Basic principals & architecture](#basic-principals--architecture)
 - [Getting started](#getting-started)
 - [Support](#support)
 - [Videos](#videos)
@@ -40,10 +41,15 @@ To get full features list, see features list in [releases versions](#releases-ve
 - [drm-cli v1.0](https://github.com/dband-drm/drm-cli/wiki/drm-cli-v1.0) (_release date: Sep 2024_)
 - drm-cli v1.1(_release date: N/A_)
 
+## Basic principals & architecture
+Learn the basic principals and architecture of the drm-cli. 
+- [Basic principals](https://github.com/dband-drm/drm-cli/wiki/basic-principals)
+- [drm-cli architecture](https://github.com/dband-drm/drm-cli/wiki/drm-cli-architecture)
+
 ## Getting started
 Use this quick start guide to master your skills in drm-cli. 
 - [Install drm-cli](https://github.com/dband-drm/drm-cli/wiki/install)
-- [Uninstall drm-cli](https://github.com/dband-drm/drm-cli/wiki/unstall)
+- [Uninstall drm-cli](https://github.com/dband-drm/drm-cli/wiki/uninstall)
 - [drm-cli architecture](https://github.com/dband-drm/drm-cli/wiki/architecture)
 - [Configure release](https://github.com/dband-drm/drm-cli/wiki/configure)
 - [Deploy release](https://github.com/dband-drm/drm-cli/wiki/deploy)
