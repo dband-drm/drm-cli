@@ -38,7 +38,7 @@ To get full features list, see features list in [releases versions](#releases-ve
 
 ## Releases versions
 [Features list](https://github.com/dband-drm/drm-cli/wiki/features-list)
-- [drm-cli v1.0](https://github.com/dband-drm/drm-cli/wiki/drm-cli-v1.0) (_release date: Sep 2024_)
+- [drm-cli v1.0](https://github.com/dband-drm/drm-cli/wiki/drm%E2%80%90cli-v1.0) (_release date: Sep 2024_)
 - drm-cli v1.1(_release date: N/A_)
 
 ## Basic principals & architecture
