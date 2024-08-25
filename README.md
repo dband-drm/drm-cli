@@ -44,7 +44,7 @@ To get full features list, see features list in [releases versions](#releases-ve
 ## Basic principals & architecture
 Learn the basic principals and architecture of the drm-cli. 
 - [Basic principals](https://github.com/dband-drm/drm-cli/wiki/basic-principals)
-- [drm-cli architecture](https://github.com/dband-drm/drm-cli/wiki/drm-cli-architecture)
+- [drm-cli architecture](https://github.com/dband-drm/drm-cli/wiki/architecture)
 
 ## Getting started
 Use this quick start guide to master your skills in drm-cli. 
