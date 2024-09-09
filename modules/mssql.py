@@ -178,8 +178,8 @@ class MsSql:
                         cmd.append('-v')
                         cmd.append(f'{var_name}={var_value}')
                 # Run the command
-                x = ''.join([str(item) for item in cmd])
-                self.logger.info(x)
+                x = ''.join([str(item) + ' '  for item in cmd])
+                self.logger.debug(x)
                 
                 result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             except Exception as e: 
