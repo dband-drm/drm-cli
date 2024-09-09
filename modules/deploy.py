@@ -721,7 +721,7 @@ class Deploy:
                                         targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text, project_targets_compare_db)
                                         
                                         # First try --> Check former deployment if failed
-                                        if try_num == 1:
+                                        if try_num >= 1:
                                             task_statuses = Deploy.get_last_deployment_statuses(self, release_id, solution_id, project_id, targets_list_js, deploy_dir, self.db_file_name)     
 
                                         if (task_statuses != {}):

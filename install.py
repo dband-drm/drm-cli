@@ -88,7 +88,7 @@ args = parser.parse_args()
 #=================
 try:
     logger_level = logging.INFO
-    logger_mode = 0 #0-install , 1-deploy 
+    logger_mode = 0 #0-install , 1-deploy ,2-crypto ,3-uninstall
     if (args.trace):
         logger_level = logging.DEBUG
 

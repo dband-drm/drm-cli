@@ -17,9 +17,15 @@ current_working_directory = Path(__file__).parent.parent.resolve()
 BYTES_PER_MB = 1024 * 1024
 LOG_DIR = "log"
 LOG_DIR_TRACE = "trace"
-INSTALL_LOG_FILE_NAME = "install.log"
+DRM_INSTALL_LOG_FILE_NAME = "drm_install.log"
+DRM_INSTALL_LOG_FILE_NAME_TRACE = "drm_install_trace.log"
+DRM_UNINSTALL_LOG_FILE_NAME = "drm_uninstall.log"
+DRM_UNINSTALL_LOG_FILE_NAME_TRACE = "drm_uninstall_trace.log"
 DRM_DEPLOY_LOG_FILE_NAME = "drm_deploy.log"
 DRM_DEPLOY_LOG_FILE_NAME_TRACE = "drm_deploy_trace.log"
+DRM_CRYPTO_LOG_FILE_NAME = "drm_crypto.log"
+DRM_CRYPTO_LOG_FILE_NAME_TRACE = "drm_crypto_trace.log"
+
 
 #Log Level: The level of the log (DEBUG, INFO, WARNING, ERROR, CRITICAL).
 
@@ -135,9 +141,17 @@ def configure_logging(logname):
     max_bytes = int(logmaxsize) * BYTES_PER_MB
     # Create a rotate file handler
     if mode == "0":
-        log_r_filename = os.path.join(log_dir ,INSTALL_LOG_FILE_NAME)
-    else:
+        log_r_filename = os.path.join(log_dir ,DRM_INSTALL_LOG_FILE_NAME)
+        drm_trace_name = DRM_INSTALL_LOG_FILE_NAME_TRACE
+    if mode =="1":
         log_r_filename = os.path.join(log_dir ,DRM_DEPLOY_LOG_FILE_NAME)
+        drm_trace_name = DRM_DEPLOY_LOG_FILE_NAME_TRACE
+    if mode =="2":
+        log_r_filename = os.path.join(log_dir ,DRM_CRYPTO_LOG_FILE_NAME)
+        drm_trace_name = DRM_CRYPTO_LOG_FILE_NAME_TRACE
+    if mode =="3":
+        log_r_filename = os.path.join(log_dir ,DRM_UNINSTALL_LOG_FILE_NAME)
+        drm_trace_name = DRM_UNINSTALL_LOG_FILE_NAME_TRACE
     
     file_r_handler = RotatingFileHandler(log_r_filename, mode='a', maxBytes=max_bytes, backupCount=backup_count, encoding=None, delay=False)
     # Define the format for the log messages
@@ -151,8 +165,7 @@ def configure_logging(logname):
     if int(level)==logging.DEBUG:
         #Get log directory
         log_dir_trace = get_verify_directory(os.path.join(log_dir,LOG_DIR_TRACE))
-
-        log_filename_trace_format =  datetime.now().strftime("%Y_%m_%d-%H_%M_%S") + DRM_DEPLOY_LOG_FILE_NAME_TRACE 
+        log_filename_trace_format =  datetime.now().strftime("%Y_%m_%d-%H_%M_%S_") + drm_trace_name 
         log_filename_trace_file = os.path.join(log_dir_trace,log_filename_trace_format )
 
         # Create a file handler
