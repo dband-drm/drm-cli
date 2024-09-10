@@ -594,13 +594,17 @@ class Deploy:
 
             task_statuses = {}
             
+            deployment_former_try_js = {}
+
             while try_num <= release_max_retries and not(deployment_succeeded):
-                try:
+                try:                    
                     try_num += 1
                     #==================
                     # Generate Try JSON
                     #==================
                     deployment_try_js = Deploy.generate_try_json(self, try_num)
+                    if (deployment_former_try_js == {}):
+                        deployment_former_try_js = deployment_try_js
 
                     #=====================
                     # Get active solutions  
@@ -662,6 +666,7 @@ class Deploy:
                                     project_is_active = 1
 
                                 if (project_is_active):
+                                    task_statuses = {}
                                     #=================
                                     # Get project info
                                     #=================
@@ -721,23 +726,37 @@ class Deploy:
                                         targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text, project_targets_compare_db)
                                         
                                         # First try --> Check former deployment if failed
-                                        if try_num >= 1:
+                                        if try_num == 1:
                                             task_statuses = Deploy.get_last_deployment_statuses(self, release_id, solution_id, project_id, targets_list_js, deploy_dir, self.db_file_name)     
+
+                                        # Former try failed --> Get statuses by project from former try json results
+                                        if (deployment_former_try_js != deployment_try_js):
+                                            for js_former_solution in deployment_former_try_js['deployments_solutions']:
+                                                if (js_former_solution["solution_id"] == solution_id):
+                                                    for js_former_project in js_former_solution['deployments_projects']:
+                                                        if (js_former_project["project_id"] == project_id):
+                                                            task_statuses[js_former_project["target_database_name"]] = {"status_id": js_former_project['deployment_status_id'], "status_name": js_former_project['deployment_status_name'], "start_time": js_former_project['start_time'], "end_time": js_former_project['end_time'], "error_message": None}
 
                                         if (task_statuses != {}):
                                             for target_db in targets_list_js:  
-                                                # If did not deploy in former run within the same deployment --> run it now
-                                                if(task_statuses[target_db]['status_id'] == 0):
-                                                    pending_tasks.append({"target_db": target_db})
-                                                    task_statuses[target_db] = {"status_id": task_statuses[target_db]['status_id'], "status_name": task_statuses[target_db]['status_name'], "start_time": None, "end_time": None, "error_message": None}
-                                                # If deployed successfully in former run within the same deployment --> mark it as already deployed
-                                                elif(task_statuses[target_db]['status_id'] == 2):
-                                                    task_statuses[target_db] = {"status_id": 5, "status_name": DEPLOYMENT_ALREADY_DEPLOYED_STATUS, "start_time": task_statuses[target_db]['start_time'], "end_time": task_statuses[target_db]['end_time'], "error_message": task_statuses[target_db]['error_message']}
+                                                if (target_db in task_statuses):
+                                                    # If did not deploy in former run within the same deployment --> run it now
+                                                    if(task_statuses[target_db]['status_id'] == 0):
+                                                        pending_tasks.append({"target_db": target_db})
+                                                        task_statuses[target_db] = {"status_id": task_statuses[target_db]['status_id'], "status_name": task_statuses[target_db]['status_name'], "start_time": None, "end_time": None, "error_message": None}
+                                                    # If deployed successfully in former run within the same deployment --> mark it as already deployed
+                                                    elif(task_statuses[target_db]['status_id'] == 2):
+                                                        task_statuses[target_db] = {"status_id": 5, "status_name": DEPLOYMENT_ALREADY_DEPLOYED_STATUS, "start_time": task_statuses[target_db]['start_time'], "end_time": task_statuses[target_db]['end_time'], "error_message": task_statuses[target_db]['error_message']}
+                                                    else:
+                                                        task_statuses[target_db] = {"status_id": task_statuses[target_db]['status_id'], "status_name": task_statuses[target_db]['status_name'], "start_time": task_statuses[target_db]['start_time'], "end_time": task_statuses[target_db]['end_time'], "error_message": task_statuses[target_db]['error_message']}
+                                                        # Former failed deployment
+                                                        if(task_statuses[target_db]['status_id'] == 4):
+                                                            failed_tasks.append({"target_db": target_db})
                                                 else:
-                                                    task_statuses[target_db] = {"status_id": task_statuses[target_db]['status_id'], "status_name": task_statuses[target_db]['status_name'], "start_time": task_statuses[target_db]['start_time'], "end_time": task_statuses[target_db]['end_time'], "error_message": task_statuses[target_db]['error_message']}
-                                                    # Former failed deployment
-                                                    if(task_statuses[target_db]['status_id'] == 4):
-                                                        failed_tasks.append({"target_db": target_db})
+                                                    # If any target database that did not yet run in the former try --> add it as pending
+                                                    pending_tasks.append({"target_db": target_db})
+                                                    task_statuses[target_db] = {"status_id": "0", "status_name": DEPLOYMENT_PENDING_STATUS, "start_time": None, "end_time": None, "error_message": None}                                                                              
+
                                         else:
                                             # New deployment --> deploy all target databases
                                             for target_db in targets_list_js:  
@@ -793,6 +812,7 @@ class Deploy:
 
                                             failed = False
                                             
+                                            # Wrapper for parallel execution (Async threads)
                                             def task_wrapper(task: Dict[str, Any], upgrade_script, target_connection_string) -> None:
                                                 target_db = task["target_db"]
                                                 try:
@@ -843,6 +863,7 @@ class Deploy:
                                                     task_statuses[task["target_db"]]["status_name"] = DEPLOYMENT_PENDING_STATUS
                                                 raise Exception ('One or more projects deployment failed.')
 
+                                            # Handle compare DB only after all other target database finished successfully
                                             if (project_targets_compare_db in targets_list_js):
                                                 target_db = project_targets_compare_db
                                                 try:
@@ -934,6 +955,10 @@ class Deploy:
                         deployment_try_js["deployment_status_name"] = DEPLOYMENT_FAILED_STATUS
                         deployment_try_js["error_message"] = f"{e}"
                         deployment_try_js["end_time"] = datetime.now().isoformat()
+                        
+                        # Save try json result for retry statuses
+                        deployment_former_try_js = deployment_try_js
+
                         deployment_js["deployments_tries"].append(deployment_try_js)
                         
                         if (try_num <= release_max_retries):
