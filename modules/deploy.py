@@ -704,8 +704,8 @@ class Deploy:
                                         deployment_project_js["target_database_name"] = project_targets_compare_db
                                         deployment_project_js["start_time"] = datetime.now().isoformat()
                                         deployment_project_js["end_time"] = datetime.now().isoformat()
-                                        deployment_project_js["status_id"] = 2
-                                        deployment_project_js["status_name"] = DEPLOYMENT_SUCCESS_STATUS
+                                        deployment_project_js["deployment_status_id"] = 2
+                                        deployment_project_js["deployment_status_name"] = DEPLOYMENT_SUCCESS_STATUS
                                         
                                         deployment_solution_js["deployments_projects"].append(deployment_project_js)
 
