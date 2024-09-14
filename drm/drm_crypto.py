@@ -234,12 +234,13 @@ try:
     #===============
     from modules.builder import Build
     from modules.validator import Validate
-    from modules import crypto, parser_sqlite_json,parser_json_json, files_and_folders,auth
+    from modules import crypto, parser_sqlite_json,parser_json_json, files_and_folders
+    from modules.auth import Auth
     #======================
     # Verify encryption key
     #======================
     encryption_key = None
-    auth = auth.Auth()
+    auth = Auth()
     
     if (DB_SECURED):
         if not (args.p):

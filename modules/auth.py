@@ -100,7 +100,7 @@ class Auth:
                 password = None
         else:
             validate_policy =False
-            validate_policy  = self.validate_password_policy(self,encryption_key)
+            validate_policy  = self.validate_password_policy(password=encryption_key)
             #5 valid option to chouse password
             valid_counter = 4
             while validate_policy == False and valid_counter > 0:

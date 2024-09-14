@@ -104,7 +104,9 @@ except (ImportError, AttributeError):
 #===============
 # Import modules
 #===============
-from modules import init_db, crypto, files_and_folders,auth
+from modules import init_db, crypto, files_and_folders
+from modules.auth import Auth
+
 	
 
 #==========
@@ -396,7 +398,7 @@ try:
 	#======================================
 	# Get installation definition from user
 	#======================================
-	auth = auth.Auth
+	auth = Auth()
 
 	if not (args.d):
 		install_type = get_installation_type()
@@ -408,12 +410,12 @@ try:
 			install_type = "sqlite"
 	
 	if not(args.p):
-		encryption_key = auth.set_password(auth)
+		encryption_key = auth.set_password()
 		#get_encryption_key()
 	elif  ((args.p) and ((args.p=="")or (args.p.lower()=="none"))):
 		encryption_key = None
 	else:
-		auth_valid =  auth.validate_password_policy(auth,password=args.p)
+		auth_valid =  auth.validate_password_policy(password=args.p)
 		if(auth_valid):
 			encryption_key = args.p
 		else:
@@ -421,8 +423,8 @@ try:
 			while auth_valid == False :
 				logger.info(" Not valid encryption key: {key}".format(key = args.p))
 
-				encryption_key = auth.set_password(auth)
-				auth_valid =  auth.validate_password_policy(auth,encryption_key)
+				encryption_key = auth.set_password()
+				auth_valid =  auth.validate_password_policy(password=encryption_key)
 			if(auth_valid == False ):
 				raise ValueError(" Not valid encryption key: {key}".format(key = encryption_key))
 			
