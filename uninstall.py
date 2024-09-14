@@ -198,12 +198,12 @@ try:
     #===============
     # Import modules
     #===============
-    from modules import auth
+    from modules.auth import Auth
     #======================
     # Verify encryption key
     #======================
     encryption_key = None
-    auth = auth.Auth()
+    auth = Auth()
     if (DB_SECURED):
         if not (args.p):
             if ("DRM_SECRET" in os.environ):

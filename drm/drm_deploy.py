@@ -146,11 +146,13 @@ try:
     #===============
     from modules.builder import Build
     from modules.validator import Validate
-    from modules import crypto, deploy,auth
+    from modules import crypto, deploy
+    from modules.auth import Auth
     
     #======================
     # Verify encryption key
     #======================
+    auth = Auth()
     encryption_key = None
     if (DB_SECURED):
         if not (args.p):
