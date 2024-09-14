@@ -143,12 +143,6 @@ class MsSql:
             if (self.default_file_prefix != None):
                 cmd.append('-v')
                 cmd.append(f'DefaultFilePrefix={self.default_file_prefix}')
-            if (self.default_data_path != None):
-                cmd.append('-v')
-                cmd.append(f'DefaultDataPath="{self.default_data_path}"')
-            if (self.default_log_path != None):
-                cmd.append('-v')
-                cmd.append(f'DefaultLogPath="{self.default_log_path}"')
             if (self.sql_script_variables_list != []):
                 for var_name, var_value in self.sql_script_variables_list:
                     cmd.append('-v')
@@ -167,12 +161,6 @@ class MsSql:
                 if (self.default_file_prefix != None):
                     cmd.append('-v')
                     cmd.append(f'DefaultFilePrefix={self.default_file_prefix}')
-                if (self.default_data_path != None):
-                    cmd.append('-v')
-                    cmd.append(f'DefaultDataPath="{self.default_data_path}"')
-                if (self.default_log_path != None):
-                    cmd.append('-v')
-                    cmd.append(f'DefaultLogPath="{self.default_log_path}"')
                 if (self.sql_script_variables_list != []):
                     for var_name, var_value in self.sql_script_variables_list:
                         cmd.append('-v')
