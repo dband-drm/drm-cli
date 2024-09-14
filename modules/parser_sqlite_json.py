@@ -347,6 +347,8 @@ class Deployments:
             for target_db in targets_list_js:
                 if target_db not in task_statuses:
                     task_statuses[target_db] = {"status_id": 0, "status_name": Deployments.DEPLOYMENT_PENDING_STATUS, "start_time": None, "end_time": None, "error_message": None}
+        else:
+            last_deployment_id = None
                         
         return last_deployment_id, task_statuses
         
