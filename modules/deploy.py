@@ -213,6 +213,14 @@ class MsSql:
         # Check if process exit with a failure
         if result.stderr:
             raise Exception (result.stderr)
+            
+        if (self.default_data_path != None):
+            file = files_and_folders.Files(upgrade_script)
+            text = f':setvar DefaultLogPath "{self.default_log_path}"\n'
+            file.add_first_line_to_file(text)
+            text = f':setvar DefaultDataPath "{self.default_data_path}"'
+            file.add_first_line_to_file(text)
+            
         self.logger.info("Upgrade script generated successfully!!!")
 
         return upgrade_script
@@ -987,4 +995,5 @@ class Deploy:
                     raise Exception (f'{e}, see detains in "{deployment_file_deply_name}"')
             else:
                 raise Exception (f'{e}')
+        
         

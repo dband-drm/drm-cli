@@ -227,6 +227,73 @@ class Files:
             if (error_raised):
                 raise Exception (error_message)
 
+    @drm_logger.log_decorator(logger) 
+    def replace_text_in_file(self, old_text, new_text):
+        """ 
+        Replace text in a file
+        :param old_text: Old text to seek for
+        :param new_text: New text to replace with
+        :return:
+        """       
+        error_raised = False
+        try:
+            # Open the file for reading using the Files.open_file method
+            file = Files.open_file(self.file_name, file_op='r')           # Read the contents of the file
+            file_data = file.read()
+            file.close()  # Close the file after reading
+            
+            # Replace the target string
+            new_data = file_data.replace(old_text, new_text)
+            
+            # Open the file for writing using Files.open_file method
+            file = Files.open_file(self, file_op='w')
+            # Write the updated content back to the file
+            file.write(new_data)
+        except Exception as e:
+            error_raised = True
+            error_message = "Operation failed!!! " + str(e)
+        finally:
+            Files.close_file(self, file)
+            if (error_raised):
+                raise Exception (error_message)
+    
+    @drm_logger.log_decorator(logger) 
+    def add_first_line_to_file(self, text):
+        """ 
+        Add a line to file as first.
+        :param text: Text to as as first line
+        :return:
+        """       
+        
+        # Read the contents of the file
+        with open(self.file_name, 'r') as file:
+            lines = file.readlines()
+
+        # Insert the new line at the beginning
+        lines.insert(0, text + '\n')
+
+
+        # Write everything back to the same file
+        with open(self.file_name, 'w') as file:
+            file.writelines(lines)
+            
+        Files.clean_file(self)
+
+    @drm_logger.log_decorator(logger) 
+    def clean_file(self):
+        """ 
+        Clean file from any hidden Bom characters
+        :return:
+        """       
+        with open(self.file_name, 'r', encoding='utf-8') as file:
+            content = file.read()
+
+        # Optionally, replace unwanted characters here
+        content = content.replace('\ufeff', '')  # Remove BOM if present
+
+        with open(self.file_name, 'w', encoding='utf-8') as file:
+            file.write(content)          
+      
 
 class Folders:
 
@@ -322,5 +389,3 @@ class Folders:
                     raise Exception ('Folder "' + self.folder_name + '" not exist.' )
         except Exception as e:
             error_message = "Folder deletion failed!!! " + str(e)
-
-
