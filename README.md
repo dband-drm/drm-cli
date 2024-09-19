@@ -65,10 +65,9 @@ In some cases the support team will request dipper technical information about y
 ## Videos
 - [d-band introduction](https://youtu.be/D8rE5XIIblw)
 - [drm-cli interactive installation](https://youtu.be/kqQnZqfBvxM)
-- [drm-cli inline installation](https://youtu.be/VAnFYnDeVIg)
 - [drm-cli inline uninstall](https://youtu.be/HrPpmrDK5GM)
-- [drm_deploy](https://youtu.be/D8rE5XIIblw)
-- [drm_crypto](https://youtu.be/D8rE5XIIblw)
+
+[All videos](https://github.com/dband-drm/drm-cli/wiki/Videos)
 
 ## Next steps
 - [Install drm-cli](https://github.com/dband-drm/drm-cli/wiki/install)
