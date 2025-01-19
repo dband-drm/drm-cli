@@ -1,0 +1,198 @@
+{
+	"dictionaries": [
+		{
+			"connection_types": [
+				{
+					"id": "1",
+					"name": "Microsoft SQL Server"
+				},
+				{
+					"id": "2",
+					"name": "Oracle"
+				},
+				{
+					"id": "3",
+					"name": "PostgreSQL"
+				},
+				{
+					"id": "4",
+					"name": "MySql"
+				},
+				{
+					"id": "5",
+					"name": "Google BigQuery"
+				}
+			]
+		},
+		{
+			"solution_types": [
+				{
+					"id": "1",
+					"name": "Microsoft SQL Server"
+				},
+				{
+					"id": "2",
+					"name": "Liquibase"
+				}
+			]
+		},
+		{
+			"target_types": [
+				{
+					"id": "1",
+					"name": "Databases list"
+				},
+				{
+					"id": "2",
+					"name": "SQL query"
+				}
+			]
+		},
+		{
+			"deployment_types": [
+				{
+					"id": "1",
+					"name": "Dry run"
+				},
+				{
+					"id": "2",
+					"name": "Publish"
+				}
+			]
+		},
+		{
+			"deployment_statuses": [
+				{
+					"id": "0",
+					"name": "Pending"
+				},
+				{
+					"id": "1",
+					"name": "In progress"
+				},
+				{
+					"id": "2",
+					"name": "Finished successfully"
+				},
+				{
+					"id": "3",
+					"name": "Canceled"
+				},
+				{
+					"id": "4",
+					"name": "Failed"
+				},
+				{
+					"id": "5",
+					"name": "Already deployed"
+				}
+			]
+		}
+	],
+	"releases": [
+		{
+			"id": 1,
+			"name": "Demo release: Deploy a project to a single mssql database",
+			"is_active": true,
+			"solutions": [
+				{
+					"name": "DRM mssql demo solution",
+					"solution_type_id": 1,
+					"path": "../mssql",
+					"connections": [
+						{
+							"name": "dev",
+							"connection_type_id": 1,
+							"connection_string": "Server=127.0.0.1;User Id=drm;Password=drm;Encrypt=False;"
+						},
+						{
+							"name": "test",
+							"connection_type_id": 1,
+							"connection_string": "Server=.;User Id=drm;Password=drm;Encrypt=False;"
+						}
+					],
+					"projects": [
+						{
+							"name": "Project_A",
+							"targets_compare_db": "DB_A1",
+							"targets_type_id": 1,
+							"targets_list": "[\"DB_A1\"]",
+							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\"]",
+							"fail_on_error": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": 2,
+			"name": "Demo release: Deploy multiple projects to multiple mssql database",
+			"max_retries": 3,
+			"is_active": true,
+			"solutions": [
+				{
+					"name": "DRM mssql demo solution",
+					"solution_type_id": 1,
+					"path": "../mssql",
+					"connections": [
+						{
+							"name": "dev",
+							"connection_type_id": 1,
+							"connection_string": "Server=127.0.0.1;User Id=drm;Password=drm;Encrypt=False;"
+						},
+						{
+							"name": "test",
+							"connection_type_id": 1,
+							"connection_string": "Server=.;User Id=drm;Password=drm;Encrypt=False;"
+						}
+					],
+					"sql_scripts_variables": [
+						{
+							"name": "var1",
+							"value": "value1"
+						},
+						{
+							"name": "var2",
+							"value": "value2"
+						},
+						{
+							"name": "var3",
+							"value": "value3"
+						}
+					],
+					"projects": [
+						{
+							"name": "Project_A",
+							"targets_compare_db": "DB_A1",
+							"targets_type_id": 1,
+							"targets_list": "[\"DB_A1\"]",
+							"fail_on_error": true
+						},
+						{
+							"name": "Project_B",
+							"targets_compare_db": "DB_B1",
+							"targets_type_id": 1,
+							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\", \"CommentOutSetVarDeclarations=True\"]",
+							"targets_list": "[\"DB_B1\", \"DB_B2\", \"DB_B3\", \"DB_B4\"]",
+							"max_degree_in_parallel": 2,
+							"timeout_in_min": 10,
+							"sleep_time_in_sec": 2,
+							"fail_on_error": false
+						},
+						{
+							"name": "Project_C",
+							"targets_compare_db": "DB_C1",
+							"targets_type_id": 2,
+							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\", \"CommentOutSetVarDeclarations=True\"]",
+							"targets_sql_text": "select name from sys.databases where name like 'DB_C%' order by name",
+							"max_degree_in_parallel": 5,
+							"timeout_in_min": 30,
+							"sleep_time_in_sec": 2,
+							"fail_on_error": true
+						}
+					]
+				}
+			]
+		}
+	]
+}

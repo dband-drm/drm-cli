@@ -1,0 +1,793 @@
+{
+	"tables": [
+		{
+			"name": "connection_types",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 50,
+					"is_nullable": false
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_connection_types",
+					"type": "PK",
+					"columns": "id"
+				}
+			]
+		},
+		{
+			"name": "solution_types",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 50,
+					"is_nullable": false
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_solution_types",
+					"type": "PK",
+					"columns": "id"
+				}
+			]
+		},
+		{
+			"name": "target_types",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 50,
+					"is_nullable": false
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_target_types",
+					"type": "PK",
+					"columns": "id"
+				}
+			]
+		},
+		{
+			"name": "deployment_types",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 50,
+					"is_nullable": false
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_deployment_types",
+					"type": "PK",
+					"columns": "id"
+				}
+			]
+		},
+		{
+			"name": "deployment_statuses",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 50,
+					"is_nullable": false
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_deployment_statuses",
+					"type": "PK",
+					"columns": "id"
+				}
+			]
+		},
+		{
+			"name": "releases",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 100,
+					"is_nullable": false
+				},
+				{
+					"name": "max_retries",
+					"data_type": "integer",
+					"is_nullable": false,
+					"default": "0"
+				},
+				{
+					"name": "is_active",
+					"data_type": "boolean",
+					"is_nullable": false,
+					"default": "true"
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_releases",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "uq_releases__name",
+					"type": "UQ",
+					"columns": "name"
+				}
+			]
+		},
+		{
+			"name": "solutions",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 100,
+					"is_nullable": false
+				},
+				{
+					"name": "release_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "ordinal",
+					"data_type": "integer",
+					"is_nullable": true
+				},
+				{
+					"name": "solution_type_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "path",
+					"data_type": "string",
+					"length": 500,
+					"is_nullable": false
+				},
+				{
+					"name": "is_active",
+					"data_type": "boolean",
+					"is_nullable": false,
+					"default": "true"
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_solutions",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "uq_solutions__name",
+					"type": "UQ",
+					"columns": "release_id, name"
+				},
+				{
+					"name": "uq_solutions__ordinal",
+					"type": "UQ",
+					"columns": "release_id, ordinal"
+				},
+				{
+					"name": "fk_solutions__release_id",
+					"type": "FK",
+					"columns": "release_id",
+					"ref_table": "releases",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_solutions__solution_type_id",
+					"type": "FK",
+					"columns": "solution_type_id",
+					"ref_table": "solution_types",
+					"ref_columns": "id"
+				}
+			]
+		},
+		{
+			"name": "connections",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 100,
+					"is_nullable": false
+				},
+				{
+					"name": "solution_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "connection_type_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "connection_string",
+					"data_type": "string",
+					"length": 500,
+					"is_nullable": false
+				},
+				{
+					"name": "is_active",
+					"data_type": "boolean",
+					"is_nullable": false,
+					"default": "true"
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_connections",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "uq_connections__name",
+					"type": "UQ",
+					"columns": "solution_id, name"
+				},
+				{
+					"name": "fk_connections__solution_id",
+					"type": "FK",
+					"columns": "solution_id",
+					"ref_table": "solutions",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_connections__connection_type_id",
+					"type": "FK",
+					"columns": "connection_type_id",
+					"ref_table": "connection_types",
+					"ref_columns": "id"
+				}
+			]
+		},
+		{
+			"name": "sql_scripts_variables",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "ineteger",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 100,
+					"is_nullable": false
+				},
+				{
+					"name": "solution_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "value",
+					"data_type": "string",
+					"length": 500,
+					"is_nullable": false
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_sql_scripts_variables",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "uq_sql_scripts_variables",
+					"type": "UQ",
+					"columns": "solution_id, name"
+				},
+				{
+					"name": "fk_sql_scripts_variables__solution_id",
+					"type": "FK",
+					"columns": "solution_id",
+					"ref_table": "solutions",
+					"ref_columns": "id"
+				}
+			]
+		},
+		{
+			"name": "projects",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 100,
+					"is_nullable": false
+				},
+				{
+					"name": "solution_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "ordinal",
+					"data_type": "integer",
+					"is_nullable": true
+				},
+				{
+					"name": "targets_compare_db",
+					"data_type": "string",
+					"length": 255,
+					"is_nullable": false
+				},
+				{
+					"name": "targets_type_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "targets_list",
+					"data_type": "text",
+					"length": 2000,
+					"is_nullable": true
+				},
+				{
+					"name": "targets_sql_script_id",
+					"data_type": "integer",
+					"is_nullable": true
+				},
+				{
+					"name": "max_degree_in_parallel",
+					"data_type": "integer",
+					"is_nullable": false,
+					"default": 1
+				},
+				{
+					"name": "timeout_in_min",
+					"data_type": "integer",
+					"is_nullable": true
+				},
+				{
+					"name": "sleep_time_in_sec",
+					"data_type": "integer",
+					"is_nullable": true
+				},
+				{
+					"name": "deployment_properties",
+					"data_type": "text",
+					"is_nullable": true
+				},
+				{
+					"name": "fail_on_error",
+					"data_type": "boolean",
+					"is_nullable": false,
+					"default": true
+				},
+				{
+					"name": "is_active",
+					"data_type": "boolean",
+					"is_nullable": false,
+					"default": "true"
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_projects",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "uq_projects__ordinal",
+					"type": "UQ",
+					"columns": "solution_id, ordinal"
+				},
+				{
+					"name": "fk_projects__solution_id",
+					"type": "FK",
+					"columns": "solution_id",
+					"ref_table": "solutions",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_projects__targets_type_id",
+					"type": "FK",
+					"columns": "targets_type_id",
+					"ref_table": "target_types",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_projects__targets_sql_script_id",
+					"type": "FK",
+					"columns": "targets_sql_script_id",
+					"ref_table": "sql_scripts",
+					"ref_columns": "id"
+				}
+			]
+		},
+		{
+			"name": "sql_scripts",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "ineteger",
+					"is_nullable": false
+				},
+				{
+					"name": "name",
+					"data_type": "string",
+					"length": 100,
+					"is_nullable": false
+				},
+				{
+					"name": "solution_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "sql_text",
+					"data_type": "string",
+					"length": 2000,
+					"is_nullable": false
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_sql_scripts",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "uq_sql_scripts__name",
+					"type": "UQ",
+					"columns": "solution_id, name"
+				},
+				{
+					"name": "fk_sql_scripts__solution_id",
+					"type": "FK",
+					"columns": "solution_id",
+					"ref_table": "solutions",
+					"ref_columns": "id"
+				}
+			]
+		},
+		{
+			"name": "deployments",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "guid",
+					"is_nullable": false
+				},
+				{
+					"name": "release_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},				
+				{
+					"name": "connection_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},				
+				{
+					"name": "user_id",
+					"data_type": "integer",
+					"is_nullable": false,
+					"default": 1
+				},				
+				{
+					"name": "deployment_type_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},				
+				{
+					"name": "start_time",
+					"data_type": "datetime",
+					"is_nullable": false
+				},				
+				{
+					"name": "end_time",
+					"data_type": "datetime",
+					"is_nullable": true
+				},				
+				{
+					"name": "error_message",
+					"data_type": "string",
+					"length": 200,
+					"is_nullable": true
+				},				
+				{
+					"name": "deployment_status_id",
+					"data_type": "integer",
+					"is_nullable": false,
+					"default": 0
+				}				
+			],
+			"constraints": [
+				{
+					"name": "pk_deployments",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "fk_deployments__release_id",
+					"type": "FK",
+					"columns": "release_id",
+					"ref_table": "releases",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_deployments__deployment_type_id",
+					"type": "FK",
+					"columns": "deployment_type_id",
+					"ref_table": "deployment_types",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_deployments__deployment_status_id",
+					"type": "FK",
+					"columns": "deployment_status_id",
+					"ref_table": "deployment_statuses",
+					"ref_columns": "id"
+				}
+			]	
+		},
+		{
+			"name": "deployments_tries",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "guid",
+					"is_nullable": false
+				},				
+				{
+					"name": "deployment_id",
+					"data_type": "guid",
+					"is_nullable": false
+				},				
+				{
+					"name": "try_num",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "start_time",
+					"data_type": "datetime",
+					"is_nullable": false
+				},				
+				{
+					"name": "end_time",
+					"data_type": "datetime",
+					"is_nullable": true
+				},				
+				{
+					"name": "error_message",
+					"data_type": "string",
+					"length": 200,
+					"is_nullable": true
+				},				
+				{
+					"name": "deployment_status_id",
+					"data_type": "integer",
+					"is_nullable": false,
+					"default": 0
+				}				
+			],
+			"constraints": [
+				{
+					"name": "pk_deployments_tries",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "fk_deployments_tries__deployment_id",
+					"type": "FK",
+					"columns": "deployment_id",
+					"ref_table": "deployments",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_deployments_tries__deployment_status_id",
+					"type": "FK",
+					"columns": "deployment_status_id",
+					"ref_table": "deployment_statuses",
+					"ref_columns": "id"
+				}
+			]	
+		},
+		{
+			"name": "deployments_solutions",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "guid",
+					"is_nullable": false
+				},
+				{
+					"name": "deployment_try_id",
+					"data_type": "guid",
+					"is_nullable": false
+				},				
+				{
+					"name": "solution_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},				
+				{
+					"name": "start_time",
+					"data_type": "datetime",
+					"is_nullable": false
+				},				
+				{
+					"name": "end_time",
+					"data_type": "datetime",
+					"is_nullable": true
+				},				
+				{
+					"name": "error_message",
+					"data_type": "string",
+					"length": 200,
+					"is_nullable": true
+				},				
+				{
+					"name": "deployment_status_id",
+					"data_type": "integer",
+					"is_nullable": false,
+					"default": 0
+				}				
+			],
+			"constraints": [
+				{
+					"name": "pk_deployments_solutions",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "fk_deployments_solutions__deployment_try_id",
+					"type": "FK",
+					"columns": "deployment_try_id",
+					"ref_table": "deployments_tries",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_deployments_solutions__solution_id",
+					"type": "FK",
+					"columns": "solution_id",
+					"ref_table": "solutions",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_deployments_solutions__deployment_status_id",
+					"type": "FK",
+					"columns": "deployment_status_id",
+					"ref_table": "deployment_statuses",
+					"ref_columns": "id"
+				}
+			]	
+		},
+		{
+			"name": "deployments_projects",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "guid",
+					"is_nullable": false
+				},
+				{
+					"name": "deployment_solution_id",
+					"data_type": "guid",
+					"is_nullable": false
+				},				
+				{
+					"name": "project_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},				
+				{
+					"name": "target_database_name",
+					"data_type": "string",
+					"length": 255,
+					"is_nullable": false
+				},				
+				{
+					"name": "start_time",
+					"data_type": "datetime",
+					"is_nullable": false
+				},				
+				{
+					"name": "end_time",
+					"data_type": "datetime",
+					"is_nullable": true
+				},				
+				{
+					"name": "error_message",
+					"data_type": "string",
+					"length": 200,
+					"is_nullable": true
+				},			
+				{
+					"name": "deployment_status_id",
+					"data_type": "integer",
+					"is_nullable": false,
+					"default": 0
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_deployments_projects",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "fk_deployments_projects__deployment_solution_id",
+					"type": "FK",
+					"columns": "deployment_solution_id",
+					"ref_table": "deployment_solutions",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_deployments_projects__project_id",
+					"type": "FK",
+					"columns": "project_id",
+					"ref_table": "projects",
+					"ref_columns": "id"
+				},
+				{
+					"name": "fk_deployments_projects__deployment_status_id",
+					"type": "FK",
+					"columns": "deployment_status_id",
+					"ref_table": "deployment_statuses",
+					"ref_columns": "id"
+				}
+			]	
+		}
+	]
+}
