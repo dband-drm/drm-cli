@@ -1,6 +1,6 @@
-# drm-cli [![d-band](https://github.com/dband-drm/drm-cli/blob/main/Images/dband_logo.jpg)](https://dbanddrm.wixsite.com/d-band)
+# drm-cli [![d-band](https://github.com/dband-drm/drm-cli/blob/main/Images/dband_logo.jpg)](https://www.d-band.com)
 
-This [Data Release Manager repository](https://github.com/dband-drm/drm-cli/) was developed by [d-band](https://dbanddrm.wixsite.com/d-band).\
+This [Data Release Manager repository](https://github.com/dband-drm/drm-cli/) was developed by [d-band](https://www.d-band.com).\
 The [repository](https://github.com/dband-drm/drm-cli/) allows you to manage and control your data releases that are held and managed on a variety of source controls.\
 The repository is a python project & supports a variety of operation systems (e.g. Windows. Linux, etc.)
 
@@ -59,7 +59,7 @@ Use this quick start guide to master your skills in drm-cli.
 ## Support
 Help us improve the `drm-cli` :)\
 Use the [issue tracker](https://github.com/dband-drm/drm-cli/issues) tab to open new issues/suggestions or keep tracking active issues progress.\
-Any suggestion will be investigated & considered by [d-band](https://dbanddrm.wixsite.com/d-band).\
+Any suggestion will be investigated & considered by [d-band](https://www.d-band.com).\
 In some cases the support team will request dipper technical information about your issue using the `drm-cli` [tracing](https://github.com/dband-drm/drm-cli/wiki/trace).
 
 ## Videos
