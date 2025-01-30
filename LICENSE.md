@@ -1,0 +1,74 @@
+[Home](https://github.com/dband-drm/drm-cli/wiki/home)
+
+# Open Source Freeware Software License Agreement
+
+**Version**: 1.0  
+**Effective Date**: September 1, 2024
+
+## 1. Definitions
+
+**"Software"**: The `drm-cli` software provided under this Agreement, including any updates, modifications, and any associated documentation.
+
+**"Licensor"**: [d-band](http://www.d-band.com), the entity that owns the Software and is granting the license under this Agreement.
+
+**"Licensee"**: Any individual or entity who uses the Software under the terms of this Agreement.
+
+**"Open Source"**: Refers to software for which the source code is freely available for modification and distribution under the terms of this Agreement.
+
+**"Freeware"**: Refers to software that is provided free of charge.
+
+## 2. Grant of License
+
+[d-band](http://www.d-band.com) grants the Licensee a worldwide, royalty-free, non-exclusive, perpetual, and irrevocable license to:
+
+- Use, copy, modify, and distribute the `drm-cli` Software, either in binary or source code form.
+- Create derivative works of the `drm-cli` Software.
+
+## 3. Redistribution
+
+Redistribution of the `drm-cli` Software, in either source or binary form, must comply with the following conditions:
+
+- The original copyright notice, this license agreement, and the disclaimer of warranties must be included in all copies or substantial portions of the Software.
+- If the `drm-cli` Software is modified, the resulting work must be marked as modified to avoid any confusion with the original Software.
+- If the `drm-cli` Software is modified and redistributed, the modified version must include the following statement:  
+  "This software has been modified by [d-band](http://www.d-band.com) or its contributors."
+- The Licensee must give appropriate credit to [d-band](http://www.d-band.com), provide a link to the original `drm-cli` Software, and indicate if changes were made.
+
+## 4. Disclaimer of Warranties
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+* THE USE OF THE SOFTWARE IS AT THE USER'S SOLE RISK. D-BAND BEARS NO RESPONSIBILITY FOR ANY CONSEQUENCES ARISING FROM THE USE OR MISUSE OF THE SOFTWARE.
+IN NO EVENT SHALL D-BAND OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+## 5. Limitation of Liability
+
+To the maximum extent permitted by law, in no event will [d-band](http://www.d-band.com) be liable for any damages arising out of the use or inability to use the `drm-cli` Software, even if [d-band](http://www.d-band.com) has been advised of the possibility of such damages.
+
+## 6. Termination
+
+This license is effective until terminated. The Licensee's rights under this license will terminate automatically without notice from [d-band](http://www.d-band.com) if the Licensee fails to comply with any term of this Agreement. Upon termination, the Licensee must destroy all copies of the `drm-cli` Software.
+
+## 7. Governing Law
+
+This Agreement shall be governed by and construed in accordance with the laws of the State of Israel, without regard to its conflict of law principles.
+
+## 8. Entire Agreement
+
+This Agreement constitutes the entire agreement between the parties with respect to the subject matter and supersedes all prior or contemporaneous understandings regarding such subject matter.
+
+---
+
+**Licensor:**  
+[d-band](http://www.d-band.com)
+
+**Date:**  
+September 1, 2024
+
+---
+
+**Licensee:**  
+By using the `drm-cli` Software, you agree to the terms of this License Agreement.
+
+[Home](https://github.com/dband-drm/drm-cli/wiki/home)
