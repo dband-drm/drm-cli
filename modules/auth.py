@@ -97,7 +97,7 @@ class Auth:
             if (user_choice.lower() == "y"):
                 password = None
             else:
-                self.set_password(self)
+                self.set_password()
         else:
             validate_policy =False
             validate_policy  = self.validate_password_policy(password=encryption_key)
@@ -114,7 +114,7 @@ class Auth:
                 self.logger.info("4. At least 1 number or digit between [0-9].")
                 self.logger.info("5. At least 1 special character suc as !@#...")
                 encryption_key = input("Enter encryption key: ")
-                validate_policy  = self.validate_password_policy(self,encryption_key)
+                validate_policy  = self.validate_password_policy(encryption_key)
                 valid_counter -= 1
 
             if(validate_policy ==True):
