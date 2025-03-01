@@ -50,10 +50,9 @@ class Install:
 
 
     @drm_logger.log_decorator(logger) 
-    def copy_drm_content(self, drm_path, modules_js):
+    def copy_drm_content(self, modules_js):
         '''
         This function copies the DRM content into the DRM  directory
-        :param drm_path: DRM full path directory
         :param modules_js: List of modules to copy
         :return:
         '''
@@ -61,7 +60,7 @@ class Install:
 
             self.logger.info('Copying DRM content...')
         
-            drm_config_file = os.path.join(drm_path, DEPLOY_CONFIG_FILE_NAME)
+            drm_config_file = os.path.join(self.drm_path, DEPLOY_CONFIG_FILE_NAME)
             file = files_and_folders.Files(drm_config_file)
             # Configuration already exists --> already installed (stop the installation)
             if (file.check_file_exists()):
@@ -74,11 +73,11 @@ class Install:
                 # Copy DRM content into destination directory
                 #============================================
                 # If destination directory (selected by the user) differ from installer --> Copy the drm content to it
-                if (drm_source_path != drm_path):
-                    shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=False, ignore=ignore_patterns('*.pyc', '__pycache__'))
+                if (drm_source_path != self.drm_path):
+                    shutil.copytree(drm_source_path, self.drm_path, dirs_exist_ok=False, ignore=ignore_patterns('*.pyc', '__pycache__'))
                     for module in modules_js:
                         source_module_file_name = os.path.join(current_working_directory, "modules", module)
-                        target_module_file_name = os.path.join(drm_path, "modules", module)
+                        target_module_file_name = os.path.join(self.drm_path, "modules", module)
                         shutil.copy(source_module_file_name, target_module_file_name)
 
             except Exception as e:
@@ -86,20 +85,20 @@ class Install:
                 # At least one content already exists in destination directory --> Request to overwrite
                 #======================================================================================
                 if (e.errno == 17):
-                    emptyfolder = files_and_folders.Folders.is_folder_empty(drm_path)
+                    emptyfolder = files_and_folders.Folders.is_folder_empty(self.drm_path)
                     user_choice = "n"
                     if(emptyfolder == False):
                         user_choice = input(style.YELLOW + "Content already exists in given directory. Enter [Y]/N to overwrite content: " + style.RESET)
                     if (user_choice.lower() == "y" or emptyfolder == True):
-                        if (drm_source_path != drm_path):
-                            shutil.copytree(drm_source_path, drm_path, dirs_exist_ok=True, ignore=ignore_patterns('*.pyc', '__pycache__'))
+                        if (drm_source_path != self.drm_path):
+                            shutil.copytree(drm_source_path, self.drm_path, dirs_exist_ok=True, ignore=ignore_patterns('*.pyc', '__pycache__'))
                             for module in modules_js:
                                 source_module_file_name = os.path.join(current_working_directory, "modules", module)
-                                target_module_file_name = os.path.join(drm_path, "modules", module)
+                                target_module_file_name = os.path.join(self.drm_path, "modules", module)
                                 shutil.copyfile(source_module_file_name, target_module_file_name,)
                     else:
                         raise Exception (str(e))
-            if (drm_source_path != drm_path):
+            if (drm_source_path != self.drm_path):
                 self.logger.info('Content copied successfully!!!')
 
         except Exception as e:
@@ -107,10 +106,9 @@ class Install:
 
 
     @drm_logger.log_decorator(logger) 
-    def create_drm_db(self, drm_path, install_type, encryption_key):
+    def create_drm_db(self, install_type, encryption_key):
         '''
         This function creates the DRM Database & DB objects
-        :param drm_path: The directory to install the DRM in
         :param install_type: Installation type
         :param encryption_key: Encryption key
         :return:
@@ -126,7 +124,7 @@ class Install:
             #===================================
             # Create DB directory in destination
             #===================================            
-            db_directory = os.path.join(drm_path, db_folder_name)
+            db_directory = os.path.join(self.drm_path, db_folder_name)
             folder = files_and_folders.Folders(db_directory)
             folder.create_folder()
 
@@ -174,10 +172,9 @@ class Install:
 
 
     @drm_logger.log_decorator(logger) 
-    def create_drm_config(self, drm_path, install_type, encryption_key):
+    def create_drm_config(self, install_type, encryption_key):
         '''
         This function creates a new drm.config file
-        :param drm_path: DRM full path directory
         :param install_type: Document the install type inside the drm.config
         :param encryption_key: Encryption key
         '''
@@ -202,7 +199,7 @@ class Install:
            #=============================================
             # Create configuration DRM file in destination
             #=============================================
-            drm_config_file = os.path.join(drm_path, DEPLOY_CONFIG_FILE_NAME)
+            drm_config_file = os.path.join(self.drm_path, DEPLOY_CONFIG_FILE_NAME)
             installer_user = os.getlogin()
             install_timestamp = str(datetime.datetime.now())
             security_text = "This drm cli was developed by d-band and it is amazing!!!"
@@ -260,17 +257,17 @@ class Install:
             # Create DRM directory & copy content
             #====================================
             modules_js = self.install_config.full_config['modules']
-            Install.copy_drm_content(self, self.drm_path, modules_js)
+            Install.copy_drm_content(self, modules_js)
 
             #==============
             # Create DRM DB
             #==============
-            Install.create_drm_db(self, self.drm_path, self.install_type, self.encryption_key)
+            Install.create_drm_db(self, self.install_type, self.encryption_key)
 
             #==================
             # Create drm.config
             #==================
-            Install.create_drm_config(self, self.drm_path, self.install_type, self.encryption_key)
+            Install.create_drm_config(self, self.install_type, self.encryption_key)
             
         except Exception as e:
             raise Exception ("failed to upgrade the DRM, " + str(e))
@@ -301,11 +298,10 @@ class Upgrade:
     
 
     @drm_logger.log_decorator(logger) 
-    def upgrade_drm_folders(self, drm_version_config, drm_path):
+    def upgrade_drm_folders(self, drm_version_config):
         '''
         This function upgrades the DRM structured folders
         :param drm_version_config: DRM version config
-        :param drm_path: DRM full path directory
         :return:
         '''
         try:
@@ -314,6 +310,31 @@ class Upgrade:
 
             if ("folders" in drm_version_config):
                 js = drm_version_config['folders']
+
+                #============
+                # Add folders
+                #============
+                if ("add" in js):
+                    folders_js = js['add']
+                    for folder in folders_js:
+                        folder_name = os.path.join(self.drm_path, folder['target_path'], folder['name'])
+                        fldr = files_and_folders.Folders(folder_name)
+                        # Create folder
+                        fldr.create_folder()
+
+                #===============
+                # Delete folders
+                #===============
+                if ("del" in js):
+                    folders_js = js['del']
+                    for folder in folders_js:
+                        folder_name = os.path.join(self.drm_path, folder['target_path'], folder['name'])
+                        fldr = files_and_folders.Folders(folder_name)
+                        # Delete folder content recursively
+                        fldr.delete_folder_content()
+                        # Delete folder
+                        fldr.delete_folder()
+
                 self.logger.info('Folders upgraded successfully!!!')
             else:
                 self.logger.info('Nothing to upgrade!!!')
@@ -323,11 +344,10 @@ class Upgrade:
         
 
     @drm_logger.log_decorator(logger) 
-    def upgrade_drm_binaries(self, drm_version_config, drm_path):
+    def upgrade_drm_binaries(self, drm_version_config):
         '''
         This function upgrades the DRM bin files
-         :param drm_version_config: DRM version config
-       :param drm_path: DRM full path directory
+        :param drm_version_config: DRM version config
         :return:
         '''
         try:
@@ -345,11 +365,10 @@ class Upgrade:
 
 
     @drm_logger.log_decorator(logger) 
-    def upgrade_drm_database(self, drm_version_config, drm_path):
+    def upgrade_drm_database(self, drm_version_config):
         '''
         This function upgrades the DRM database
         :param drm_version_config: DRM version config
-        :param drm_path: DRM full path directory
         :return:
         '''
         try:
@@ -367,11 +386,10 @@ class Upgrade:
 
 
     @drm_logger.log_decorator(logger) 
-    def upgrade_drm_configs(self, drm_version_config, drm_path):
+    def upgrade_drm_configs(self, drm_version_config):
         '''
         This function upgrades the DRM config files
         :param drm_version_config: DRM version config
-        :param drm_path: DRM full path directory
         :return:
         '''
         try:
@@ -413,22 +431,22 @@ class Upgrade:
                     #================
                     # Upgrade folders
                     #================
-                    Upgrade.upgrade_drm_folders(self, drm_version_config, self.drm_path)
+                    Upgrade.upgrade_drm_folders(self, drm_version_config)
 
                     #============
                     # Upgrade bin
                     #============
-                    Upgrade.upgrade_drm_binaries(self, drm_version_config, self.drm_path)
+                    Upgrade.upgrade_drm_binaries(self, drm_version_config)
 
                     #===========
                     # Upgrade db
                     #===========
-                    Upgrade.upgrade_drm_database(self, drm_version_config, self.drm_path)
+                    Upgrade.upgrade_drm_database(self, drm_version_config)
 
                     #===============
                     # Upgrade config
                     #===============
-                    Upgrade.upgrade_drm_configs(self, drm_version_config, self.drm_path)
+                    Upgrade.upgrade_drm_configs(self, drm_version_config)
 
                     #==================================
                     # Update drm version in config file
