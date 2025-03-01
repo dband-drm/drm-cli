@@ -356,6 +356,44 @@ class Upgrade:
 
             if ("bin" in drm_version_config):
                 js = drm_version_config['bin']
+
+                #=============
+                # Add binaries
+                #=============
+                if ("add" in js):
+                    files_js = js['add']
+                    for file in files_js:
+                        source_file_name = os.path.join(current_working_directory, file['source_path'], file['name'])
+                        target_file_name = os.path.join(self.drm_path, file['target_path'], file['name'])
+                        fl = files_and_folders.Files(source_file_name)
+                        if (fl.check_file_exists()):
+                            # Copy file
+                            shutil.copy(source_file_name, target_file_name)
+
+                #================
+                # Update binaries
+                #================
+                if ("upd" in js):
+                    files_js = js['upd']
+                    for file in files_js:
+                        source_file_name = os.path.join(current_working_directory, file['source_path'], file['name'])
+                        target_file_name = os.path.join(self.drm_path, file['target_path'], file['name'])
+                        fl = files_and_folders.Files(source_file_name)
+                        if (fl.check_file_exists()):
+                            # Copy file
+                            shutil.copy(source_file_name, target_file_name)
+
+                #================
+                # Delete binaries
+                #================
+                if ("del" in js):
+                    files_js = js['del']
+                    for file in files_js:
+                        target_file_name = os.path.join(self.drm_path, file['target_path'], file['name'])
+                        fl = files_and_folders.Files(target_file_name)
+                        # Delete folder content recursively
+                        fl.delete_file()
+
                 self.logger.info('Binaries upgraded successfully!!!')
             else:
                 self.logger.info('Nothing to upgrade!!!')
