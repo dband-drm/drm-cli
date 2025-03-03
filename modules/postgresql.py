@@ -3,6 +3,7 @@ import subprocess
 import json
 import logging
 import asyncio
+import re
 from pathlib import Path
 from modules import drm_logger, files_and_folders
 
@@ -30,29 +31,29 @@ class PostgreSQL:
         self.sql_script_variables_list = sql_script_variables_list
         self.output_log_file = output_log_file # os.path.join(current_working_directory, "log", LOG_FILE_DEFAULT_NAME)
         self.run_script_tool_file_name = run_script_tool_file_name
-        self.database = database_name
+        
 
         # Parse connection string
         self.server = "localhost"
         self.port = "5432"
         self.username = None
         self.password = None
-        
-        params_pair = connection_string.split(";")
-        for param in params_pair:
-            key, value = param.split('=', 1)
-            param_name = key.strip().lower()
-            param_value = value.strip()
-            if param_name == 'host':
-                self.server = param_value
-            elif param_name == 'port':
-                self.port = param_value
-            elif param_name == 'dbname':
-                self.database = param_value
-            elif param_name == 'user':
-                self.username = param_value
-            elif param_name == 'password':
-                self.password = param_value
+        self.database = database_name
+        #TODO using database_name param or extract from connection string 
+        # Regular expression to extract values
+        match = re.search(r'jdbc:postgresql://([\d\.]+):(\d+)/(\w+);username=(\w+);password=(\w+);', connection_string)
+
+        if match:
+            server, port, dbname, username, password = match.groups()
+            self.server = server
+            self.port = port
+            self.database = dbname
+            self.username = username
+            self.password = password
+        else:
+            self.logger.error(f"Not valid connection string,  valid format 'url=jdbc:postgresql://server:port/db;username=user;password=pass;'")
+            raise ValueError(f"Not valid connection string")
+
 
     @drm_logger.log_decorator(logger)
     def execute_query(self, query_text):

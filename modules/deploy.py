@@ -7,6 +7,7 @@ import logging
 import subprocess
 import shutil
 import concurrent.futures
+import re
 from typing import Callable, List, Dict, Any
 from queue import Queue
 from pathlib import Path
@@ -155,7 +156,7 @@ class MsSql:
         return connection_string + "Database={project_targets_compare_db};".format(project_targets_compare_db = project_targets_compare_db)
                
     @drm_logger.log_decorator(logger) 
-    def generate_upgrade_script(self, deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, connection_string, deployment_properties):
+    def generate_upgrade_script(self, deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, connection_string, deployment_properties, solution_path):
         """ 
         returns the fixed connection string using compare DB
         :param deploy_file_base_name: file base name (prefix)
@@ -166,6 +167,7 @@ class MsSql:
         :param source_file: source file name (dacpac)
         :param connection_string: connection string
         :param deployment_properties: array of deployment properties
+        :param solution_path: solution path
         :return: update script name (String)
         """ 
         # Define upgrade script file
@@ -267,14 +269,15 @@ class Liquibase:
     @drm_logger.log_decorator(logger) 
     def __init__(self, deploy_config): 
         def get_location (self, app_name):
-            if which(app_name) != None:
-                return app_name
+           
             app = "{app_name}.bat".format(app_name = app_name)
             if which(app) != None:
-                return app
+                return which(app)
             app = "{app_name}.exe".format(app_name = app_name)
             if which(app) != None:
-                return app
+                return which(app)
+            if which(app_name) != None:
+                return which(app_name)
             # Not known --> search
             f = files_and_folders.Files(app_name)
             file_name = f.find_file_in_dir("/")
@@ -299,30 +302,39 @@ class Liquibase:
         #============================
         #todo add more types 
         app_name = "liquibase"
-        if hasattr(deploy_config, 'liquibase_path'):
-            # Get utility location from configuration
-            self.upgrade_tool_file_name = deploy_config.liquibase_path
+        liquibase_path = next(
+           (json.loads(loc)["liquibase_path"] for loc in deploy_config.full_config["locations"] if "liquibase_path" in json.loads(loc)) ,
+           None 
+        )
+        if liquibase_path is not None:
+            self.upgrade_tool_file_name = liquibase_path
         else:
             # Utility not configured --> serach
             missing_object = True
             self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
             self.upgrade_tool_file_name = get_location (self, app_name)                    
             self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
-            locations_js = json.loads('{"liquibase_path": "' + self.upgrade_tool_file_name + '"}')
+            
+            locations_js = json.loads(json.dumps('{"liquibase_path": "' + self.upgrade_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
             js['locations'].append(locations_js)
 
         app_name = "psql"
-        if hasattr(deploy_config, 'psql_path'):
-            # Get utility location from configuration
-            self.run_script_tool_file_name = deploy_config.psql_path
+        psql_path = next(
+           (json.loads(loc)["psql_path"] for loc in deploy_config.full_config["locations"] if "psql_path" in json.loads(loc)) ,
+           None 
+        )
+        if psql_path is not None:
+            self.run_script_tool_file_name = psql_path
         else:
             # Utility not configured --> serach
             missing_object = True
             self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
             self.run_script_tool_file_name = get_location (self, app_name)                    
             self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
-            locations_js = json.loads('{"psql_path": "' + self.run_script_tool_file_name + '"}')
+            
+            locations_js = json.loads(json.dumps('{"psql_path": "' + self.run_script_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
             js['locations'].append(locations_js)
+
 
         if(missing_object):
             json_obj = json.dumps(js, indent=4)
@@ -373,8 +385,8 @@ class Liquibase:
         :return: source file full path (String)
         """ 
         #TODO change to changelog
-        return os.path.join (solution_path, project_name, "changelog",".xml")
-               
+        #return os.path.join (solution_path,  "changelog.xml")
+        return "changelog.xml"
 
     @drm_logger.log_decorator(logger) 
     def get_fixed_connection_string(self, connection_string, project_targets_compare_db):
@@ -384,10 +396,12 @@ class Liquibase:
         :param project_targets_compare_db: database name to connect into
         :return: fixed conneciton string (String)
         """ 
-        url = self.parse_connection_string(connection_string,"url")
+        #jdbc_url = self.parse_connection_string(connection_string,"url")
         #--url=jdbc:postgresql://127.0.0.1:5432/postgres ^
         #--url=jdbc:postgresql://127.0.0.1:5432/mydatabase ^
-        return url.replace("/postgres",f"/{project_targets_compare_db}")
+        #return url.replace("/postgres",f"/{project_targets_compare_db}")
+        return re.sub(r"(url=jdbc:postgresql://[^/]+/)(\w+)", rf"\1{project_targets_compare_db}", connection_string)
+        
         #return connection_string + "Database={project_targets_compare_db};".format(project_targets_compare_db = project_targets_compare_db)
 
     @drm_logger.log_decorator(logger) 
@@ -414,7 +428,7 @@ class Liquibase:
         return None 
 
     @drm_logger.log_decorator(logger) 
-    def generate_upgrade_script(self, deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, connection_string, deployment_properties):
+    def generate_upgrade_script(self, deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, connection_string, deployment_properties, solution_path):
         """ 
         returns the fixed connection string using compare DB
         :param deploy_file_base_name: file base name (prefix)
@@ -425,6 +439,7 @@ class Liquibase:
         :param source_file: source file name (changelog)
         :param connection_string: connection string
         :param deployment_properties: array of deployment properties
+        :param solution_path: solution path
         :return: update script name (String)
         """ 
         # Define upgrade script file
@@ -437,12 +452,20 @@ class Liquibase:
         args_list = []
         # Utility
         args_list.append(self.upgrade_tool_file_name)
-
-        #changeLogFile  
+        
+        #changeLogFile  C:\Users\vikil\liquibase\Project_P01
         args_list.append("--changeLogFile=" + source_file)
         #SearchPath
-        args_list.append("--search-path=" + source_file)
-
+        f = files_and_folders.Files(os.path.join(solution_path, source_file))
+         
+        if  f.check_file_exists():
+            args_list.append("--search-path=" + solution_path)
+        else:
+            f = files_and_folders.Files(os.path.join(solution_path, project_name, source_file))
+            if  f.check_file_exists():
+                args_list.append("--search-path=" + os.path.join(solution_path, project_name))
+            else:
+                raise Exception ("Search path not defined")
         #parse connection_string
         url = self.parse_connection_string(connection_string,"url")
         username = self.parse_connection_string(connection_string,"username")
@@ -454,9 +477,9 @@ class Liquibase:
         #password
         args_list.append("--password=" + password)
         # Output log file
-        args_list.append("--logFile=" + upgrade_script)
+        #args_list.append("--logFile=" + "./liquibase.log")
         # Generate script
-        args_list.append("status")
+        args_list.append("updateSql" )
         # Deployment properties
         
         if (deployment_properties == None or len(deployment_properties)==0):
@@ -481,9 +504,16 @@ class Liquibase:
         #=============================
         # Generate upgrade script file
         #=============================
-        result = subprocess.run(args_list, capture_output=True)
+        output_file =  upgrade_script
+
+        with open(output_file, "w") as f:
+            result = subprocess.run(args_list, stdout=f, stderr=subprocess.PIPE, text=True)
+
+        #if result.returncode != 0:
+        #    print("Error:", result.stderr)
+        #result = subprocess.run(args_list, capture_output=True)
         # Check if process exit with a failure
-        if result.stderr:
+        if result.returncode != 0:
             raise Exception (result.stderr)
             
         #if (self.default_data_path != None):
@@ -976,7 +1006,7 @@ class Deploy:
                                         # Generate upgrade script
                                         #========================
                                         target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
-                                        upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties)
+                                        upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties,solution_path)
     
                                         #======================
                                         # Generate Project JSON
@@ -1055,7 +1085,7 @@ class Deploy:
                                             # Generate upgrade script
                                             #========================
                                             target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)                                              
-                                            upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties)
+                                            upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties, solution_path)
                                             try:
                                                 task_statuses[target_db]["start_time"] = datetime.now().isoformat()
                                                 result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
@@ -1085,7 +1115,7 @@ class Deploy:
                                             #========================
                                             if (self.execution_mode == DEPLOY_MODE):
                                                 target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)
-                                                upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties)
+                                                upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties, solution_path)
 
                                             # Queue pending tasks in parallel
                                             task_queue = Queue()
@@ -1102,7 +1132,7 @@ class Deploy:
                                                         task_statuses[target_db]["start_time"] = datetime.now().isoformat()
                                                         if (self.execution_mode == ALIGN_MODE):
                                                             target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)
-                                                            upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties)
+                                                            upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties, solution_path)
                                             
                                                         result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                                         task_statuses[target_db]["status_id"] = 2
@@ -1152,7 +1182,7 @@ class Deploy:
                                                     task_statuses[target_db]["start_time"] = datetime.now().isoformat()
                                                     if (self.execution_mode == ALIGN_MODE):
                                                         target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)
-                                                        upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties)
+                                                        upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties, solution_path)
                                                         
                                                     result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                                     task_statuses[target_db]["status_id"] = 2
