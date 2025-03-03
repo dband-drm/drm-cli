@@ -53,6 +53,7 @@ class PostgreSQL:
         else:
             self.logger.error(f"Not valid connection string,  valid format 'url=jdbc:postgresql://server:port/db;username=user;password=pass;'")
             raise ValueError(f"Not valid connection string")
+ 
 
 
     @drm_logger.log_decorator(logger)
