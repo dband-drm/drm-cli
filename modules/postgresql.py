@@ -34,13 +34,7 @@ class PostgreSQL:
         
 
         # Parse connection string
-        self.server = "localhost"
-        self.port = "5432"
-        self.username = None
-        self.password = None
-        self.database = database_name
-        #TODO using database_name param or extract from connection string 
-        # Regular expression to extract values
+         
         match = re.search(r'jdbc:postgresql://([\d\.]+):(\d+)/(\w+);username=(\w+);password=(\w+);', connection_string)
 
         if match:
@@ -53,6 +47,10 @@ class PostgreSQL:
         else:
             self.logger.error(f"Not valid connection string,  valid format 'url=jdbc:postgresql://server:port/db;username=user;password=pass;'")
             raise ValueError(f"Not valid connection string")
+        
+        #Override target DB
+        if database_name is not None:
+            self.database = database_name
  
 
 
