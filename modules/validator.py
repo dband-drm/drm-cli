@@ -90,8 +90,8 @@ class Solution:
                 # Validate Solution Type
                 #=======================
                 if "solution_type_id" in solution:
-                    if solution['solution_type_id'] not in [1]:
-                        raise Exception ('Solution type "' + str(solution['solution_type_id']) + '" in solution "' + str(solution['name']) + '" is not yet supported!!! (legal values: 1)')
+                    if solution['solution_type_id'] not in [1, 2]:
+                        raise Exception ('Solution type "' + str(solution['solution_type_id']) + '" in solution "' + str(solution['name']) + '" is not yet supported!!! (legal values: 1, 2)')
                 else:
                     raise Exception ('No Solution Type defined for solution "' + str(solution['id']) + '"!!!')
                 #==============
@@ -178,15 +178,15 @@ class Project:
                                     raise Exception ('No targets list defined for project "' + project['name'] + '" in solution "' + str(solution['id']) + '"!!!')
                             elif project['targets_type_id'] in [2]:
                                 if "targets_sql_script_id" not in project:
-                                    raise Exception ('Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
+                                    raise Exception ('No Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
                                 else:
                                     if project['targets_sql_script_id'] == None:
-                                        raise Exception ('Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
+                                        raise Exception ('No Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
                                 if "targets_sql_text" not in project:
-                                    raise Exception ('Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
+                                    raise Exception ('No Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
                                 else:
                                     if project['targets_sql_text'] == None:
-                                        raise Exception ('Sql script text is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
+                                        raise Exception ('No Sql script text is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
                             elif project['targets_type_id'] not in [1,2]:
                                 raise Exception ('Invalid targets type "' + str(project['targets_type_id']) + '" is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
                         else:
