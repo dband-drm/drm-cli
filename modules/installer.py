@@ -436,6 +436,144 @@ class Upgrade:
 
             if ("config" in drm_version_config):
                 js = drm_version_config['config']
+
+                #============
+                # Add configs
+                #============
+                if ("add" in js):
+                    files_js = js['add']
+                    for file in files_js:
+                        source_file_name = os.path.join(current_working_directory, file['source_path'], file['name'])
+                        target_file_name = os.path.join(self.drm_path, file['target_path'], file['name'])
+                        fl = files_and_folders.Files(source_file_name)
+                        if (fl.check_file_exists()):
+                            # Copy file
+                            shutil.copy(source_file_name, target_file_name)
+
+                #===============
+                # Update configs
+                #===============
+                if ("upd" in js):
+                    files_js = js['upd']
+                    for file in files_js:
+                        target_file_name = os.path.join(self.drm_path, file['target_path'], file['name'])
+                        fl = files_and_folders.Files(target_file_name)
+                        if (fl.check_file_exists()):
+                            config_file_js = fl.load_file()
+
+                            #=============
+                            # Add new keys
+                            #=============
+                            if "add" in file['changes']:
+                                keys_js = file['changes']['add']
+                                for key in keys_js:
+                                    path_parts = key['path'].split('/') if key['path'] else []  # Handle empty path
+                                    current = config_file_js
+
+                                    # If path is empty, modify the root
+                                    if not path_parts:
+                                        # Only set the value if the key does not already exist
+                                        if key['name'] not in config_file_js:
+                                            config_file_js[key['name']] = key['value']
+                                        # If it's an array, do nothing
+                                        elif isinstance(config_file_js[key['name']], list):
+                                            continue  # Prevent overwriting an existing list
+                                        else:
+                                            continue  # If it's a dictionary, do nothing
+                                        continue
+
+                                    # Traverse the dictionary to the correct level
+                                    for i, part in enumerate(path_parts):
+                                        if isinstance(current, list):  
+                                            current = None
+                                            break
+                                        
+                                        # If the key doesn't exist, create the correct structure
+                                        if part not in current:
+                                            if i == len(path_parts) - 1:
+                                                # Decide between list or object based on key['value']
+                                                current[part] = [] if isinstance(key['value'], list) else {}
+                                            else:
+                                                current[part] = {}
+
+                                        current = current[part]
+
+                                    if current is not None:
+                                        if isinstance(current, list):
+                                            # Check if an identical object exists; if not, add a new one
+                                            if not any(isinstance(item, dict) and item == {key['name']: key['value']} for item in current):
+                                                current.append({key['name']: key['value']})
+                                        elif isinstance(current, dict) and key['name'] not in current:
+                                            current[key['name']] = key['value']
+
+                                with open(target_file_name, "w") as file_:
+                                    json.dump(config_file_js, file_, indent=4)
+
+                            #============
+                            # Update keys
+                            #============
+                            if "upd" in file['changes']:
+                                keys_js = file['changes']['upd']
+                                for key in keys_js:
+                                    path_parts = key['path'].split('/')
+                                    current = config_file_js
+
+                                    # Traverse the dictionary to reach the target level
+                                    for part in path_parts:
+                                        if part in current:
+                                            current = current[part]
+                                        else:
+                                            current = None
+                                            break  # Exit early if path doesn't exist
+
+                                    # Only update if the path exists
+                                    if current is not None and isinstance(current, dict):  
+                                        if key['name'] in current:
+                                            current[key['name']] = key['value']
+
+                                with open(target_file_name, "w") as file_:
+                                    json.dump(config_file_js, file_, indent=4)
+                                    
+                            #============
+                            # Delete keys
+                            #============
+                            if "del" in file['changes']:
+                                keys_js = file['changes']['del']
+                                for key in keys_js:
+                                    path_parts = key['path'].split('/') if key['path'] else []  # Handle empty path
+                                    current = config_file_js
+
+                                    # If path is empty, delete directly from root
+                                    if not path_parts:
+                                        config_file_js.pop(key['name'], None)
+                                    else:
+                                        # Traverse the dictionary to the correct level
+                                        for part in path_parts:
+                                            if part in current:
+                                                current = current[part]
+                                            else:
+                                                current = None
+                                                break  # Exit if path doesn't exist
+
+                                        # Only delete if the path exists
+                                        if current is not None and isinstance(current, dict):
+                                            current.pop(key['name'], None)
+
+                                with open(target_file_name, "w") as file_:
+                                    json.dump(config_file_js, file_, indent=4)
+
+ 
+                #===============
+                # Delete configs
+                #===============
+                if ("del" in js):
+                    files_js = js['del']
+                    for file in files_js:
+                        target_file_name = os.path.join(self.drm_path, file['target_path'], file['name'])
+                        fl = files_and_folders.Files(target_file_name)
+                        # Delete folder content recursively
+                        fl.delete_file()
+
                 self.logger.info('Configuration upgraded successfully!!!')
             else:
                 self.logger.info('Nothing to upgrade!!!')
@@ -452,6 +590,9 @@ class Upgrade:
         try:
             supported_version = False
             upgraded = False
+            installer_user = os.getlogin()
+            install_timestamp = str(datetime.datetime.now())
+            
 
             for version in self.main_config["versions"]:
                 if (version == self.drm_config.drm_version):
@@ -486,13 +627,38 @@ class Upgrade:
                     #===============
                     Upgrade.upgrade_drm_configs(self, drm_version_config)
 
+                    #===============================
+                    # Document installation hitstory
+                    #===============================
+                    drm_version_config = '{' \
+                                            '"config": {' \
+                                                '"upd": [' \
+                                                    '{' \
+                                                        '"name": "drm_deploy.config",' \
+                                                        '"target_path": "",' \
+                                                        '"changes": {' \
+                                                            '"add": [' \
+                                                                '{"path": "", "name": "installation_info", "value": []},' \
+                                                                '{"path": "installation_info", "name": "upgrades_history", "value": []},' \
+                                                                '{"path": "installation_info/upgrades_history", "name": "version", "value": "' + version + ', installed_by: ' + installer_user + ', installation_time: ' + install_timestamp + '"}' \
+                                                            ']' \
+                                                        '}' \
+                                                    '}' \
+                                                ']' \
+                                            '}' \
+                                        '}'
+                    drm_version_config = json.loads(drm_version_config)
+                    Upgrade.upgrade_drm_configs(self, drm_version_config)
+                    
                     #==================================
                     # Update drm version in config file
                     #==================================
-                    self.drm_config.full_config['drm_version'] = version
                     file_name = os.path.join(self.drm_path, DEPLOY_CONFIG_FILE_NAME)
+                    fl = files_and_folders.Files(file_name)
+                    config_file_js = fl.load_file()   
+                    config_file_js['drm_version'] = version
                     with open(file_name, 'w', encoding='utf-8') as file:
-                        json.dump(self.drm_config.full_config, file, indent=4)
+                        json.dump(config_file_js, file, indent=4)
             
             if not (supported_version):
                 raise Exception ('Upgrade from version "' + self.drm_config.drm_version + '" to version "' + version + '" is not supported')
