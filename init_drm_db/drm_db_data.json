@@ -236,7 +236,7 @@
 		},
 		{
 			"id": 4,
-			"name": "Demo release: Deploy a project to a complex postgres database with liquibase",
+			"name": "Demo release: Deploy a project to a complex, list postgres database with liquibase",
 			"is_active": true,
 			"solutions": [
 				{
@@ -269,7 +269,7 @@
 		},
 		{
 			"id": 5,
-			"name": "Demo release: Deploy a project to a complex postgres database with liquibase",
+			"name": "Demo release: Deploy a project to a complex, query postgres database with liquibase",
 			"is_active": true,
 			"solutions": [
 				{

@@ -88,15 +88,30 @@ class PostgreSQL:
         """
         try:
             cmd = [
-                self.run_script_tool_file_name, "-h", self.server, "-p", self.port,
-                "-U", self.username, "-d", self.database, "-f", script_name,
-                "-o", self.output_log_file
+                self.run_script_tool_file_name, "-h", self.server, "-p", self.port,# Split the string by newline and remove empty lines
+                "-U", self.username, "-d", self.database,"-v", "ON_ERROR_STOP=1","-e",
+                "-f", script_name, "-o", self.output_log_file
             ]
             env = os.environ.copy()
             if self.password:
                 env["PGPASSWORD"] = self.password
             
             result = subprocess.run(cmd, capture_output=True, text=True, check=True, env=env)
-        except Exception as e:
-            self.logger.error(f"Script execution failed: {str(e)}")
-            raise
+        except subprocess.CalledProcessError as e: 
+            # Split the string by newline and remove empty lines
+            commands = [cmd.strip() for cmd in e.stdout.split('\n') if cmd.strip()] 
+            # Get the last command (which should be the last non-empty string)
+            last_command = commands[-1]  
+            # Regular expression to extract the error message
+            error_pattern = r'ERROR:.*'
+            # Search for the error pattern in the log output
+            match = re.search(error_pattern, e.stderr)
+            if match:
+                error_message = match.group()  
+                # Extract the matched error message
+            else:
+                error_message = ''
+            message = (f"Script execution failed: LastCommand: {last_command}, {error_message}")
+            self.logger.error(f"{message}")
+            raise Exception (f'{message}')
+

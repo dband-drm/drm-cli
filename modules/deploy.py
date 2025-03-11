@@ -478,6 +478,7 @@ class Liquibase:
         args_list.append("--password=" + password)
         # Output log file
         #args_list.append("--logFile=" + "./liquibase.log")
+        args_list.append("--logLevel=SEVERE")
         # Generate script
         args_list.append("updateSql" )
         # Deployment properties
@@ -487,17 +488,7 @@ class Liquibase:
         else:
             js_deployment_properties = json.loads(deployment_properties)
         
-            #for property in js_deployment_properties:
-            #    args_list.append("/p:" + property)
-            #    if (property=="CommentOutSetVarDeclarations=True"):
-            #        target_db_obj = mssql.MsSql(self.run_script_tool_file_name, connection_string)
-            #        defaults_sql_text="SELECT SERVERPROPERTY('InstanceDefaultDataPath') AS DefaultDataPath,SERVERPROPERTY('InstanceDefaultLogPath') AS DefaultLogPath;"
-            #        result = target_db_obj.execute_query(defaults_sql_text)
-            #        js_result = json.loads(result)
-            #        if len(js_result)>0:
-            #            self.default_data_path = js_result[0]["DefaultDataPath"]
-            #            self.default_log_path = js_result[0]["DefaultLogPath"]
-                        
+                  
 
 
 
@@ -509,19 +500,11 @@ class Liquibase:
         with open(output_file, "w") as f:
             result = subprocess.run(args_list, stdout=f, stderr=subprocess.PIPE, text=True)
 
-        #if result.returncode != 0:
-        #    print("Error:", result.stderr)
-        #result = subprocess.run(args_list, capture_output=True)
+
         # Check if process exit with a failure
         if result.returncode != 0:
             raise Exception (result.stderr)
             
-        #if (self.default_data_path != None):
-        #    file = files_and_folders.Files(upgrade_script)
-        #    text = f':setvar DefaultLogPath "{self.default_log_path}"\n'
-        #    file.add_first_line_to_file(text)
-        #    text = f':setvar DefaultDataPath "{self.default_data_path}"'
-        #    file.add_first_line_to_file(text)
             
         self.logger.info("Upgrade script generated successfully!!!")
 
@@ -1096,6 +1079,7 @@ class Deploy:
                                                 task_statuses[target_db]["status_id"] = 4
                                                 task_statuses[target_db]["status_name"] = DEPLOYMENT_FAILED_STATUS
                                                 task_statuses[target_db]["error_message"] = f"{str(e)}"
+                                                failed = True
                                                 if project_fail_on_error and failed:
                                                     raise Exception ('One or more projects deployment failed.')
 
