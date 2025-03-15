@@ -1,30 +1,6 @@
 {
 	"dictionaries": [
 		{
-			"eli_tbl": [
-				{
-					"id": "1",
-					"name": "Microsoft SQL Server"
-				},
-				{
-					"id": "2",
-					"name": "Oracle"
-				},
-				{
-					"id": "3",
-					"name": "PostgreSQL"
-				},
-				{
-					"id": "4",
-					"name": "MySql"
-				},
-				{
-					"id": "5",
-					"name": "Google BigQuery"
-				}
-			]
-		},
-		{
 			"connection_types": [
 				{
 					"id": "1",

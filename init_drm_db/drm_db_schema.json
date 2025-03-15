@@ -1,29 +1,6 @@
 {
 	"tables": [
 		{
-			"name": "eli_tbl",
-			"columns": [
-				{
-					"name": "id",
-					"data_type": "integer",
-					"is_nullable": false
-				},
-				{
-					"name": "name",
-					"data_type": "string",
-					"length": 50,
-					"is_nullable": false
-				}
-			],
-			"constraints": [
-				{
-					"name": "pk_eli_tbl",
-					"type": "PK",
-					"columns": "id"
-				}
-			]
-		},
-		{
 			"name": "connection_types",
 			"columns": [
 				{
