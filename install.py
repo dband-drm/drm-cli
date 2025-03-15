@@ -81,7 +81,7 @@ except (ImportError, AttributeError):
 #===============
 # Import modules
 #===============
-from modules import init_db, crypto, files_and_folders, installer
+from modules import init_db, crypto, files_and_folders, installer_scratch, installer_upgrade
 from modules.auth import Auth
 
 
@@ -195,14 +195,14 @@ def install_drm(drm_path, install_type, encryption_key, upgrade_mode):
 		#========
 		# Upgrade
 		#========
-		drm_conf = DrmConfig(drm_path)
-		installer_obj = installer.Upgrade(drm_conf, drm_path, install_config)
+		drm_config = DrmConfig(drm_path)
+		installer_obj = installer_upgrade.Install(drm_path, install_config, install_type, encryption_key, drm_config)
 
 	else:
 		#=====================
 		# Scratch installation
 		#=====================
-		installer_obj = installer.Install(drm_path, install_config, install_type, encryption_key)
+		installer_obj = installer_scratch.Install(drm_path, install_config, install_type, encryption_key)
 
 	installer_obj.run_installer()
 
@@ -233,11 +233,11 @@ try:
 	file = files_and_folders.Files(file_name)
 	if (files_and_folders.Files.check_file_exists(file)):
 		upgrade_mode = True
-		user_choice = input(style.YELLOW + "Do you want to upgrade the existing DRM? Enter [Y]/N to upgrade: " + style.RESET)
-		if (user_choice.lower() == "y"):
-			drm_conf = DrmConfig(drm_path)
-		else:
-			raise ValueError("Installation aborted")
+		drm_conf = DrmConfig(drm_path)
+		if not (args.f):
+			user_choice = input(style.YELLOW + "Do you want to upgrade the existing DRM? Enter [Y]/N to upgrade: " + style.RESET)
+			if not (user_choice.lower() == "y"):
+				raise ValueError("Installation aborted")
 		
 	# Get encryption key
 	if not(args.p):
