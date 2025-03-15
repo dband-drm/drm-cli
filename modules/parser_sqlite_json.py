@@ -1,5 +1,6 @@
 import sys
 import json
+import re
 import logging
 from modules import sqlite, drm_logger
 
@@ -38,6 +39,103 @@ class Db:
         conn = sqlite.create_connection(self.db_name)
         sqlite.execute_command(conn, command)
         sqlite.close_connection(conn)
+
+    @drm_logger.log_decorator(logger)
+    def get_table_ddl(self, table_name):
+        # Get table DDL from SQLite
+        sql_command = f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table_name}';"
+        rows = self.select_query(sql_command)
+
+        if len(rows) > 0:
+            table_ddl = rows[0][0]
+
+        if not table_ddl:
+            return None
+
+        # Initialize table info structure
+        table_ddl_js = {
+            "name": table_name,
+            "columns": [],
+            "constraints": []
+        }
+
+        # Clean up the DDL: remove the CREATE TABLE and table name part
+        table_ddl = table_ddl.replace('CREATE TABLE', '').replace(f'`{table_name}`', '').strip()
+
+        # Split into columns and constraints manually using the first constraint declaration
+        constraint_start = table_ddl.lower().find('constraint')
+        if constraint_start != -1:
+            columns_part = table_ddl[:constraint_start].strip()
+            constraints_part = table_ddl[constraint_start:].strip()
+        else:
+            columns_part = table_ddl
+            constraints_part = ""
+
+        # Regex pattern for columns: capture column name, data type, nullable status, length, and default values
+        column_pattern = re.compile(r'(\w+)\s+(\w+(\(\d+\))?)(\s+NOT\s+NULL)?(\s+DEFAULT\s+([^\s,]+))?', re.IGNORECASE)
+
+        # Regex pattern for constraints (e.g., PRIMARY KEY, UNIQUE, FOREIGN KEY, etc.)
+        constraint_pattern = re.compile(r'CONSTRAINT\s+`?(\w+)`?\s+(PRIMARY\s+KEY|UNIQUE|FOREIGN\s+KEY|CHECK)\s?\(([^)]+)\)(\s+REFERENCES\s+(\w+)\s?\(([^)]+)\))?', re.IGNORECASE)
+
+        # Process columns (regex to capture columns)
+        column_matches = re.findall(column_pattern, columns_part)
+        for col in column_matches:
+            column_name = col[0]
+            data_type = col[1]
+            length = None
+            default_value = col[5] if col[5] else None
+            is_nullable = True if col[3] == "" else False
+
+            # Extract length for varchar columns
+            if '(' in data_type:
+                data_type, length = data_type.split('(')
+                length = int(length[:-1])  # Remove the closing parenthesis
+
+            # Prepare column info
+            column_info = {
+                "name": column_name,
+                "data_type": "string" if data_type.lower() == "varchar" else data_type.lower()
+            }
+
+            if length:
+                column_info["length"] = length
+
+            column_info["is_nullable"] = is_nullable
+
+            if default_value:
+                column_info["default"] = default_value
+
+            table_ddl_js["columns"].append(column_info)
+        # Process constraints (ensure they are valid and add them)
+        # Constraint type mapping
+        constraint_type_map = {
+            "PRIMARY KEY": "PK",
+            "FOREIGN KEY": "FK",
+            "CHECK": "CK",
+            "UNIQUE": "UQ"
+        }
+
+        constraint_matches = re.findall(constraint_pattern, constraints_part)
+        for constraint in constraint_matches:
+            constraint_name = constraint[0]
+            constraint_type = constraint[1].upper()
+            constraint_columns = constraint[2].strip()
+
+            # Prepare constraint info
+            constraint_info = {
+                "name": constraint_name,
+                "type": constraint_type_map.get(constraint_type, constraint_type),
+                "columns": constraint_columns
+            }
+
+            # For foreign keys, capture the reference table and columns
+            if len(constraint) > 4 and constraint[4]:
+                constraint_info["ref_table"] = constraint[4]
+                constraint_info["ref_columns"] = constraint[5]
+
+            table_ddl_js["constraints"].append(constraint_info)
+
+        return table_ddl_js
 
 
 class Releases:

@@ -30,6 +30,85 @@ class Generic:
             
         return json.dumps(js)
 
+    @drm_logger.log_decorator(logger) 
+    def compare_columns(target_columns, source_columns):
+        
+        actions = []
+
+        # Get columns names in source & target tables
+        target_column_names = {col['name'] for col in target_columns}
+        source_column_names = {col['name'] for col in source_columns}
+
+        # Check for updates and additions in columns
+        for source_col in source_columns:
+            if source_col['name'] in target_column_names:
+                # Find the corresponding column in the target to compare
+                target_col = next(col for col in target_columns if col['name'] == source_col['name'])
+                if source_col != target_col:
+                    # If there's a difference, mark as update
+                    source_col['action'] = 'upd'
+                    actions.append(source_col)
+            else:
+                # If column is not in the target, it's an addition
+                source_col['action'] = 'add'
+                actions.append(source_col)
+
+        for target_col in target_columns:
+            if target_col['name'] not in source_column_names:
+                target_col['action'] = 'del'
+                actions.append(target_col)
+
+        return actions
+
+    @drm_logger.log_decorator(logger) 
+    def compare_constraints(target_constraints, source_constraints):
+
+        actions = []
+
+        # Get columns names in source & target tables
+        target_constraint_names = {constraint['name'] for constraint in target_constraints}
+        source_constraint_names = {constraint['name'] for constraint in source_constraints}
+
+        # Check for updates and additions in constraints
+        for source_constraint in source_constraints:
+            if source_constraint['name'] in target_constraint_names:
+                # Find the corresponding constraint in the target to compare
+                target_constraint = next(constraint for constraint in target_constraints if constraint['name'] == source_constraint['name'])
+                if source_constraint != target_constraint:
+                    # If there's a difference, mark as update
+                    source_constraint['action'] = 'upd'
+                    actions.append(source_constraint)
+            else:
+                # If constraint is not in the target, it's an addition
+                source_constraint['action'] = 'add'
+                actions.append(source_constraint)
+
+        for target_constraint in target_constraints:
+            if target_constraint['name'] not in source_constraint_names:
+                target_constraint['action'] = 'del'
+                actions.append(target_constraint)
+
+        return actions
+
+    @drm_logger.log_decorator(logger) 
+    def compare_tables(target_table, source_table):
+        
+        changes_js = {}
+        #================
+        # Compare columns
+        #================
+        change = Generic.compare_columns(target_table['columns'], source_table['columns'])
+        if (change):
+            changes_js['columns'] = change
+        #====================
+        # Compare constraints
+        #====================
+        change = Generic.compare_constraints(target_table['constraints'], source_table['constraints'])
+        if (change):
+            changes_js['constraints'] = change
+        
+        return changes_js
+
 
 class Releases:
 

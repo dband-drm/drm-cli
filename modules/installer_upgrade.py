@@ -6,7 +6,7 @@ import datetime
 import json
 from shutil import ignore_patterns
 from pathlib import Path
-from modules import files_and_folders, drm_logger, crypto, init_db
+from modules import files_and_folders, drm_logger, sqlite, parser_json_sqlite, parser_json_json,parser_sqlite_json
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
@@ -39,249 +39,15 @@ class style():
 
 class Install:
 
-    logger = drm_logger.configure_logging("installer.Install")
+    logger = drm_logger.configure_logging("installer_upgrade.Install")
 
     @drm_logger.log_decorator(logger) 
-    def __init__(self, drm_path, install_config, install_type, encryption_key): 
-        self.drm_path = drm_path
-        self.install_config = install_config   
-        self.install_type = install_type
-        self.encryption_key = encryption_key
-
-
-    @drm_logger.log_decorator(logger) 
-    def copy_drm_content(self, modules_js):
-        '''
-        This function copies the DRM content into the DRM  directory
-        :param modules_js: List of modules to copy
-        :return:
-        '''
-        try:
-
-            self.logger.info('Copying DRM content...')
-        
-            drm_config_file = os.path.join(self.drm_path, DEPLOY_CONFIG_FILE_NAME)
-            file = files_and_folders.Files(drm_config_file)
-            # Configuration already exists --> already installed (stop the installation)
-            if (file.check_file_exists()):
-                raise Exception ("DRM already installed in given path. Please select another path or unsinatall before reinstall")
-            try:
-                # Get drm content from installer
-                drm_source_path = os.path.join(current_working_directory, DRM_FOLDER_NAME)
-
-                #============================================
-                # Copy DRM content into destination directory
-                #============================================
-                # If destination directory (selected by the user) differ from installer --> Copy the drm content to it
-                if (drm_source_path != self.drm_path):
-                    shutil.copytree(drm_source_path, self.drm_path, dirs_exist_ok=False, ignore=ignore_patterns('*.pyc', '__pycache__'))
-                    for module in modules_js:
-                        source_module_file_name = os.path.join(current_working_directory, "modules", module)
-                        target_module_file_name = os.path.join(self.drm_path, "modules", module)
-                        shutil.copy(source_module_file_name, target_module_file_name)
-
-            except Exception as e:
-                #======================================================================================
-                # At least one content already exists in destination directory --> Request to overwrite
-                #======================================================================================
-                if (e.errno == 17):
-                    emptyfolder = files_and_folders.Folders.is_folder_empty(self.drm_path)
-                    user_choice = "n"
-                    if(emptyfolder == False):
-                        user_choice = input(style.YELLOW + "Content already exists in given directory. Enter [Y]/N to overwrite content: " + style.RESET)
-                    if (user_choice.lower() == "y" or emptyfolder == True):
-                        if (drm_source_path != self.drm_path):
-                            shutil.copytree(drm_source_path, self.drm_path, dirs_exist_ok=True, ignore=ignore_patterns('*.pyc', '__pycache__'))
-                            for module in modules_js:
-                                source_module_file_name = os.path.join(current_working_directory, "modules", module)
-                                target_module_file_name = os.path.join(self.drm_path, "modules", module)
-                                shutil.copyfile(source_module_file_name, target_module_file_name,)
-                    else:
-                        raise Exception (str(e))
-            if (drm_source_path != self.drm_path):
-                self.logger.info('Content copied successfully!!!')
-
-        except Exception as e:
-            raise Exception ("failed to copy content into DRM directory, " + str(e))
-
-
-    @drm_logger.log_decorator(logger) 
-    def create_drm_db(self, install_type, encryption_key):
-        '''
-        This function creates the DRM Database & DB objects
-        :param install_type: Installation type
-        :param encryption_key: Encryption key
-        :return:
-        '''
-        try:
-
-            config_js = self.install_config.full_config['config']
-            db_folder_name = config_js['db_folder_name'] 
-            db_file_name = config_js['db_file_name'] 
-            sqlite_file_ext = config_js['sqlite_file_ext']
-            data_file_ext = config_js['data_file_ext']
-
-            #===================================
-            # Create DB directory in destination
-            #===================================            
-            db_directory = os.path.join(self.drm_path, db_folder_name)
-            folder = files_and_folders.Folders(db_directory)
-            folder.create_folder()
-
-            #=========================
-            # SQLite installation type
-            #=========================
-            if (install_type == "sqlite"):
-                self.logger.info('Creating DRM database...')
-
-                sqlite_db_file_name = db_file_name + "." + sqlite_file_ext
-                db_name = os.path.join(db_directory, sqlite_db_file_name)
-                if(encryption_key == ""):
-                    encryption_key = None
-                drm_db = init_db.InitDB(db_name, encryption_key)
-
-                # Create Database & load system Data
-                drm_db.create_drm_db()
-                
-            #=======================
-            # JSON installation type
-            #=======================
-            else:
-                self.logger.info('Creating DRM database (Json style)...')
-                src_drm_db_json = os.path.join(current_working_directory, DRM_DB_JSON_PATH, DRM_DB_JSON_FILE_NAME)
-                
-                # copy JSON DB from installer into destination DB directory
-                shutil.copy(src_drm_db_json, db_directory)
-                old_drm_db_json = os.path.join(current_working_directory, db_directory, DRM_DB_JSON_FILE_NAME)
-                if(encryption_key != "" and encryption_key != None):
-                    drm_db = init_db.InitDB(old_drm_db_json, encryption_key)
-                    js = drm_db.encrypt_drm_json_db()
-                    # Encrypt sensitive data
-                    with open(old_drm_db_json, "w") as file:
-                        json.dump(js, file, indent=4)
-                db_json_file_name = db_file_name + "." + data_file_ext
-                new_drm_db_json = os.path.join(db_directory, db_json_file_name)
-                shutil.move(old_drm_db_json, new_drm_db_json)
-                
-            drm_db_schema_json = os.path.join(current_working_directory, DRM_DB_JSON_PATH, DRM_SCHEM_JSON_FILE_NAME)
-            shutil.copy(drm_db_schema_json, db_directory)
-            self.logger.info('DRM database created successfully!!!')
-
-        except Exception as e:
-            raise Exception ("failed to create DRM database, " + str(e))
-
-
-    @drm_logger.log_decorator(logger) 
-    def create_drm_config(self, install_type, encryption_key):
-        '''
-        This function creates a new drm.config file
-        :param install_type: Document the install type inside the drm.config
-        :param encryption_key: Encryption key
-        '''
-        try:
-
-            self.logger.info('Creating drm.config...')
-
-            drm_version = self.install_config.full_config['drm_version']
-
-            config_js = self.install_config.full_config['config']
-            build_folder_name = config_js['build_folder_name'] 
-            db_folder_name = config_js['db_folder_name'] 
-            db_file_name = config_js['db_file_name']
-            data_file_ext = config_js['data_file_ext']
-            sqlite_file_ext = config_js['sqlite_file_ext']
-
-            log_js = self.install_config.full_config['log']
-            log_folder_name = log_js['folder_name']
-            log_max_size_mb = log_js['max_size_mb']
-            log_backup_count = log_js['backup_count']
-
-           #=============================================
-            # Create configuration DRM file in destination
-            #=============================================
-            drm_config_file = os.path.join(self.drm_path, DEPLOY_CONFIG_FILE_NAME)
-            installer_user = os.getlogin()
-            install_timestamp = str(datetime.datetime.now())
-            security_text = "This drm cli was developed by d-band and it is amazing!!!"
-            encrypted = False
-            # If user chose encryption key --> encrypt the security_text
-            if (encryption_key != "" and encryption_key !=None):
-                crpt = crypto.Crypto(encryption_key)
-                security_text = crpt.encrypt_string(security_text)
-                encrypted = True
-
-            # Build configiration JSON
-            content = {
-                "drm_version": drm_version,
-                "installation_info":
-                {
-                    "installed_by": installer_user,
-                    "installation_time": install_timestamp,
-                    "installation_type": install_type,
-                    "db_secured": encrypted,
-                    "security_text": security_text
-                },
-                "config":
-                {
-                    "build_folder_name": build_folder_name,
-                    "db_folder_name": db_folder_name,
-                    "db_file_name": db_file_name,
-                    "data_file_ext": data_file_ext,
-                    "sqlite_file_ext": sqlite_file_ext				
-                },
-                "log":{
-                    "folder_name": log_folder_name,
-                    "max_size_mb": log_max_size_mb,
-                    "backup_count": log_backup_count
-                },
-                "locations": [],
-                "trace_flags": []
-            }
-            json_obj = json.dumps(content, indent=4)
-            file = files_and_folders.Files(drm_config_file)
-            file.write_file(json_obj)
-
-            self.logger.info('drm.config created successfully!!!')
-
-        except Exception as e:	
-            raise Exception ("failed to create drm.config, " + str(e))
-
-
-    @drm_logger.log_decorator(logger) 
-    def run_installer(self):
-        '''
-        This function runs the installer BL
-        '''
-        try:
-            #====================================
-            # Create DRM directory & copy content
-            #====================================
-            modules_js = self.install_config.full_config['modules']
-            Install.copy_drm_content(self, modules_js)
-
-            #==============
-            # Create DRM DB
-            #==============
-            Install.create_drm_db(self, self.install_type, self.encryption_key)
-
-            #==================
-            # Create drm.config
-            #==================
-            Install.create_drm_config(self, self.install_type, self.encryption_key)
-            
-        except Exception as e:
-            raise Exception ("failed to upgrade the DRM, " + str(e))
-
-
-class Upgrade:
-
-    logger = drm_logger.configure_logging("installer.Upgrade")
-
-    @drm_logger.log_decorator(logger) 
-    def __init__(self, drm_config, drm_path, install_config): 
-        self.drm_config = drm_config  
+    def __init__(self, drm_path, install_config, install_type, encryption_key, drm_config): 
         self.drm_path = drm_path
         self.install_config = install_config
+        self.install_type = install_type
+        self.encryption_key = encryption_key
+        self.drm_config = drm_config  
 
         # Read main upgrade configuration file
         file_name = os.path.join(DRM_UPGRADE_PATH, DRM_UPGRADE_FILE_NAME)
@@ -415,6 +181,149 @@ class Upgrade:
 
             if ("db" in drm_version_config):
                 js = drm_version_config['db']
+
+                #===============
+                # Upgrade Schema                
+                #===============
+                if ("schema" in js):
+
+                    db_js = js['schema']
+
+                    #==============================
+                    # Get latest schema definitions
+                    #==============================
+                    source_drm_db_schema_json = os.path.join(current_working_directory, DRM_DB_JSON_PATH, DRM_SCHEM_JSON_FILE_NAME)
+                    fl = files_and_folders.Files(source_drm_db_schema_json)
+                    source_js = fl.load_file()
+
+                    #=======================
+                    # JSON DRM type handling
+                    #=======================
+                    if (self.install_type == "json"):
+                        target_drm_db_schema_json = os.path.join(self.drm_path, "db", DRM_SCHEM_JSON_FILE_NAME)
+                        fl = files_and_folders.Files(target_drm_db_schema_json)
+                        target_js = fl.load_file()
+
+                        # Update / Create table
+                        ops = ["add", "upd"]
+                        for op in ops:                            
+                            if (op in db_js):
+                                for db in db_js[op]:
+                                    name = db['name']
+                                    source_path = db['source_path']
+
+                                    source_table = None
+                                    for table in source_js[source_path]:
+                                        if table['name'] == name:
+                                            source_table = table
+                                            break
+
+                                    # Found table definitions pointed in upgrade inside the latest schema definitions --> add or replace existing withe latest version
+                                    if source_table:
+                                        table_exists = any(table['name'] == source_table['name'] for table in target_js['tables'])
+                                        if (table_exists):
+                                            target_js['tables'] = [
+                                            source_table if table['name'] == name else table
+                                            for table in target_js['tables']
+                                            ]
+                                        else:
+                                            target_js['tables'].append(source_table)
+
+                        # Delete table
+                        if ("del" in db_js):
+                            for db in db_js["del"]:
+                                name = db['name'] 
+                                target_js['tables'] = [table for table in target_js['tables'] if table['name'] != name]
+
+                        with open(target_drm_db_schema_json, "w") as file_:
+                            json.dump(target_js, file_, indent=4)
+
+                    #=========================
+                    # SQLite DRM type handling
+                    #=========================
+                    else: 
+                        drm_config_file = os.path.join(self.drm_path, DEPLOY_CONFIG_FILE_NAME)
+                        fl = files_and_folders.Files(drm_config_file)
+                        drm_config_js = fl.load_file()
+                        parser = parser_json_sqlite.ParserJsonSqlite()
+                        
+                        db_directory = os.path.join(self.drm_path, drm_config_js['config']['db_folder_name'])
+                        sqlite_db_file_name = drm_config_js['config']['db_file_name'] + "." + drm_config_js['config']['sqlite_file_ext']
+                        db_name = os.path.join(db_directory, sqlite_db_file_name)
+                        conn = sqlite.create_connection(db_name)
+
+                        # Update / Create table
+                        ops = ["add", "upd"]
+                        for op in ops:
+                            if (op in db_js):
+                                for db in db_js[op]:
+                                    name = db['name']
+                                    source_path = db['source_path']
+
+                                    source_table = None
+                                    for table in source_js[source_path]:
+                                        if table['name'] == name:
+                                            source_table = table
+                                            break
+
+                                    # Found table definitions pointed in upgrade inside the latest schema definitions --> add or replace existing withe latest version
+                                    if source_table:
+                                        # Check if table exists in target
+                                        sql_command = "SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'".format(table_name = name)
+                                        table_exists = sqlite.execute_query(conn, sql_command)
+                                        if not table_exists:
+                                            if op == "add":
+                                                sql_command = parser.create_table(source_table['name'], source_table['columns'], source_table['constraints'])
+                                        else: #upd
+                                            db = parser_sqlite_json.Db(db_name)
+                                            # Parse table from SQLite to JSON
+                                            target_table = db.get_table_ddl (name)
+                                            # Compare between Source & Target table definitions
+                                            changes_js = parser_json_json.Generic.compare_tables(target_table, source_table)
+                                            # Differece includes columns changes
+                                            if ('columns' in changes_js):
+                                                for change_js in changes_js['columns']:
+                                                    target_table = db.get_table_ddl(name)
+                                                    parser = parser_json_sqlite.ParserJsonSqlite()
+                                                    # Prase JSON diff to SQLite
+                                                    sql_commands = parser.alter_table(target_table, "column", change_js)
+                                                    if (sql_commands is not None):
+                                                        # Run upgrade changes on target
+                                                        commands = sql_commands.strip().split(';')
+                                                        for sql_command in commands:
+                                                            sqlite.execute_command(conn, sql_command)
+
+                                            # Differece includes constraints changes
+                                            if ('constraints' in changes_js):
+                                                for change_js in changes_js['constraints']:
+                                                    target_table = db.get_table_ddl(name)
+                                                    parser = parser_json_sqlite.ParserJsonSqlite()
+                                                    # Prase JSON diff to SQLite
+                                                    sql_commands = parser.alter_table(target_table, "constraint", change_js)
+                                                    if (sql_commands is not None):
+                                                        # Run upgrade changes on target
+                                                        commands = sql_commands.strip().split(';')
+                                                        for sql_command in commands:
+                                                            sqlite.execute_command(conn, sql_command)
+                                                            
+                        # Delete table
+                        if ("del" in db_js):
+                            for db in db_js["del"]:
+                                name = db['name']
+
+                                # Check if table exists in target --> Delete it
+                                sql_command = "SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'".format(table_name = name)
+                                table_exists = sqlite.execute_query(conn, sql_command)
+                                if table_exists:
+                                    sql_command = parser.drop_table(name)
+                                    sqlite.execute_command(conn, sql_command)
+
+
+                #=============
+                # Upgrade Data                
+                #=============
+                if ("data" in js):
+                    print ("TD")
                 self.logger.info('Database upgraded successfully!!!')
             else:
                 self.logger.info('Nothing to upgrade!!!')
@@ -605,27 +514,27 @@ class Upgrade:
                     #========================================
                     # Read upgrade version configuration file
                     #========================================
-                    drm_version_config = Upgrade.read_version_config(self, version)
+                    drm_version_config = Install.read_version_config(self, version)
 
                     #================
                     # Upgrade folders
                     #================
-                    Upgrade.upgrade_drm_folders(self, drm_version_config)
+                    Install.upgrade_drm_folders(self, drm_version_config)
 
                     #============
                     # Upgrade bin
                     #============
-                    Upgrade.upgrade_drm_binaries(self, drm_version_config)
-
-                    #===========
-                    # Upgrade db
-                    #===========
-                    Upgrade.upgrade_drm_database(self, drm_version_config)
+                    Install.upgrade_drm_binaries(self, drm_version_config)
 
                     #===============
                     # Upgrade config
                     #===============
-                    Upgrade.upgrade_drm_configs(self, drm_version_config)
+                    Install.upgrade_drm_configs(self, drm_version_config)
+
+                    #===========
+                    # Upgrade db
+                    #===========
+                    Install.upgrade_drm_database(self, drm_version_config)
 
                     #===============================
                     # Document installation hitstory
@@ -648,7 +557,7 @@ class Upgrade:
                                             '}' \
                                         '}'
                     drm_version_config = json.loads(drm_version_config)
-                    Upgrade.upgrade_drm_configs(self, drm_version_config)
+                    Install.upgrade_drm_configs(self, drm_version_config)
                     
                     #==================================
                     # Update drm version in config file
