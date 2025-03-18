@@ -137,6 +137,26 @@ class Db:
 
         return table_ddl_js
 
+    @drm_logger.log_decorator(logger)
+    def get_table_data(self, table_name):
+        
+        # Get table Columns from SQLite
+        sql_command = f"PRAGMA table_info({table_name})"
+        columns_rows = self.select_query(sql_command)
+        columns = [col[1] for col in columns_rows]
+
+        # Get table Data from SQLite
+        sql_command = f"SELECT * FROM {table_name};"
+        rows = self.select_query(sql_command)
+
+        table_data = []
+        for row in rows:
+            row_data = {columns[i]: row[i] for i in range(len(columns))}
+            table_data.append(row_data)
+
+        js = json.loads(json.dumps({table_name: table_data}))  
+        return js
+
 
 class Releases:
 
