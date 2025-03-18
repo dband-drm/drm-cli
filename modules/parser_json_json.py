@@ -94,6 +94,14 @@ class Generic:
     def compare_tables(target_table, source_table):
         
         changes_js = {}
+
+        source_constraints_js = []
+        if ('constraints' in source_table):
+            source_constraints_js = source_table['constraints']
+        target_constraints_js = []
+        if ('constraints' in target_table):
+            target_constraints_js = target_table['constraints']
+
         #================
         # Compare columns
         #================
@@ -103,11 +111,103 @@ class Generic:
         #====================
         # Compare constraints
         #====================
-        change = Generic.compare_constraints(target_table['constraints'], source_table['constraints'])
+        change = Generic.compare_constraints(target_constraints_js, source_constraints_js)
         if (change):
             changes_js['constraints'] = change
         
         return changes_js
+
+
+    @drm_logger.log_decorator(logger)
+    def compare_table_data(table_name, target_data, source_data, pk_columns):
+        changes_js = []  # Initialize changes_js as a list, not a dictionary.
+
+        if target_data is None:
+            target_data = {table_name: []}
+
+        pk_columns = pk_columns.split(',')
+
+        # Helper function to convert text values to numeric values (if possible)
+        def convert_to_numeric(value):
+            try:
+                # Attempt to convert to float (handles integers and decimals)
+                return float(value)
+            except ValueError:
+                return value  # If conversion fails, return the original value
+
+        # Modify the pk to handle numeric and string equality consistently
+        def get_pk_value(row):
+            return tuple(convert_to_numeric(row[field]) for field in pk_columns)
+
+        # Create target_dict and source_dict with consistent PK comparison
+        target_dict = {get_pk_value(row): row for row in target_data[table_name]}
+        source_dict = {get_pk_value(row): row for row in source_data[table_name]}
+
+        #===========
+        # Insert row
+        #===========
+        for pk, row in source_dict.items():
+            if pk not in target_dict:
+                changes_js.append({"row": row, "action": "add"})
+
+        #===========
+        # Update row
+        #===========
+        for pk, row in source_dict.items():
+            if pk in target_dict:
+                target_row = target_dict[pk]
+                # Compare non-PK fields, ignoring type mismatches between text and numbers
+                if any(
+                    convert_to_numeric(target_row[field]) != convert_to_numeric(row[field])
+                    for field in row if field not in pk_columns
+                ):
+                    changes_js.append({"row": row, "action": "upd"})
+
+        #===========
+        # Delete row
+        #===========
+        for pk, row in target_dict.items():
+            if pk not in source_dict:
+                changes_js.append({"row": row, "action": "del"})
+
+        return changes_js
+
+
+    @drm_logger.log_decorator(logger) 
+    def insert_row(table_name, table_data_js, row):
+
+        table_data_js[table_name].append(row)
+
+        return table_data_js
+
+
+    @drm_logger.log_decorator(logger) 
+    def delete_row(table_name, table_data_js, row, pk_columns):
+
+        search_fields = pk_columns.split(',')
+
+        search_value = row[search_fields[0].strip()]
+
+        table_data_js[table_name] = [
+            item for item in table_data_js[table_name]
+            if not any(item[field.strip()] == search_value for field in search_fields)
+        ]
+        return table_data_js
+
+
+    @drm_logger.log_decorator(logger) 
+    def update_row(table_name, table_data_js, row, pk_columns):
+
+        search_fields = pk_columns.split(',')
+
+        for item in table_data_js[table_name]:
+            # Check if all specified fields match
+            if all(item[field.strip()] == row[field.strip()] for field in search_fields):
+                # Update the fields in the matched record
+                for field in row:
+                    item[field] = row[field]
+
+        return table_data_js
 
 
 class Releases:

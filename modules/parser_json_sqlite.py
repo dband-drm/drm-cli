@@ -279,23 +279,76 @@ class ParserJsonSqlite:
 		return sql_command
 
 	@drm_logger.log_decorator(logger) 
-	def update_row (self, table_name, columns_names, columns_values, where_query):
+	def delete_row(self, table_name, columns_names, columns_values, pk_columns):
 		""" 
-        Generate an update record in a table command
-        :param table_name: Table name
-        :param columns_names: list of columns
-        :param columns_values: List of values respectively
-        :return: SQL Command (string)
-        """
-		columns_names_list = ", ".join(columns_names)
-		columns_values_list = ", ".join([f"'{value}'" if isinstance(value, str) else str(value) for value in columns_values])
-		update_command = " set "
-		for c in columns_names:
-			for value in columns_values:
-				update_command += f"{c} = '{value if isinstance(value, str) else str(value)}',"
-		#remove last ,
-		if(update_command != " set "):
-			update_command = update_command[:-1]
+		Generate a delete record into a table command using primary key columns in the WHERE clause
+		:param table_name: Table name
+		:param columns_names: List or dict_keys object of column names
+		:param columns_values: List or dict_values object of values respectively
+		:param pk_columns: Comma-delimited string of primary key column names
+		:return: SQL Command (string)
+		"""
+		# Ensure columns_names and columns_values are converted to lists if they are dict_keys or dict_values
+		columns_names = list(columns_names)
+		columns_values = list(columns_values)
+		
+		# Split the pk_columns string into a list
+		pk_columns_list = pk_columns.split(',')
+		
+		# Create a list of conditions for the primary key columns (column = value)
+		where_conditions = [
+			f"{columns_names[i]} = '{columns_values[i]}'" if isinstance(columns_values[i], str)
+			else f"{columns_names[i]} = {columns_values[i]}"
+			for i in range(len(columns_names))
+			if columns_names[i] in pk_columns_list  # Only include primary key columns
+		]
+		
+		# Join the conditions with 'AND' to form the complete WHERE clause
+		where_clause = " and ".join(where_conditions)
+		
+		# Generate the final SQL command
+		sql_command = f"DELETE FROM {table_name} WHERE {where_clause}"
+		
+		return sql_command
 
-		sql_command = f"update {table_name} {update_command} where {where_query}"
+	@drm_logger.log_decorator(logger) 
+	def update_row(table_name, columns_names, columns_values, pk_columns):
+		""" 
+		Generate an update record into a table command
+		:param table_name: Table name
+		:param columns_names: List or dict_keys object of column names
+		:param columns_values: List or dict_values object of values respectively
+		:param pk_columns: Comma-delimited string of primary key column names
+		:return: SQL Command (string)
+		"""
+		# Ensure columns_names and columns_values are converted to lists if they are dict_keys or dict_values
+		columns_names = list(columns_names)
+		columns_values = list(columns_values)
+		
+		# Split the pk_columns string into a list
+		pk_columns_list = pk_columns.split(',')
+		
+		# Create the SET clause for non-primary key columns (column = value)
+		set_clauses = [
+			f"{columns_names[i]} = '{columns_values[i]}'" if isinstance(columns_values[i], str)
+			else f"{columns_names[i]} = {columns_values[i]}"
+			for i in range(len(columns_names))
+			if columns_names[i] not in pk_columns_list  # Only include non-primary key columns
+		]
+		
+		# Create the WHERE clause for primary key columns (column = value)
+		where_conditions = [
+			f"{columns_names[i]} = '{columns_values[i]}'" if isinstance(columns_values[i], str)
+			else f"{columns_names[i]} = {columns_values[i]}"
+			for i in range(len(columns_names))
+			if columns_names[i] in pk_columns_list  # Only include primary key columns
+		]
+		
+		# Join the clauses
+		set_clause = ", ".join(set_clauses)
+		where_clause = " and ".join(where_conditions)
+		
+		# Generate the final SQL command
+		sql_command = f"UPDATE {table_name} SET {set_clause} WHERE {where_clause}"
+		
 		return sql_command
