@@ -312,7 +312,7 @@ class ParserJsonSqlite:
 		return sql_command
 
 	@drm_logger.log_decorator(logger) 
-	def update_row(table_name, columns_names, columns_values, pk_columns):
+	def update_row(self, table_name, columns_names, columns_values, pk_columns):
 		""" 
 		Generate an update record into a table command
 		:param table_name: Table name
