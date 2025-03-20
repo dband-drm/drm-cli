@@ -10,6 +10,139 @@ class Generic:
     logger = drm_logger.configure_logging("parser_json_json.Generic")
 
     @drm_logger.log_decorator(logger) 
+    def create_table(js, path, table_js):
+        """ 
+        Create a table in JSON
+        :param js: JSON file
+        :param path: Path to append the table in
+        :param table_js: Table json
+        :return: New modified file (JSON)
+        """
+        js[path].append(table_js)
+        return js
+
+    @drm_logger.log_decorator(logger) 
+    def drop_table(js, path, table_name):
+        """ 
+        Delete a table in JSON
+        :param js: JSON file
+        :param path: Path to append the table in
+        :param table_js: Table json
+        :return: New modified file (JSON)
+        """
+        js[path] = [table for table in js[path] if table['name'] != table_name]
+        return js
+        
+
+    @drm_logger.log_decorator(logger) 
+    def drop_table_data(js, path, table_name):
+        """ 
+        Delete a table DATA in JSON
+        :param js: JSON file
+        :param path: Path to append the table in
+        :param table_js: Table json
+        :return: New modified file (JSON)
+        """
+        for table_dict in js[path]:
+            # If the table name exists in the dictionary, delete it
+            if table_name in table_dict:
+                del table_dict[table_name] 
+                if not table_dict:
+                    js[path].remove(table_dict)
+                break
+        return js
+        
+
+    @drm_logger.log_decorator(logger) 
+    def delete_column_data(js, path, table_name, column_name):
+        """ 
+        Delete column's DATA in JSON
+        :param js: JSON file
+        :param path: Path to append the table in
+        :param table_js: Table json
+        :return: New modified file (JSON)
+        """
+        for table_dict in js[path]:
+            if table_name in table_dict:
+                for row in table_dict[table_name]:
+                    if column_name in row:
+                        del row[column_name]  # Delete the column data
+                break
+        return js
+        
+
+    @drm_logger.log_decorator(logger) 
+    def alter_table(self, alter_type, js, path, table_name, change):
+        """ 
+        Alter a table in JSON
+        :param alter_type: column/constraint
+        :param js: JSON file
+        :param path: Path to file the table in
+        :param table_name: Table name
+        :param change: Change in table (JSON)
+        :return: New modified file (JSON)
+        """
+        table = next((t for t in js[path] if t['name'] == table_name), None)
+        if (alter_type == "column"):
+            column = next((col for col in table['columns'] if col['name'] == change['name']), None)
+        
+            action = change.get('action')
+            if action == 'upd':  # Update column attributes
+                if 'length' in change:
+                    column['length'] = change['length']
+                if 'data_type' in change:
+                    column['data_type'] = change['data_type']
+                if 'is_nullable' in change:
+                    column['is_nullable'] = change['is_nullable']
+                if 'default' in change:
+                    column['default'] = change['default']
+            
+            elif action == 'add':  # Add a new column
+                new_column = {
+                    'name': change['name']
+                }
+                if 'data_type' in change:
+                    new_column['data_type'] = change['data_type']
+                if 'length' in change:
+                    new_column['length'] = change['length']
+                if 'is_nullable' in change:
+                    new_column['is_nullable'] = change['is_nullable']
+                if 'default' in change:
+                    new_column['default'] = change['default']
+                
+                table['columns'].append(new_column)
+            
+            elif action == 'del':  # Delete a column
+                table['columns'] = [col for col in table['columns'] if col['name'] != change['name']]
+
+        else: # constraint
+            if ("constraints" not in table):
+                table['constraints'] = []
+
+            constraint = next((c for c in table['constraints'] if c['name'] == change['name']), None)
+            
+            action = change.get('action')
+            if action == 'upd':  # Update constraint attributes
+                constraint['type'] = change['type']
+                constraint['columns'] = change['columns']
+            
+            elif action == 'add':  # Add a new column
+                new_constraint = {
+                    'name': change['name'],
+                    'type': change['type'],
+                    'columns': change['columns']
+                }
+
+                table['constraints'].append(new_constraint)
+
+            elif action == 'del':  # Delete a column
+                table['constraints'] = [c for c in table['constraints'] if c['name'] != change['name']]
+                if not table['constraints']:
+                    del table['constraints']
+
+        return js
+    
+    @drm_logger.log_decorator(logger) 
     def get_table_columns_list(schema_file_name, table_name):
         """ 
         Return table columns list
@@ -142,7 +275,7 @@ class Generic:
         # Create target_dict and source_dict with consistent PK comparison
         target_dict = {get_pk_value(row): row for row in target_data[table_name]}
         source_dict = {get_pk_value(row): row for row in source_data[table_name]}
-
+        
         #===========
         # Insert row
         #===========

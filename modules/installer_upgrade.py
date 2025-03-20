@@ -68,6 +68,7 @@ class Install:
             db_file_name = self.drm_config_js["config"]["db_file_name"] + "." + self.drm_config_js["config"]["data_file_ext"]
             db_path = self.drm_config_js["config"]["db_folder_name"]
             self.db_name = os.path.join(self.drm_path, db_path, db_file_name)
+            self.Db = JsonDb
                                     
         else:
             self.parser = parser_json_sqlite.ParserJsonSqlite()
@@ -76,6 +77,7 @@ class Install:
             db_directory = os.path.join(drm_path, self.drm_config_js['config']['db_folder_name'])
             sqlite_db_file_name = self.drm_config_js['config']['db_file_name'] + "." + self.drm_config_js['config']['sqlite_file_ext']
             self.db_name = os.path.join(db_directory, sqlite_db_file_name)
+            self.Db = SqliteDb
 
     @drm_logger.log_decorator(logger) 
     def read_version_config(self, version):	
@@ -200,177 +202,76 @@ class Install:
 
             db_js = js['schema']
 
-            #==============================
-            # Get latest schema definitions
-            #==============================
+            #======================================
+            # Get latest upgrade schema definitions
+            #======================================
             source_drm_db_schema_json = os.path.join(current_working_directory, DRM_DB_JSON_PATH, DRM_SCHEM_JSON_FILE_NAME)
             fl = files_and_folders.Files(source_drm_db_schema_json)
             source_js = fl.load_file()
 
             #=======================
-            # JSON DRM type handling
+            # Get TARGET schema JSON
             #=======================
-            if (self.install_type == "json"):
-                target_drm_db_schema_json = os.path.join(self.drm_path, self.drm_config_js["config"]["db_folder_name"], DRM_SCHEM_JSON_FILE_NAME)
-                fl = files_and_folders.Files(target_drm_db_schema_json)
-                target_js = fl.load_file()
+            target_drm_db_schema_json = os.path.join(self.drm_path, self.drm_config_js["config"]["db_folder_name"], DRM_SCHEM_JSON_FILE_NAME)
+            fl = files_and_folders.Files(target_drm_db_schema_json)
+            target_js = fl.load_file()
 
-                # Update / Create table
-                ops = ["add", "upd"]
-                for op in ops:                            
-                    if (op in db_js):
-                        for db in db_js[op]:
-                            name = db['name']
-                            source_path = db['source_path']
-
-                            source_table = None
-                            for table in source_js[source_path]:
-                                if table['name'] == name:
-                                    source_table = table
-                                    break
-
-                            # Found table definitions pointed in upgrade inside the latest schema definitions --> add or replace existing withe latest version
-                            if source_table:
-                                table_exists = any(table['name'] == source_table['name'] for table in target_js[source_path])
-                                if (table_exists):
-                                    target_js[source_path] = [
-                                    source_table if table['name'] == name else table
-                                    for table in target_js[source_path]
-                                    ]
-
-                                    # If update includes columns deletion, delete the columns from the table in data json as well
-                                    # TD
-                                else:
-                                    target_js[source_path].append(source_table)
-
-                # Delete table
-                if ("del" in db_js):
-                    for db in db_js["del"]:
+            #======================
+            # Update / Create table
+            #======================
+            ops = ["add", "upd"]
+            for op in ops:                            
+                if (op in db_js):
+                    for db in db_js[op]:
                         name = db['name']
                         source_path = db['source_path']
-                        target_js[source_path] = [table for table in target_js[source_path] if table['name'] != name]
 
-                    # Delete table Data from data json as well
-                    fl = files_and_folders.Files(self.db_name)
-                    target_data_js = fl.load_file()
-                    for path in self.system_tables_type:
-                        for table_dict in target_data_js[path]:
-                            for table_name in list(table_dict.keys()):
-                                if name in table_name:
-                                    del table_dict[table_name]
-                                    with open(self.db_name, "w") as file_:
-                                        json.dump(target_data_js, file_, indent=4)
-                       
+                        # Find upgraded table in SOURCE JSON
+                        source_table = None
+                        for table in source_js[source_path]:
+                            if table['name'] == name:
+                                source_table = table
+                                break
 
-                with open(target_drm_db_schema_json, "w") as file_:
-                    json.dump(target_js, file_, indent=4)
+                        # If SOURCE table found, Find it in TARGET JSON
+                        if source_table:
+                            table_exists = any(table['name'] == source_table['name'] for table in target_js[source_path])
+                        
+                            # Table found in both SOURCE & TARGET --> Upgrade
+                            if (table_exists):
+                                # Get TARGET table
+                                for table in target_js[source_path]:
+                                    if (table['name'] == name):
+                                        target_table = table
+                                        # Find changes between SOURCE & TARGET tables
+                                        changes_js = self.json_parser.compare_tables(target_table, source_table)
+                                        # Differece includes columns changes
+                                        if ('columns' in changes_js):
+                                            for change in changes_js['columns']:
+                                                self.Db.alter_table(self, "column", target_js, source_path, name, change, target_drm_db_schema_json)
+                                        # Differece includes constraints changes
+                                        if ('constraints' in changes_js):
+                                            for change in changes_js['constraints']:
+                                                self.Db.alter_table(self, "constraint", target_js, source_path, name, change, target_drm_db_schema_json)
+                            else:
+                                # Create table
+                                self.Db.create_table(self, target_js, source_path, source_table, target_drm_db_schema_json)
+                                
                 
-                
-
-            #=========================
-            # SQLite DRM type handling
-            #=========================
-            else: 
-                # Update / Create table
-                ops = ["add", "upd"]
-                for op in ops:
-                    if (op in db_js):
-                        for db in db_js[op]:
-                            name = db['name']
-                            source_path = db['source_path']
-
-                            source_table = None
-                            for table in source_js[source_path]:
-                                if table['name'] == name:
-                                    source_table = table
-                                    break
-
-                            # Found table definitions pointed in upgrade inside the latest schema definitions --> add or replace existing withe latest version
-                            if source_table:
-                                # Check if table exists in target
-                                sql_command = "SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'".format(table_name = name)
-                                table_exists = Sqlite.execute_query(self, self.db_name, sql_command)
-                                if not table_exists:
-                                    if op == "add":
-                                        constraints_js = []
-                                        if ('constraints' in source_table):
-                                            constraints_js = source_table['constraints']
-                                            
-                                        sql_command = self.parser.create_table(source_table['name'], source_table['columns'], constraints_js)
-                                        Sqlite.execute_command(self, self.db_name, sql_command)
-
-                                        # Add table into schema json as well
-                                        target_drm_db_schema_json = os.path.join(self.drm_path, self.drm_config_js["config"]["db_folder_name"], DRM_SCHEM_JSON_FILE_NAME)
-                                        fl = files_and_folders.Files(target_drm_db_schema_json)
-                                        target_schema_js = fl.load_file()
-                                        target_schema_js[source_path].append(source_table)
-                                        with open(target_drm_db_schema_json, "w") as file_:
-                                            json.dump(target_schema_js, file_, indent=4)
-
-
-                                else: #upd
-                                    db = parser_sqlite_json.Db(self.db_name)
-                                    # Parse table from SQLite to JSON
-                                    target_table = db.get_table_ddl (name)
-                                    # Compare between Source & Target table definitions
-                                    changes_js = self.json_parser.compare_tables(target_table, source_table)
-                                    # Differece includes columns changes
-                                    if ('columns' in changes_js):
-                                        for change_js in changes_js['columns']:
-                                            target_table = db.get_table_ddl(name)
-                                            # Prase JSON diff to SQLite
-                                            sql_commands = self.parser.alter_table(target_table, "column", change_js)
-                                            if (sql_commands is not None):
-                                                # Run upgrade changes on target
-                                                commands = sql_commands.strip().split(';')
-                                                for sql_command in commands:
-                                                    Sqlite.execute_command(self, self.db_name, sql_command)
-
-                                                    # Update column in schema json as well
-                                                    # TD
-                                    
-                                    # Differece includes constraints changes
-                                    if ('constraints' in changes_js):
-                                        for change_js in changes_js['constraints']:
-                                            target_table = db.get_table_ddl(name)
-                                            # Prase JSON diff to SQLite
-                                            sql_commands = self.parser.alter_table(target_table, "constraint", change_js)
-                                            if (sql_commands is not None):
-                                                # Run upgrade changes on target
-                                                commands = sql_commands.strip().split(';')
-                                                for sql_command in commands:
-                                                    Sqlite.execute_command(self, self.db_name, sql_command)
-
-                                                    # Update column in schema json as well
-                                                    # TD
-                                                    
-                # Delete table
-                if ("del" in db_js):
-                    for db in db_js["del"]:
-                        name = db['name']
-
-                        # Check if table exists in target --> Delete it
-                        sql_command = "SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'".format(table_name = name)
-                        table_exists = Sqlite.execute_query(self, self.db_name, sql_command)
-                        if table_exists:
-                            sql_command = self.parser.drop_table(name)
-                            Sqlite.execute_command(self, self.db_name, sql_command)
-
-                            # Delete table from schema json as well
-                            target_drm_db_schema_json = os.path.join(self.drm_path, self.drm_config_js["config"]["db_folder_name"], DRM_SCHEM_JSON_FILE_NAME)
-                            fl = files_and_folders.Files(target_drm_db_schema_json)
-                            target_schema_js = fl.load_file()
-                            for table_dict in target_schema_js[source_path]:
-                                for table_name in list(table_dict.keys()):
-                                    if name in table_name:
-                                        del table_dict[table_name]
-                                        with open(target_drm_db_schema_json, "w") as file_:
-                                            json.dump(target_schema_js, file_, indent=4)
+            #===========
+            # Drop table
+            #===========
+            if ("del" in db_js):
+                for db in db_js["del"]:
+                    name = db['name']
+                    source_path = db['source_path']
+                    #Drop table
+                    self.Db.drop_table(self, target_js, source_path, name, target_drm_db_schema_json)
 
         except Exception as e:
             raise Exception (str(e))
 
-
+ 
     @drm_logger.log_decorator(logger) 
     def upgrade_drm_database_data(self, js):
         '''
@@ -395,8 +296,10 @@ class Install:
             source_drm_db_data_json = os.path.join(current_working_directory, DRM_DB_JSON_PATH, DRM_DB_JSON_FILE_NAME)
             fl = files_and_folders.Files(source_drm_db_data_json)
             source_data_js = fl.load_file()
-            
+
+            #===================================
             # Add / Update / Delete table's Data
+            #===================================
             ops = ["add", "upd", "del"]
             for op in ops:
                 if (op in db_js):
@@ -406,9 +309,8 @@ class Install:
                         schema_source_path = db['schema_source_path']
 
                         if (source_path in self.system_tables_type):
-                            # Get Data
-                            source_data = None
-                            
+                            # Get table data
+                            source_data = None                            
                             for table in source_data_js[source_path]:
                                 if name in table:
                                     source_data = table
@@ -421,11 +323,9 @@ class Install:
                                     source_table = table
                                     break
 
+                            # Both SCHEMA & DATA found
                             if (source_data and source_table):
-                                
-                                #====================
                                 # Get table PK fields
-                                #====================
                                 constraints_js = None
                                 if ('constraints' in source_table):
                                     constraints_js = source_table['constraints']
@@ -434,77 +334,36 @@ class Install:
                                     for constraint in constraints_js:
                                         if (constraint["type"] == "PK"):
                                             pk_columns = constraint["columns"]
+                                            items = pk_columns.split(',')
+                                            cleaned_items = [item.strip() for item in items]
+                                            pk_columns = ','.join(cleaned_items)
                                 else:
                                     pk_columns = ""
                                     for column in source_table['columns']:
                                         if (pk_columns):
-                                            pk_columns += "," + column['name']
+                                            pk_columns += "," + column['name'].strip()
                                         else:
-                                            pk_columns += column['name']
+                                            pk_columns += column['name'].strip()
 
-                                #=======================
-                                # JSON DRM type handling
-                                #=======================
-                                if (self.install_type == "json"):
-                    
-                                    fl = files_and_folders.Files(self.db_name)
-                                    target_js = fl.load_file()
-                                    target_data = {name: []}
-                                    for table in target_js[source_path]:
-                                        if name in table:
-                                            target_data = table
-                                            break
-                                    
-                                #=========================
-                                # SQLite DRM type handling
-                                #=========================
-                                else:
-                                    
-                                    db = parser_sqlite_json.Db(self.db_name)
-                                    # Parse table from SQLite to JSON
-                                    target_data = db.get_table_data(name)
-                                    
-                                #======================
-                                # Identify Data changes
-                                #======================
+                                # Get target DATA
+                                target_data = self.Db.get_table_data(self, name, source_path)
+                                
+                                # Find DATA changes
                                 changes_js = self.json_parser.compare_table_data(name, target_data, source_data, pk_columns)
                                 
-                                if (changes_js):
-                                    #=======================
-                                    # JSON DRM type handling
-                                    #=======================
-                                    if (self.install_type == "json"):
-                                        for change in changes_js:
-                                            row = change['row']
-                                            action = change['action']
-                                            if (action == "add"):
-                                                target_data = self.parser.insert_row(name, target_data, row)
-                                            elif (action == "upd"):
-                                                target_data = self.parser.update_row(name, target_data, row, pk_columns)
-                                            elif (action == "del"):
-                                                target_data = self.parser.delete_row(name, target_data, row, pk_columns)
-                                    
-                                        target_js[source_path][0][name] = target_data[name]
-                                        
-                                        with open(self.db_name, 'w', encoding='utf-8') as file:
-                                            json.dump(target_js, file, indent=4)
-                                        
-                                    #=========================
-                                    # SQLite DRM type handling
-                                    #=========================
-                                    else:
-                                        for change in changes_js:
-                                            row = change['row']
-                                            action = change['action']
-                                            if (action == "add"):
-                                                sql_command = self.parser.insert_row(name, row.keys(), row.values())
-                                            elif (action == "upd"):
-                                               sql_command = self.parser.update_row(name, row.keys(), row.values(), pk_columns)
-                                            elif (action == "del"):
-                                                sql_command = self.parser.delete_row(name, row.keys(), row.values(), pk_columns)
-                                            
-                                            Sqlite.execute_command(self, self.db_name, sql_command)
-                                            
+                                for change in changes_js:
+                                    row = change['row']
+                                    action = change['action']
+                                    # Insert row
+                                    if (action == "add"):
+                                        self.Db.insert_row(self, source_path, name, target_data, row)
+                                    # Update row
+                                    elif (action == "upd"):
+                                        self.Db.update_row(self, source_path, name, target_data, row, pk_columns)
+                                    # Delete row
+                                    elif (action == "del"):
+                                        self.Db.delete_row(self, source_path, name, target_data, row, pk_columns)                                                                 
+
         except Exception as e:
             raise Exception (str(e))
 
@@ -788,6 +647,162 @@ class Install:
 
         except Exception as e:
             raise Exception ("failed to upgrade the DRM, " + str(e))
+
+class JsonDb:
+
+    logger = drm_logger.configure_logging("installer_upgrade.Db")
+
+    @drm_logger.log_decorator(logger) 
+    def update_json_file(self, js, file_name):
+        with open(file_name, "w") as file_:
+            json.dump(js, file_, indent=4)
+
+    @drm_logger.log_decorator(logger) 
+    def create_table(self, target_js, source_path, source_table, target_drm_db_schema_json):
+        target_js = self.json_parser.create_table(target_js, source_path, source_table) 
+        JsonDb.update_json_file(self, target_js, target_drm_db_schema_json)
+
+    @drm_logger.log_decorator(logger) 
+    def alter_table(self, alter_type, target_js, source_path, name, change, target_drm_db_schema_json):       
+        target_js = self.json_parser.alter_table(self, alter_type, target_js, source_path, name, change)
+        JsonDb.update_json_file(self, target_js, target_drm_db_schema_json)
+
+        if (self.install_type == 'json' and alter_type =='column'):
+            # Delete column DATA in JSON
+            fl = files_and_folders.Files(self.db_name)
+            target_js = fl.load_file()
+            column_name = change['name']
+            target_js = self.json_parser.delete_column_data(target_js, 'dictionaries', name, column_name)
+            JsonDb.update_json_file(self, target_js, self.db_name) 
+
+ 
+    @drm_logger.log_decorator(logger) 
+    def drop_table(self, target_js, source_path, name, target_drm_db_schema_json): 
+        target_js = self.json_parser.drop_table(target_js, source_path, name)
+        JsonDb.update_json_file(self, target_js, target_drm_db_schema_json)
+
+        if (self.install_type == 'json'):
+            # Drop table DATA in JSON
+            fl = files_and_folders.Files(self.db_name)
+            target_js = fl.load_file()
+            target_js = self.json_parser.drop_table_data(target_js, 'dictionaries', name)
+            JsonDb.update_json_file(self, target_js, self.db_name)
+
+    @drm_logger.log_decorator(logger) 
+    def get_table_data(self, name, source_path): 
+        fl = files_and_folders.Files(self.db_name)
+        target_js = fl.load_file()
+        table_found = False
+        for table in target_js[source_path]:
+            if name in table:
+                target_data = table
+                table_found = True
+                break
+        if not table_found:
+            target_data = {name: []}
+        return target_data
+    
+    @drm_logger.log_decorator(logger) 
+    def insert_row(self, source_path, name, target_data, row): 
+        fl = files_and_folders.Files(self.db_name)
+        target_js = fl.load_file()
+        target_data = self.json_parser.insert_row(name, target_data, row)
+        table_found = False
+        for table_dict in target_js[source_path]:
+            # Table found --> add new row
+            if name in table_dict:
+                table_found = True
+                table_dict[name].append(row)
+
+        if not table_found:
+            # Table not found --> add new table & new row
+            new_table = {name: [row]}
+            target_js[source_path].append(new_table)
+        JsonDb.update_json_file(self, target_js, self.db_name)
+
+
+    @drm_logger.log_decorator(logger) 
+    def update_row(self, source_path, name, target_data, row, pk_columns): 
+        fl = files_and_folders.Files(self.db_name)
+        target_js = fl.load_file()
+        target_data = self.parser.update_row(name, target_data, row, pk_columns)
+        for table_dict in target_js[source_path]:
+            if name in table_dict:
+                table_dict[name] = target_data[name]
+                break
+        JsonDb.update_json_file(self, target_js, self.db_name)
+
+    @drm_logger.log_decorator(logger) 
+    def delete_row(self, source_path, name, target_data, row, pk_columns): 
+        fl = files_and_folders.Files(self.db_name)
+        target_js = fl.load_file()
+        target_data = self.parser.delete_row(name, target_data, row, pk_columns)
+        for table_dict in target_js[source_path]:
+            if name in table_dict:
+                table_dict[name] = target_data[name]
+                break
+        JsonDb.update_json_file(self, target_js, self.db_name)
+
+
+class SqliteDb:
+
+    logger = drm_logger.configure_logging("installer_upgrade.Db")
+
+    @drm_logger.log_decorator(logger) 
+    def create_table(self, target_js, source_path, source_table, target_drm_db_schema_json):
+        # Create table from database
+        constraints_js = []
+        if ('constraints' in source_table):
+            constraints_js = source_table['constraints']
+        sql_command = self.parser.create_table(source_table['name'], source_table['columns'], constraints_js)
+        Sqlite.execute_command(self, self.db_name, sql_command)
+
+        # Create table in schema JSON
+        JsonDb.create_table(self, target_js, source_path, source_table, target_drm_db_schema_json)
+
+    @drm_logger.log_decorator(logger) 
+    def alter_table(self, alter_type, target_js, source_path, name, change, target_drm_db_schema_json): 
+        db = parser_sqlite_json.Db(self.db_name)
+        target_table = db.get_table_ddl (name)
+        sql_commands = self.parser.alter_table(target_table, alter_type, change)
+        if (sql_commands is not None):
+            # Run upgrade changes on target
+            commands = sql_commands.strip().split(';')
+            for sql_command in commands:
+                Sqlite.execute_command(self, self.db_name, sql_command)
+
+        # Alter table in schema JSON
+        JsonDb.alter_table(self, alter_type, target_js, source_path, name, change, target_drm_db_schema_json)      
+
+    @drm_logger.log_decorator(logger) 
+    def drop_table(self, target_js, source_path, name, target_drm_db_schema_json): 
+        sql_command = self.parser.drop_table(name)
+        Sqlite.execute_command(self, self.db_name, sql_command)
+
+        # Delete table in schema JSON
+        JsonDb.drop_table(self, target_js, source_path, name, target_drm_db_schema_json)
+
+    @drm_logger.log_decorator(logger) 
+    def get_table_data(self, name, source_path): 
+        db = parser_sqlite_json.Db(self.db_name)
+        target_data = db.get_table_data(name)
+        return target_data
+
+    @drm_logger.log_decorator(logger) 
+    def insert_row(self, source_path, name, target_data, row): 
+        sql_command = self.parser.insert_row(name, row.keys(), row.values())
+        Sqlite.execute_command(self, self.db_name, sql_command)
+
+    @drm_logger.log_decorator(logger) 
+    def update_row(self, source_path, name, target_data, row, pk_columns): 
+        sql_command = self.parser.update_row(name, row.keys(), row.values(), pk_columns)
+        Sqlite.execute_command(self, self.db_name, sql_command)
+
+    @drm_logger.log_decorator(logger) 
+    def delete_row(self, source_path, name, target_data, row, pk_columns): 
+        sql_command = self.parser.delete_row(name, row.keys(), row.values(), pk_columns)
+        Sqlite.execute_command(self, self.db_name, sql_command)
+
 
 class Sqlite:
 
