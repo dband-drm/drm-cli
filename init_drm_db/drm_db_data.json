@@ -327,14 +327,14 @@
 					],
 					"projects": [
 						{
-							"name": "Project_PF01",
+							"name": "Project_FL_01",
 							"targets_compare_db": "db_pf1",
 							"targets_type_id": 1,
 							"targets_list": "[\"db_pf1\"]",
 							"fail_on_error": true
 						},
 						{
-							"name": "Project_PF02",
+							"name": "Project_FL_02",
 							"targets_compare_db": "db_pf2",
 							"targets_type_id": 1,
 							"targets_list": "[\"db_pf2\"]",
@@ -367,7 +367,7 @@
 					],
 					"projects": [
 						{
-							"name": "Project_PF03",
+							"name": "Project_FL_04",
 							"targets_compare_db": "db_pf3",
 							"targets_type_id": 1,
 							"targets_list": "[\"db_pf4\",\"db_pf3\",\"db_pf5\"]",
@@ -400,7 +400,7 @@
 					],
 					"projects": [
 						{
-							"name": "Project_PF10",
+							"name": "Project_FL_05",
 							"targets_compare_db": "db_pfc3",
 							"targets_type_id": 2,
 							"targets_sql_text": "SELECT datname AS name FROM pg_database WHERE datname LIKE 'db_pf%' ORDER BY datname;",

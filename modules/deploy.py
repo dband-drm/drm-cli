@@ -552,15 +552,15 @@ class Flyway:
     @drm_logger.log_decorator(logger) 
     def __init__(self, deploy_config): 
         def get_location (self, app_name):
-           
+            if which(app_name) != None:
+                return which(app_name)
             app = "{app_name}.cmd".format(app_name = app_name)
             if which(app) != None:
                 return which(app)
             app = "{app_name}.exe".format(app_name = app_name)
             if which(app) != None:
                 return which(app)
-            if which(app_name) != None:
-                return which(app_name)
+
             # Not known --> search
             f = files_and_folders.Files(app_name)
             file_name = f.find_file_in_dir("/")
@@ -741,7 +741,7 @@ class Flyway:
         #-outputFile=/home/osboxes/flyway/Project_FL_01/output.log \
 
         #locations
-        f = files_and_folders.Folders(os.path.join(solution_path, source_file))
+        f = files_and_folders.Folders(os.path.join(solution_path, project_name))
         if  f.check_folder_exists():
             args_list.append("-locations=filesystem:" + os.path.join(solution_path, project_name))
         else:
