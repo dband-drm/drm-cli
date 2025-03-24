@@ -33,6 +33,10 @@
 				{
 					"id": "2",
 					"name": "Liquibase"
+				},
+				{
+					"id": "3",
+					"name": "Flyway"
 				}
 			]
 		},
