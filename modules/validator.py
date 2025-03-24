@@ -90,7 +90,7 @@ class Solution:
                 # Validate Solution Type
                 #=======================
                 if "solution_type_id" in solution:
-                    if solution['solution_type_id'] not in [1, 2]:
+                    if solution['solution_type_id'] not in [1, 2, 3]:
                         raise Exception ('Solution type "' + str(solution['solution_type_id']) + '" in solution "' + str(solution['name']) + '" is not yet supported!!! (legal values: 1, 2)')
                 else:
                     raise Exception ('No Solution Type defined for solution "' + str(solution['id']) + '"!!!')
