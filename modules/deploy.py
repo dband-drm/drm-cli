@@ -355,23 +355,20 @@ class Liquibase:
         :return: List of target databases (json)
         """ 
         try:
-            def custom_sort_key(s):
-                # Define a high priority for "a" to make it come last
-                return (1, s) if s == targets_compare_db else (0, s)
             
             #==========
             # JSON list
             #==========
             if targets_type_id == 1:
-                return sorted(json.loads(targets_list), key=custom_sort_key)
+                targets = json.loads(targets_list)
+                if len(targets) != 1:
+                    raise ValueError("list of targets, not supported in this version")
+                return targets
             #==========
             # SQL query
             #==========
             elif targets_type_id == 2:
-                target_db_obj = postgresql.PostgreSQL(self.run_script_tool_file_name, connection_string)
-                result = target_db_obj.execute_query(targets_sql_text)
-                names = [entry["name"] for entry in json.loads(result)]
-                return sorted(names, key=custom_sort_key)
+                raise Exception (f"query list of targets, not supported in this version")
         except Exception as e:            
             raise Exception (f"failed to get list of targets: {e}")
                
@@ -384,8 +381,6 @@ class Liquibase:
         :param project_name: project_name
         :return: source file full path (String)
         """ 
-        #TODO change to changelog
-        #return os.path.join (solution_path,  "changelog.xml")
         return "changelog.xml"
 
     @drm_logger.log_decorator(logger) 
@@ -638,26 +633,23 @@ class Flyway:
         :return: List of target databases (json)
         """ 
         try:
-            def custom_sort_key(s):
-                # Define a high priority for "a" to make it come last
-                return (1, s) if s == targets_compare_db else (0, s)
             
             #==========
             # JSON list
             #==========
             if targets_type_id == 1:
-                return sorted(json.loads(targets_list), key=custom_sort_key)
+                targets = json.loads(targets_list)
+                if len(targets) != 1:
+                    raise ValueError("list of targets, !!! Not supported")
+                return targets
             #==========
             # SQL query
             #==========
             elif targets_type_id == 2:
-                target_db_obj = postgresql.PostgreSQL(self.run_script_tool_file_name, connection_string)
-                result = target_db_obj.execute_query(targets_sql_text)
-                names = [entry["name"] for entry in json.loads(result)]
-                return sorted(names, key=custom_sort_key)
+                raise Exception (f"query list of targets, !!! Not supported")
+
         except Exception as e:            
             raise Exception (f"failed to get list of targets: {e}")
-               
 
     @drm_logger.log_decorator(logger) 
     def get_source_file(self, solution_path, project_name):
@@ -667,10 +659,8 @@ class Flyway:
         :param project_name: project_name
         :return: source file full path (String)
         """ 
-        #TODO change to changelog
-        #return os.path.join (solution_path,  "changelog.xml")
-        return "changelog.xml"
-
+        return ""
+    
     @drm_logger.log_decorator(logger) 
     def get_fixed_connection_string(self, connection_string, project_targets_compare_db):
         """ 
@@ -1202,12 +1192,13 @@ class Deploy:
                             #=======================
                             deployment_solution_js = Deploy.generate_solution_json(self, solution_id, solution_name)                            
 
-                            if (solution_type_id == 1): #mssql
-                                solution_obj = MsSql(self.deploy_config)
-                            if (solution_type_id == 2): #liquibase
-                                solution_obj = Liquibase(self.deploy_config)
-                            if (solution_type_id == 3): #flyway
-                                solution_obj = Flyway(self.deploy_config)
+                            match solution_type_id:
+                                case 1:#mssql
+                                    solution_obj = MsSql(self.deploy_config)
+                                case 2:#liquibase
+                                    solution_obj = Liquibase(self.deploy_config)
+                                case 3:#flyway
+                                    solution_obj = Flyway(self.deploy_config)
 
                             #====================
                             # Get connection info
