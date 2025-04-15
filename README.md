@@ -8,7 +8,7 @@ This `drm-cli` is an open source and freeware. Do make sure you see [licensing p
 Use the [README.md](https://github.com/dband-drm/drm-cli/readme.md) file for a quick project start.
 
 ## Contents
-- [Whats is drm-cli](#what-is-drm-cli)
+- [What is drm-cli](#what-is-drm-cli)
 - [License](#license)
 - [Releases versions](#releases-versions)
 - [Basic principals & architecture](#basic-principals--architecture)
@@ -18,18 +18,18 @@ Use the [README.md](https://github.com/dband-drm/drm-cli/readme.md) file for a q
 - [Next steps](#next-steps)
 
 ## What is drm-cli
-The `drm-cli` is a Data Release Management system that seamlessly integrates with your current version control systems.\
-This means you won't need to purchase any additional licenses beyond those you already have.
+The `drm-cli` is an open-source, cross-platform Data Release Management (DRM) tool developed by [d-band](https://dbanddrm.wixsite.com/).\
+It integrates seamlessly with existing version control systems, eliminating the need for additional licenses.\
 
 Each version control system typically includes basic tools for specific tasks, such as managing data releases (e.g., schema changes and data updates to your data storage systems).\
-However, these tools are often limited, offering only fundamental operations like releasing data from a source to a specific target.
+However, these tools are often limited, offering only fundamental operations like releasing data from a source to a specific target.\
 
-The `drm-cli` provides sophisticated management abilities that allow you to extend those basic operations.\
-For instance:
-- [x] Releases history save.
-- [x] Detailed release flow status.
-- [x] Multiple solutions releases under a single release.
-- [x] Automated exception handling mechanism.
+`drm-cli` enhances basic release operations by offering:
+- [x] Release History Tracking: Maintain a comprehensive log of all data releases.
+- [x] Detailed Status Monitoring: Gain insights into each step of the release process.
+- [x] Multi-Solution Releases: Manage multiple solutions under a single release.
+- [x] Automated Exception Handling: Automatically detect and handle exceptions during releases.
+- [x] For a quick start, refer to the [README.md](https://github.com/dband-drm/drm-cli/readme.md) 
 
 To get full features list, see features list in [releases versions](#releases-versions).
 
