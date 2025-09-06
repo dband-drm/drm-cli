@@ -760,12 +760,13 @@ class Flyway:
         #================================
         args_list = []
         # Utility
-        args_list.append(self.upgrade_tool_file_name)
+        flyway_exec = self.upgrade_tool_file_name
+        if os.name == "nt":  # only adjust for Windows
+            base, ext = os.path.splitext(flyway_exec)
+            if not ext:  # no extension provided
+                flyway_exec += ".cmd"
+        args_list.append(flyway_exec)
         
- 
-        #-dryRunOutput=/home/osboxes/flyway/Project_FL_01/dryrun_output.sql \
-        #-outputFile=/home/osboxes/flyway/Project_FL_01/output.log \
-
         #locations
         f = files_and_folders.Folders(os.path.join(solution_path, project_name))
         if  f.check_folder_exists():
@@ -793,24 +794,18 @@ class Flyway:
             deployment_properties = '[]'
         else:
             js_deployment_properties = json.loads(deployment_properties)
-        
-                  
-
-
 
         #=============================
         # Generate upgrade script file
         #=============================
-        output_file =  upgrade_script
+        output_file =  upgrade_script        
 
         with open(output_file, "w") as f:
             result = subprocess.run(args_list, stdout=f, stderr=subprocess.PIPE, text=True)
 
-
         # Check if process exit with a failure
         if result.returncode != 0:
-            raise Exception (result.stderr)
-            
+            raise Exception (result.stderr)          
             
         self.logger.info("Upgrade script generated successfully!!!")
 
