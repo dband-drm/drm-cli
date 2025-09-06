@@ -457,7 +457,7 @@
 					],
 					"projects": [
 						{
-							"name": "Project_P01",
+							"name": "drm",
 							"targets_compare_db": "XEPDB1",
 							"targets_type_id": 1,
 							"targets_list": "[\"XEPDB1\"]",
