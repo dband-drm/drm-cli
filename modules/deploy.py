@@ -14,7 +14,7 @@ from pathlib import Path
 from shutil import which
 from datetime import datetime
 from modules import drm_logger, files_and_folders, crypto, parser_sqlite_json
-from modules import parser_json_json, sqlite, parser_json_sqlite, mssql,postgresql
+from modules import parser_json_json, sqlite, parser_json_sqlite, mssql,postgresql, oracle
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
@@ -41,7 +41,9 @@ class MsSql:
     logger = drm_logger.configure_logging("deploy.MsSql")
 
     @drm_logger.log_decorator(logger) 
-    def __init__(self, deploy_config): 
+    def __init__(self, deploy_config, connection_type_id): 
+
+        self.connection_type_id = connection_type_id
 
         def get_location (self, app_name):
             if which(app_name) != None:
@@ -135,10 +137,11 @@ class MsSql:
                
 
     @drm_logger.log_decorator(logger) 
-    def get_source_file(self, solution_path, project_name):
+    def get_source_file(self, solution_path, solution_file_name, project_name):
         """ 
         returns the source file path 
         :param solution_path: solution path
+        :param solution_file_name: solution file name
         :param project_name: project_name
         :return: source file full path (String)
         """ 
@@ -267,7 +270,10 @@ class Liquibase:
     logger = drm_logger.configure_logging("deploy.Liquibase")
 
     @drm_logger.log_decorator(logger) 
-    def __init__(self, deploy_config): 
+    def __init__(self, deploy_config, connection_type_id): 
+
+        self.connection_type_id = connection_type_id
+
         def get_location (self, app_name):
            
             app = "{app_name}.bat".format(app_name = app_name)
@@ -318,22 +324,41 @@ class Liquibase:
             locations_js = json.loads(json.dumps('{"liquibase_path": "' + self.upgrade_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
             js['locations'].append(locations_js)
 
-        app_name = "psql"
-        psql_path = next(
-           (json.loads(loc)["psql_path"] for loc in deploy_config.full_config["locations"] if "psql_path" in json.loads(loc)) ,
-           None 
-        )
-        if psql_path is not None:
-            self.run_script_tool_file_name = psql_path
-        else:
-            # Utility not configured --> serach
-            missing_object = True
-            self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
-            self.run_script_tool_file_name = get_location (self, app_name)                    
-            self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
-            
-            locations_js = json.loads(json.dumps('{"psql_path": "' + self.run_script_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
-            js['locations'].append(locations_js)
+        if (self.connection_type_id == 2):
+            app_name = "sqlplus"
+            sqlplus_path = next(
+            (json.loads(loc)["sqlplus_path"] for loc in deploy_config.full_config["locations"] if "sqlplus_path" in json.loads(loc)) ,
+            None 
+            )
+            if sqlplus_path is not None:
+                self.run_script_tool_file_name = sqlplus_path
+            else:
+                # Utility not configured --> serach
+                missing_object = True
+                self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
+                self.run_script_tool_file_name = get_location (self, app_name)                    
+                self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
+                
+                locations_js = json.loads(json.dumps('{"sqlplus_path": "' + self.run_script_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
+                js['locations'].append(locations_js)
+
+        if (self.connection_type_id == 3):
+            app_name = "psql"
+            psql_path = next(
+            (json.loads(loc)["psql_path"] for loc in deploy_config.full_config["locations"] if "psql_path" in json.loads(loc)) ,
+            None 
+            )
+            if psql_path is not None:
+                self.run_script_tool_file_name = psql_path
+            else:
+                # Utility not configured --> serach
+                missing_object = True
+                self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
+                self.run_script_tool_file_name = get_location (self, app_name)                    
+                self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
+                
+                locations_js = json.loads(json.dumps('{"psql_path": "' + self.run_script_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
+                js['locations'].append(locations_js)
 
 
         if(missing_object):
@@ -374,14 +399,15 @@ class Liquibase:
                
 
     @drm_logger.log_decorator(logger) 
-    def get_source_file(self, solution_path, project_name):
+    def get_source_file(self, solution_path, solution_file_name, project_name):
         """ 
         returns the source file path 
         :param solution_path: solution path
+        :param solution_file_name: solution file name
         :param project_name: project_name
         :return: source file full path (String)
         """ 
-        return "changelog.xml"
+        return solution_file_name
 
     @drm_logger.log_decorator(logger) 
     def get_fixed_connection_string(self, connection_string, project_targets_compare_db):
@@ -447,10 +473,11 @@ class Liquibase:
         args_list = []
         # Utility
         args_list.append(self.upgrade_tool_file_name)
-        
+
         #changeLogFile  C:\Users\vikil\liquibase\Project_P01
         args_list.append("--changeLogFile=" + source_file)
         #SearchPath
+        f1 = os.path.join(solution_path, source_file)
         f = files_and_folders.Files(os.path.join(solution_path, source_file))
          
         if  f.check_file_exists():
@@ -524,12 +551,10 @@ class Liquibase:
         upgrade_log_file = os.path.join (current_working_directory, "log", deploy_file_base_name + "_S" + str(solution_id) + "-P" + str(project_id) + "-" + project_name + "-" + target_name + ".log")
         self.logger.info('Running upgrade script against "{target_name}" (log file: "{upgrade_log_file}")...'.format(target_name = target_name, upgrade_log_file = upgrade_log_file))
         
-        db_obj = postgresql.PostgreSQL(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)
-        
-        #if(self.default_data_path != None):
-        #    db_obj.default_data_path = self.default_data_path
-        #    db_obj.default_log_path = self.default_log_path
-            
+        if (self.connection_type_id == 2):
+            db_obj = oracle.SqlPlus(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)
+        if (self.connection_type_id == 3):
+            db_obj = postgresql.PostgreSQL(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)
 
         try:
             result = db_obj.run_script(upgrade_script)
@@ -545,7 +570,10 @@ class Flyway:
     logger = drm_logger.configure_logging("deploy.Flyway")
 
     @drm_logger.log_decorator(logger) 
-    def __init__(self, deploy_config): 
+    def __init__(self, deploy_config, connection_type_id): 
+
+        self.connection_type_id = connection_type_id
+
         def get_location (self, app_name):
             if which(app_name) != None:
                 return which(app_name)
@@ -596,22 +624,41 @@ class Flyway:
             locations_js = json.loads(json.dumps('{"flyway_path": "' + self.upgrade_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
             js['locations'].append(locations_js)
 
-        app_name = "psql"
-        psql_path = next(
-           (json.loads(loc)["psql_path"] for loc in deploy_config.full_config["locations"] if "psql_path" in json.loads(loc)) ,
-           None 
-        )
-        if psql_path is not None:
-            self.run_script_tool_file_name = psql_path
-        else:
-            # Utility not configured --> serach
-            missing_object = True
-            self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
-            self.run_script_tool_file_name = get_location (self, app_name)                    
-            self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
-            
-            locations_js = json.loads(json.dumps('{"psql_path": "' + self.run_script_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
-            js['locations'].append(locations_js)
+        if (self.connection_type_id == 2):
+            app_name = "sqlplus"
+            sqlplus_path = next(
+            (json.loads(loc)["sqlplus_path"] for loc in deploy_config.full_config["locations"] if "sqlplus_path" in json.loads(loc)) ,
+            None 
+            )
+            if sqlplus_path is not None:
+                self.run_script_tool_file_name = sqlplus_path
+            else:
+                # Utility not configured --> serach
+                missing_object = True
+                self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
+                self.run_script_tool_file_name = get_location (self, app_name)                    
+                self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
+                
+                locations_js = json.loads(json.dumps('{"sqlplus_path": "' + self.run_script_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
+                js['locations'].append(locations_js)
+
+        if (self.connection_type_id == 3):
+            app_name = "psql"
+            psql_path = next(
+            (json.loads(loc)["psql_path"] for loc in deploy_config.full_config["locations"] if "psql_path" in json.loads(loc)) ,
+            None 
+            )
+            if psql_path is not None:
+                self.run_script_tool_file_name = psql_path
+            else:
+                # Utility not configured --> serach
+                missing_object = True
+                self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
+                self.run_script_tool_file_name = get_location (self, app_name)                    
+                self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
+                
+                locations_js = json.loads(json.dumps('{"psql_path": "' + self.run_script_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
+                js['locations'].append(locations_js)
 
 
         if(missing_object):
@@ -652,7 +699,7 @@ class Flyway:
             raise Exception (f"failed to get list of targets: {e}")
 
     @drm_logger.log_decorator(logger) 
-    def get_source_file(self, solution_path, project_name):
+    def get_source_file(self, solution_path, solution_file_name, project_name):
         """ 
         returns the source file path 
         :param solution_path: solution path
@@ -1186,19 +1233,7 @@ class Deploy:
                             solution_name = js_solution['name']
                             solution_type_id = js_solution['solution_type_id']
                             solution_path = js_solution['path']
-
-                            #=======================
-                            # Generate Solution JSON
-                            #=======================
-                            deployment_solution_js = Deploy.generate_solution_json(self, solution_id, solution_name)                            
-
-                            match solution_type_id:
-                                case 1:#mssql
-                                    solution_obj = MsSql(self.deploy_config)
-                                case 2:#liquibase
-                                    solution_obj = Liquibase(self.deploy_config)
-                                case 3:#flyway
-                                    solution_obj = Flyway(self.deploy_config)
+                            solution_file_name = js_solution['file_name']
 
                             #====================
                             # Get connection info
@@ -1215,6 +1250,19 @@ class Deploy:
                                 if self.deploy_config.db_secured:
                                     crpt = crypto.Crypto(self.encryption_key)
                                     connection_string = crpt.decrypt_string(connection_string)
+
+                            #=======================
+                            # Generate Solution JSON
+                            #=======================
+                            deployment_solution_js = Deploy.generate_solution_json(self, solution_id, solution_name)                            
+
+                            match solution_type_id:
+                                case 1:#mssql
+                                    solution_obj = MsSql(self.deploy_config, connection_type_id)
+                                case 2:#liquibase
+                                    solution_obj = Liquibase(self.deploy_config, connection_type_id)
+                                case 3:#flyway
+                                    solution_obj = Flyway(self.deploy_config, connection_type_id)
 
                             #=========================
                             # Get SQL script variables
@@ -1251,7 +1299,7 @@ class Deploy:
                                     project_deployment_properties = js_project['deployment_properties']
                                     project_fail_on_error = js_project['fail_on_error']
 
-                                    source_file = solution_obj.get_source_file(solution_path, project_name)                                    
+                                    source_file = solution_obj.get_source_file(solution_path, solution_file_name, project_name)                                    
 
                                     #============
                                     # DryRun mode

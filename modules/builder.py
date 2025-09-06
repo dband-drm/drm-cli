@@ -36,13 +36,14 @@ class Solution:
     logger = drm_logger.configure_logging("builder.Solution")
 
     @drm_logger.log_decorator(logger) 
-    def __init__(self, release_id, id = None, name = None, ordinal = None, solution_type_id = None, path = None, is_active = None): 
+    def __init__(self, release_id, id = None, name = None, ordinal = None, solution_type_id = None, path = None, file_name = None, is_active = None): 
         self.id = id       
         self.name = name       
         self.release_id = release_id       
         self.ordinal = ordinal       
         self.solution_type_id = solution_type_id       
         self.path = path       
+        self.file_name = file_name       
         self.is_active = is_active       
 
 class Connection:

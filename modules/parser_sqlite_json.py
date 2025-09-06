@@ -234,7 +234,7 @@ class Solutions:
         #=================================
         # Get Solutions info by Release ID
         #=================================
-        sql_command = "select id, name, release_id, ordinal, solution_type_id, path, is_active from solutions where release_id = {rel_id} order by ordinal, id;".format(rel_id = release_id)
+        sql_command = "select id, name, release_id, ordinal, solution_type_id, path, file_name, is_active from solutions where release_id = {rel_id} order by ordinal, id;".format(rel_id = release_id)
         rows = drm_db.select_query(sql_command)
         for row in rows:
             solution_obj.id = row[0]    
@@ -243,7 +243,8 @@ class Solutions:
             solution_obj.ordinal = row[3]    
             solution_obj.solution_type_id = row[4]    
             solution_obj.path = row[5]    
-            solution_obj.is_active = row[6] 
+            solution_obj.file_name = row[6]    
+            solution_obj.is_active = row[7] 
             solution_js = json.loads(json.dumps(solution_obj.__dict__))
             js['solutions'].append(solution_js)
         return json.dumps(js)
