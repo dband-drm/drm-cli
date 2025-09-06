@@ -448,6 +448,7 @@ class Solutions:
                             solution_obj.ordinal = _solution_id
                         solution_obj.solution_type_id = solution['solution_type_id']    
                         solution_obj.path = solution['path']   
+                        solution_obj.file_name = solution['file_name']   
                         if  ("is_active" in solution):
                             solution_obj.is_active = solution['is_active'] 
                         else:

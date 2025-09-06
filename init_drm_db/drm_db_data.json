@@ -409,6 +409,35 @@
 					]
 				}
 			]
+		},
+		{
+			"id": 9,
+			"name": "Demo release: Deploy a project to a simple oracle database with liquibase",
+			"is_active": true,
+			"solutions": [
+				{
+					"name": "DRM liquibase oracle demo solution",
+					"solution_type_id": 2,
+					"path": "../oracle/liquibase/",
+					"file_name": "main-changelog.xml",
+					"connections": [
+						{
+							"name": "dev",
+							"connection_type_id": 2,
+							"connection_string": "url=jdbc:oracle:thin:@//127.0.0.1:1521/XEPDB1;username=drm;password=drm;"
+						}
+					],
+					"projects": [
+						{
+							"name": "Project_P01",
+							"targets_compare_db": "XEPDB1",
+							"targets_type_id": 1,
+							"targets_list": "[\"XEPDB1\"]",
+							"fail_on_error": true
+						}
+					]
+				}
+			]
 		}
 	]
 }

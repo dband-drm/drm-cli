@@ -191,6 +191,12 @@
 					"is_nullable": false
 				},
 				{
+					"name": "file_name",
+					"data_type": "string",
+					"length": 500,
+					"is_nullable": true
+				},
+				{
 					"name": "is_active",
 					"data_type": "boolean",
 					"is_nullable": false,
