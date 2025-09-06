@@ -417,13 +417,8 @@ class Liquibase:
         :param project_targets_compare_db: database name to connect into
         :return: fixed conneciton string (String)
         """ 
-        #jdbc_url = self.parse_connection_string(connection_string,"url")
-        #--url=jdbc:postgresql://127.0.0.1:5432/postgres ^
-        #--url=jdbc:postgresql://127.0.0.1:5432/mydatabase ^
-        #return url.replace("/postgres",f"/{project_targets_compare_db}")
-        return re.sub(r"(url=jdbc:postgresql://[^/]+/)(\w+)", rf"\1{project_targets_compare_db}", connection_string)
+        return connection_string
         
-        #return connection_string + "Database={project_targets_compare_db};".format(project_targets_compare_db = project_targets_compare_db)
 
     @drm_logger.log_decorator(logger) 
     def parse_connection_string(self, connection_string, key):
@@ -706,7 +701,7 @@ class Flyway:
         :param project_name: project_name
         :return: source file full path (String)
         """ 
-        return ""
+        return solution_file_name
     
     @drm_logger.log_decorator(logger) 
     def get_fixed_connection_string(self, connection_string, project_targets_compare_db):
@@ -716,13 +711,7 @@ class Flyway:
         :param project_targets_compare_db: database name to connect into
         :return: fixed conneciton string (String)
         """ 
-        #jdbc_url = self.parse_connection_string(connection_string,"url")
-        #--url=jdbc:postgresql://127.0.0.1:5432/postgres ^
-        #--url=jdbc:postgresql://127.0.0.1:5432/mydatabase ^
-        #return url.replace("/postgres",f"/{project_targets_compare_db}")
-        return re.sub(r"(url=jdbc:postgresql://[^/]+/)(\w+)", rf"\1{project_targets_compare_db}", connection_string)
-        
-        #return connection_string + "Database={project_targets_compare_db};".format(project_targets_compare_db = project_targets_compare_db)
+        return connection_string
 
     @drm_logger.log_decorator(logger) 
     def parse_connection_string(self, connection_string, key):
@@ -846,12 +835,10 @@ class Flyway:
         upgrade_log_file = os.path.join (current_working_directory, "log", deploy_file_base_name + "_S" + str(solution_id) + "-P" + str(project_id) + "-" + project_name + "-" + target_name + ".log")
         self.logger.info('Running upgrade script against "{target_name}" (log file: "{upgrade_log_file}")...'.format(target_name = target_name, upgrade_log_file = upgrade_log_file))
         
-        db_obj = postgresql.PostgreSQL(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)
-        
-        #if(self.default_data_path != None):
-        #    db_obj.default_data_path = self.default_data_path
-        #    db_obj.default_log_path = self.default_log_path
-            
+        if (self.connection_type_id == 2):
+            db_obj = oracle.SqlPlus(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)
+        if (self.connection_type_id == 3):
+            db_obj = postgresql.PostgreSQL(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)            
 
         try:
             result = db_obj.run_script(upgrade_script)
