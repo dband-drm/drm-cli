@@ -460,6 +460,51 @@
 			]
 		},
 		{
+			"name": "targets_list_priority",
+			"columns": [
+				{
+					"name": "id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "project_id",
+					"data_type": "integer",
+					"is_nullable": false
+				},
+				{
+					"name": "target_database_name",
+					"data_type": "string",
+					"length": 255,
+					"is_nullable": false
+				},
+				{
+					"name": "ordinal",
+					"data_type": "integer",
+					"is_nullable": false
+				}
+			],
+			"constraints": [
+				{
+					"name": "pk_targets_list_priority",
+					"type": "PK",
+					"columns": "id"
+				},
+				{
+					"name": "uq_targets_list_priority__ordinal",
+					"type": "UQ",
+					"columns": "project_id, ordinal"
+				},
+				{
+					"name": "fk_projects__project_id",
+					"type": "FK",
+					"columns": "project_id",
+					"ref_table": "projects",
+					"ref_columns": "id"
+				}
+			]
+		},
+		{
 			"name": "sql_scripts",
 			"columns": [
 				{
