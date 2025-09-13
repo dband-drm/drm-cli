@@ -105,25 +105,35 @@ class MsSql:
                 
 
     @drm_logger.log_decorator(logger) 
-    def get_list_of_targets(self, targets_type_id, targets_list, connection_string, targets_sql_text, targets_compare_db):
+    def get_list_of_targets(self, targets_type_id, targets_list, connection_string, targets_sql_text, targets_priority, targets_compare_db):
         """ 
         Returns a list of target databases to deploy into
         :param targets_type_id: targets type id (list or query)
         :param targets_list: targets json list
         :param targets_sql_text: SQL query which returns a list of targets
+        :param targets_priority: targets priority json 
         :prams targets_compare_db: target compare database name
         :return: List of target databases (json)
         """ 
         try:
-            def custom_sort_key(s):
-                # Define a high priority for "a" to make it come last
-                return (1, s) if s == targets_compare_db else (0, s)
+            # Sort targets
+            def final_sort_key(item):
+                # Priority items first, in given order
+                if targets_priority and item in targets_priority:
+                    return (0, targets_priority.index(item))
+                
+                # Compare-db always last
+                if item == targets_compare_db:
+                    return (2, item)
+                
+                # Normal items (alphabetical)
+                return (1, item)
             
             #==========
             # JSON list
             #==========
             if targets_type_id == 1:
-                return sorted(json.loads(targets_list), key=custom_sort_key)
+                return sorted(json.loads(targets_list), key=final_sort_key)
             #==========
             # SQL query
             #==========
@@ -131,7 +141,7 @@ class MsSql:
                 target_db_obj = mssql.MsSql(self.run_script_tool_file_name, connection_string)
                 result = target_db_obj.execute_query(targets_sql_text)
                 names = [entry["name"] for entry in json.loads(result)]
-                return sorted(names, key=custom_sort_key)
+                return sorted(names, key=final_sort_key)
         except Exception as e:            
             raise Exception (f"failed to get list of targets: {e}")
                
@@ -1275,6 +1285,7 @@ class Deploy:
                                     project_targets_list = js_project['targets_list']
                                     project_targets_sql_script_id = js_project['targets_sql_script_id']
                                     project_targets_sql_text = js_project['targets_sql_text']
+                                    project_targets_priority = js_project['targets_priority']
                                     project_max_degree_in_parallel = js_project['max_degree_in_parallel']
                                     project_timeout_in_min = js_project['timeout_in_min']
                                     project_sleep_time_in_sec = js_project['sleep_time_in_sec']
@@ -1321,7 +1332,7 @@ class Deploy:
                                         target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
 
                                         # Get list targets
-                                        targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text, project_targets_compare_db)
+                                        targets_list_js = solution_obj.get_list_of_targets(project_targets_type_id, project_targets_list, target_connection_string, project_targets_sql_text, project_targets_priority, project_targets_compare_db)
                                         
                                         # First try --> Check former deployment if failed
                                         if try_num == 1:

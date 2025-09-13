@@ -629,6 +629,10 @@ class Projects:
                                     else:
                                         project_obj.targets_sql_script_id = None
                                         project_obj.targets_sql_text = None
+                                    if ("targets_priority" in project):    
+                                        project_obj.targets_priority = project['targets_priority'] 
+                                    else:
+                                        project_obj.targets_priority = None
                                     if ("max_degree_in_parallel" in project):   
                                         project_obj.max_degree_in_parallel = project['max_degree_in_parallel']
                                     else:

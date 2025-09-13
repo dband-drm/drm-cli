@@ -86,7 +86,7 @@ class Project:
     logger = drm_logger.configure_logging("builder.Project")
 
     @drm_logger.log_decorator(logger) 
-    def __init__(self, solution_id, id = None, name = None, ordinal = None, targets_compare_db = None, targets_type_id = None, targets_list = None, targets_sql_script_id = None, targets_sql_text = None, max_degree_in_parallel = None, timeout_in_min = None, sleep_time_in_sec = None, deployment_properties = None, fail_on_error = None, is_active = None): 
+    def __init__(self, solution_id, id = None, name = None, ordinal = None, targets_compare_db = None, targets_type_id = None, targets_list = None, targets_sql_script_id = None, targets_sql_text = None, targets_priority = None, max_degree_in_parallel = None, timeout_in_min = None, sleep_time_in_sec = None, deployment_properties = None, fail_on_error = None, is_active = None): 
         self.id = id       
         self.name = name       
         self.solution_id = solution_id       
@@ -95,7 +95,8 @@ class Project:
         self.targets_type_id = targets_type_id      
         self.targets_list = targets_list      
         self.targets_sql_script_id = targets_sql_script_id      
-        self.targets_sql_text = targets_sql_text      
+        self.targets_sql_text = targets_sql_text   
+        self.targets_priority = targets_priority
         self.max_degree_in_parallel = max_degree_in_parallel      
         self.timeout_in_min = timeout_in_min      
         self.sleep_time_in_sec = sleep_time_in_sec      

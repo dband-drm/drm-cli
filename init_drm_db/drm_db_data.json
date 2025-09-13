@@ -178,6 +178,7 @@
 							"targets_type_id": 1,
 							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\", \"CommentOutSetVarDeclarations=True\"]",
 							"targets_list": "[\"DB_B1\", \"DB_B2\", \"DB_B3\", \"DB_B4\"]",
+							"targets_priority": "[\"DB_B4\", \"DB_B2\"]",
 							"max_degree_in_parallel": 2,
 							"timeout_in_min": 10,
 							"sleep_time_in_sec": 2,
