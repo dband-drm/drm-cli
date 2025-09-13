@@ -190,6 +190,7 @@
 							"targets_type_id": 2,
 							"deployment_properties": "[\"CreateNewDatabase=False\", \"ScriptDatabaseOptions=False\", \"CommentOutSetVarDeclarations=True\"]",
 							"targets_sql_text": "select name from sys.databases where name like 'DB_C%' order by name",
+							"targets_exclude": "[\"DB_C4\", \"DB_C2\"]",
 							"max_degree_in_parallel": 5,
 							"timeout_in_min": 30,
 							"sleep_time_in_sec": 2,

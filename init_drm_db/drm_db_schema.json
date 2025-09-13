@@ -398,6 +398,12 @@
 					"is_nullable": true
 				},
 				{
+					"name": "targets_exclude",
+					"data_type": "text",
+					"length": 2000,
+					"is_nullable": true
+				},
+				{
 					"name": "max_degree_in_parallel",
 					"data_type": "integer",
 					"is_nullable": false,
