@@ -392,6 +392,8 @@ class Liquibase:
         :param targets_type_id: targets type id (list or query)
         :param targets_list: targets json list
         :param targets_sql_text: SQL query which returns a list of targets
+        :param targets_priority: targets priority json 
+        :param targets_exclude: targets json to exclude from list 
         :prams targets_compare_db: target compare database name
         :return: List of target databases (json)
         """ 
@@ -687,6 +689,8 @@ class Flyway:
         :param targets_type_id: targets type id (list or query)
         :param targets_list: targets json list
         :param targets_sql_text: SQL query which returns a list of targets
+        :param targets_priority: targets priority json 
+        :param targets_exclude: targets json to exclude from list 
         :prams targets_compare_db: target compare database name
         :return: List of target databases (json)
         """ 
