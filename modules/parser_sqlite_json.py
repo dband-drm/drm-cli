@@ -376,7 +376,7 @@ class Projects:
         #=================================
         # Get Projects info by Solution ID
         #=================================
-        sql_command = "select projects.id, projects.name, projects.solution_id, projects.ordinal, targets_compare_db, targets_type_id, targets_list, targets_sql_script_id, sql_scripts.sql_text as targets_sql_text, max_degree_in_parallel, timeout_in_min, sleep_time_in_sec, deployment_properties, fail_on_error, is_active from projects left join sql_scripts on projects.solution_id = sql_scripts.solution_id and projects.targets_sql_script_id = sql_scripts.id where projects.solution_id = {sol_id} order by projects.ordinal, projects.id;".format(sol_id = solution_id)
+        sql_command = "select projects.id, projects.name, projects.solution_id, projects.ordinal, targets_compare_db, targets_type_id, targets_list, targets_sql_script_id, sql_scripts.sql_text as targets_sql_text, targets_priority, max_degree_in_parallel, timeout_in_min, sleep_time_in_sec, deployment_properties, fail_on_error, is_active from projects left join sql_scripts on projects.solution_id = sql_scripts.solution_id and projects.targets_sql_script_id = sql_scripts.id where projects.solution_id = {sol_id} order by projects.ordinal, projects.id;".format(sol_id = solution_id)
         rows = drm_db.select_query(sql_command)
         for row in rows:
             project_obj.id = row[0]    
@@ -387,13 +387,14 @@ class Projects:
             project_obj.targets_type_id = row[5]    
             project_obj.targets_list = row[6]    
             project_obj.targets_sql_script_id = row[7]    
-            project_obj.targets_sql_text = row[8]    
-            project_obj.max_degree_in_parallel = row[9]    
-            project_obj.timeout_in_min = row[10]    
-            project_obj.sleep_time_in_sec = row[11]    
-            project_obj.deployment_properties = row[12] 
-            project_obj.fail_on_error = row[13]    
-            project_obj.is_active = row[14]    
+            project_obj.targets_sql_text = row[8]   
+            project_obj.targets_priority = row[89]  
+            project_obj.max_degree_in_parallel = row[10]    
+            project_obj.timeout_in_min = row[11]    
+            project_obj.sleep_time_in_sec = row[12]    
+            project_obj.deployment_properties = row[13] 
+            project_obj.fail_on_error = row[14]    
+            project_obj.is_active = row[15]    
             project_js = json.loads(json.dumps(project_obj.__dict__))
             js['projects'].append(project_js)
         return json.dumps(js)
