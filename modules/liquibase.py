@@ -16,7 +16,7 @@ DEPLOY_CONFIG_FILE_NAME = "drm_deploy.config"
 
 class Liquibase:
 
-    logger = drm_logger.configure_logging("deploy.Liquibase")
+    logger = drm_logger.configure_logging("liquibase.Liquibase")
 
     @drm_logger.log_decorator(logger) 
     def __init__(self, deploy_config, connection_type_id): 

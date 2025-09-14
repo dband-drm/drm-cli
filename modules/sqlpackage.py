@@ -4,7 +4,7 @@ import logging
 import subprocess
 from pathlib import Path
 from shutil import which
-from modules import drm_logger, files_and_folders, postgresql, oracle
+from modules import drm_logger, files_and_folders, mssql
 
 current_working_directory = Path(__file__).parent.parent.resolve()
 
@@ -13,9 +13,9 @@ current_working_directory = Path(__file__).parent.parent.resolve()
 #===========
 DEPLOY_CONFIG_FILE_NAME = "drm_deploy.config"
 
-class Flyway:
+class SqlPackage:
 
-    logger = drm_logger.configure_logging("flyway.Flyway")
+    logger = drm_logger.configure_logging("sqlpackage.SqlPackage")
 
     @drm_logger.log_decorator(logger) 
     def __init__(self, deploy_config, connection_type_id): 
@@ -24,20 +24,13 @@ class Flyway:
 
         def get_location (self, app_name):
             if which(app_name) != None:
-                return which(app_name)
-            app = "{app_name}.cmd".format(app_name = app_name)
-            if which(app) != None:
-                return which(app)
+                return app_name
             app = "{app_name}.exe".format(app_name = app_name)
             if which(app) != None:
-                return which(app)
-
+                return app
             # Not known --> search
             f = files_and_folders.Files(app_name)
             file_name = f.find_file_in_dir("/")
-            if (file_name == None):
-                f = files_and_folders.Files("{app_name}.cmd".format(app_name = app_name))
-                file_name = f.find_file_in_dir("/")
             if (file_name == None):
                 f = files_and_folders.Files("{app_name}.exe".format(app_name = app_name))
                 file_name = f.find_file_in_dir("/")
@@ -54,60 +47,31 @@ class Flyway:
         #============================
         # Identify SqlPackage utility
         #============================
-        #todo add more types 
-        app_name = "flyway"
-        flyway_path = next(
-           (json.loads(loc)["flyway_path"] for loc in deploy_config.full_config["locations"] if "flyway_path" in json.loads(loc)) ,
-           None 
-        )
-        if flyway_path is not None:
-            self.upgrade_tool_file_name = flyway_path
+        app_name = "sqlpackage"
+        if hasattr(deploy_config, 'sqlpackage_path'):
+            # Get utility location from configuration
+            self.upgrade_tool_file_name = deploy_config.sqlpackage_path
         else:
             # Utility not configured --> serach
             missing_object = True
             self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
             self.upgrade_tool_file_name = get_location (self, app_name)                    
             self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
-            
-            locations_js = json.loads(json.dumps('{"flyway_path": "' + self.upgrade_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
+            locations_js = json.loads('{"sqlpackage_path": "' + self.upgrade_tool_file_name + '"}')
             js['locations'].append(locations_js)
 
-        if (self.connection_type_id == 2):
-            app_name = "sqlplus"
-            sqlplus_path = next(
-            (json.loads(loc)["sqlplus_path"] for loc in deploy_config.full_config["locations"] if "sqlplus_path" in json.loads(loc)) ,
-            None 
-            )
-            if sqlplus_path is not None:
-                self.run_script_tool_file_name = sqlplus_path
-            else:
-                # Utility not configured --> serach
-                missing_object = True
-                self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
-                self.run_script_tool_file_name = get_location (self, app_name)                    
-                self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
-                
-                locations_js = json.loads(json.dumps('{"sqlplus_path": "' + self.run_script_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
-                js['locations'].append(locations_js)
-
-        if (self.connection_type_id == 3):
-            app_name = "psql"
-            psql_path = next(
-            (json.loads(loc)["psql_path"] for loc in deploy_config.full_config["locations"] if "psql_path" in json.loads(loc)) ,
-            None 
-            )
-            if psql_path is not None:
-                self.run_script_tool_file_name = psql_path
-            else:
-                # Utility not configured --> serach
-                missing_object = True
-                self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
-                self.run_script_tool_file_name = get_location (self, app_name)                    
-                self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
-                
-                locations_js = json.loads(json.dumps('{"psql_path": "' + self.run_script_tool_file_name.replace("\\","\\\\") + '"}', indent=4))
-                js['locations'].append(locations_js)
-
+        app_name = "sqlcmd"
+        if hasattr(deploy_config, 'sqlcmd_path'):
+            # Get utility location from configuration
+            self.run_script_tool_file_name = deploy_config.sqlcmd_path
+        else:
+            # Utility not configured --> serach
+            missing_object = True
+            self.logger.info("{app_name} utility path was not supplied in drm_deploy.config, searching (This may take a while)...".format(app_name = app_name))
+            self.run_script_tool_file_name = get_location (self, app_name)                    
+            self.logger.info("{app_name} utility found & configured in drm_deploy.config for next deployments!!!".format(app_name = app_name))
+            locations_js = json.loads('{"sqlcmd_path": "' + self.run_script_tool_file_name + '"}')
+            js['locations'].append(locations_js)
 
         if(missing_object):
             json_obj = json.dumps(js, indent=4)
@@ -130,34 +94,53 @@ class Flyway:
         :return: List of target databases (json)
         """ 
         try:
+            # Sort targets
+            def final_sort_key(item):
+                # Priority items first, in given order
+                if targets_priority and item in targets_priority:
+                    return (0, targets_priority.index(item))
+                
+                # Compare-db always last
+                if item == targets_compare_db:
+                    return (2, item)
+                
+                # Normal items (alphabetical)
+                return (1, item)
             
             #==========
             # JSON list
             #==========
             if targets_type_id == 1:
-                targets = json.loads(targets_list)
-                if len(targets) != 1:
-                    raise ValueError("list of targets, !!! Not supported")
-                return targets
+                items = json.loads(targets_list)
+                if targets_exclude:
+                    items = [i for i in items if i not in targets_exclude]
+                return sorted(items, key=final_sort_key)
             #==========
             # SQL query
             #==========
             elif targets_type_id == 2:
-                raise Exception (f"query list of targets, !!! Not supported")
-
+                target_db_obj = mssql.MsSql(self.run_script_tool_file_name, connection_string)
+                result = target_db_obj.execute_query(targets_sql_text)
+                names = [entry["name"] for entry in json.loads(result)]
+                if targets_exclude:
+                    names = [n for n in names if n not in targets_exclude]
+                return sorted(names, key=final_sort_key)
         except Exception as e:            
             raise Exception (f"failed to get list of targets: {e}")
+               
 
     @drm_logger.log_decorator(logger) 
     def get_source_file(self, solution_path, solution_file_name, project_name):
         """ 
         returns the source file path 
         :param solution_path: solution path
+        :param solution_file_name: solution file name
         :param project_name: project_name
         :return: source file full path (String)
         """ 
-        return solution_file_name
-    
+        return os.path.join (solution_path, project_name, "bin", "Debug", project_name + ".dacpac")
+               
+
     @drm_logger.log_decorator(logger) 
     def get_fixed_connection_string(self, connection_string, project_targets_compare_db):
         """ 
@@ -166,31 +149,8 @@ class Flyway:
         :param project_targets_compare_db: database name to connect into
         :return: fixed conneciton string (String)
         """ 
-        return connection_string
-
-    @drm_logger.log_decorator(logger) 
-    def parse_connection_string(self, connection_string, key):
-        """ 
-        returns the  connection string value for key
-        :param connection_string: connection string from the solution
-        :param key: key in the connection (e.g., 'url', 'username', 'password')
-        :return: value of conneciton string for key (String)
-        """ 
-        key = key.lower()
-        parts = connection_string.split(';')
-        # Map each key to its corresponding prefix in the connection string
-        key_map = {
-            "url": "url=",
-            "username": "username=",
-            "password": "password="
-        }
-
-        # Check if the key exists in the map and return the corresponding value
-        for part in parts:
-            if part.startswith(key_map.get(key, "")):
-                return part.split('=')[1]
-        return None 
-
+        return connection_string + "Database={project_targets_compare_db};".format(project_targets_compare_db = project_targets_compare_db)
+               
     @drm_logger.log_decorator(logger) 
     def generate_upgrade_script(self, deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, connection_string, deployment_properties, solution_path):
         """ 
@@ -200,7 +160,7 @@ class Flyway:
         :param project_id: project ID
         :param project_name: project name
         :param project_targets_compare_db: target database name to compare with
-        :param source_file: source file name (changelog)
+        :param source_file: source file name (dacpac)
         :param connection_string: connection string
         :param deployment_properties: array of deployment properties
         :param solution_path: solution path
@@ -215,52 +175,49 @@ class Flyway:
         #================================
         args_list = []
         # Utility
-        flyway_exec = self.upgrade_tool_file_name
-        if os.name == "nt":  # only adjust for Windows
-            base, ext = os.path.splitext(flyway_exec)
-            if not ext:  # no extension provided
-                flyway_exec += ".cmd"
-        args_list.append(flyway_exec)
-        
-        #locations
-        f = files_and_folders.Folders(os.path.join(solution_path, project_name))
-        if  f.check_folder_exists():
-            args_list.append("-locations=filesystem:" + os.path.join(solution_path, project_name))
-        else:
-            raise Exception ("Search path not defined(locations)")
-        #parse connection_string
-        url = self.parse_connection_string(connection_string,"url")
-        username = self.parse_connection_string(connection_string,"username")
-        password = self.parse_connection_string(connection_string,"password")
-
-        args_list.append("-url=" + url)
-        #user
-        args_list.append("-user=" + username)
-        #password
-        args_list.append("-password=" + password)
-        #dryRunOutput
-        args_list.append("-dryRunOutput=" + upgrade_script)
-        args_list.append("-q")
+        args_list.append(self.upgrade_tool_file_name)
         # Generate script
-        args_list.append("migrate" )
+        args_list.append("/Action:script")
+        # Dacpac source file
+        args_list.append("/SourceFile:" + source_file)
+        # Target connection string
+        args_list.append("/TargetConnectionString:" + connection_string)
+        # Output log file
+        args_list.append("/OutputPath:" + upgrade_script)
         # Deployment properties
         
         if (deployment_properties == None or len(deployment_properties)==0):
             deployment_properties = '[]'
         else:
             js_deployment_properties = json.loads(deployment_properties)
+            for property in js_deployment_properties:
+                args_list.append("/p:" + property)
+                if (property=="CommentOutSetVarDeclarations=True"):
+                    target_db_obj = mssql.MsSql(self.run_script_tool_file_name, connection_string)
+                    defaults_sql_text="SELECT SERVERPROPERTY('InstanceDefaultDataPath') AS DefaultDataPath,SERVERPROPERTY('InstanceDefaultLogPath') AS DefaultLogPath;"
+                    result = target_db_obj.execute_query(defaults_sql_text)
+                    js_result = json.loads(result)
+                    if len(js_result)>0:
+                        self.default_data_path = js_result[0]["DefaultDataPath"]
+                        self.default_log_path = js_result[0]["DefaultLogPath"]
+                        
+
+
 
         #=============================
         # Generate upgrade script file
         #=============================
-        output_file =  upgrade_script        
-
-        with open(output_file, "w") as f:
-            result = subprocess.run(args_list, stdout=f, stderr=subprocess.PIPE, text=True)
-
+        result = subprocess.run(args_list, capture_output=True)
         # Check if process exit with a failure
-        if result.returncode != 0:
-            raise Exception (result.stderr)          
+        if result.stderr:
+            raise Exception (result.stderr)
+            
+        if (self.default_data_path != None):
+            file = files_and_folders.Files(upgrade_script)
+            text = f':setvar DefaultLogPath "{self.default_log_path}"\n'
+            file.add_first_line_to_file(text)
+            text = f':setvar DefaultDataPath "{self.default_data_path}"'
+            file.add_first_line_to_file(text)
             
         self.logger.info("Upgrade script generated successfully!!!")
 
@@ -285,10 +242,12 @@ class Flyway:
         upgrade_log_file = os.path.join (current_working_directory, "log", deploy_file_base_name + "_S" + str(solution_id) + "-P" + str(project_id) + "-" + project_name + "-" + target_name + ".log")
         self.logger.info('Running upgrade script against "{target_name}" (log file: "{upgrade_log_file}")...'.format(target_name = target_name, upgrade_log_file = upgrade_log_file))
         
-        if (self.connection_type_id == 2):
-            db_obj = oracle.SqlPlus(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)
-        if (self.connection_type_id == 3):
-            db_obj = postgresql.PostgreSQL(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)            
+        db_obj = mssql.MsSql(self.run_script_tool_file_name, connection_string, target_name, sql_script_variables_list, upgrade_log_file)
+        
+        if(self.default_data_path != None):
+            db_obj.default_data_path = self.default_data_path
+            db_obj.default_log_path = self.default_log_path
+            
 
         try:
             result = db_obj.run_script(upgrade_script)
