@@ -57,8 +57,12 @@ class Flyway:
         #todo add more types 
         app_name = "flyway"
         flyway_path = next(
-           (json.loads(loc)["flyway_path"] for loc in deploy_config.full_config["locations"] if "flyway_path" in json.loads(loc)) ,
-           None 
+            (
+                (loc if isinstance(loc, dict) else json.loads(loc))["flyway_path"]
+                for loc in deploy_config.full_config.get("locations", [])
+                if "flyway_path" in (loc if isinstance(loc, dict) else json.loads(loc))
+            ),
+            None
         )
         if flyway_path is not None:
             self.upgrade_tool_file_name = flyway_path
@@ -75,8 +79,12 @@ class Flyway:
         if (self.connection_type_id == 2):
             app_name = "sqlplus"
             sqlplus_path = next(
-            (json.loads(loc)["sqlplus_path"] for loc in deploy_config.full_config["locations"] if "sqlplus_path" in json.loads(loc)) ,
-            None 
+                (
+                    (loc if isinstance(loc, dict) else json.loads(loc))["sqlplus_path"]
+                    for loc in deploy_config.full_config.get("locations", [])
+                    if "sqlplus_path" in (loc if isinstance(loc, dict) else json.loads(loc))
+                ),
+                None
             )
             if sqlplus_path is not None:
                 self.run_script_tool_file_name = sqlplus_path
@@ -93,8 +101,12 @@ class Flyway:
         if (self.connection_type_id == 3):
             app_name = "psql"
             psql_path = next(
-            (json.loads(loc)["psql_path"] for loc in deploy_config.full_config["locations"] if "psql_path" in json.loads(loc)) ,
-            None 
+                (
+                    (loc if isinstance(loc, dict) else json.loads(loc))["psql_path"]
+                    for loc in deploy_config.full_config.get("locations", [])
+                    if "psql_path" in (loc if isinstance(loc, dict) else json.loads(loc))
+                ),
+                None
             )
             if psql_path is not None:
                 self.run_script_tool_file_name = psql_path

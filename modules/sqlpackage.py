@@ -48,9 +48,17 @@ class SqlPackage:
         # Identify SqlPackage utility
         #============================
         app_name = "sqlpackage"
-        if hasattr(deploy_config, 'sqlpackage_path'):
+        sqlpackage_path = next(
+            (
+                (loc if isinstance(loc, dict) else json.loads(loc))["sqlpackage_path"]
+                for loc in deploy_config.full_config.get("locations", [])
+                if "sqlpackage_path" in (loc if isinstance(loc, dict) else json.loads(loc))
+            ),
+            None
+        )
+        if sqlpackage_path is not None:
             # Get utility location from configuration
-            self.upgrade_tool_file_name = deploy_config.sqlpackage_path
+            self.upgrade_tool_file_name = sqlpackage_path
         else:
             # Utility not configured --> serach
             missing_object = True
@@ -61,9 +69,17 @@ class SqlPackage:
             js['locations'].append(locations_js)
 
         app_name = "sqlcmd"
-        if hasattr(deploy_config, 'sqlcmd_path'):
+        sqlcmd_path = next(
+            (
+                (loc if isinstance(loc, dict) else json.loads(loc))["sqlcmd_path"]
+                for loc in deploy_config.full_config.get("locations", [])
+                if "sqlcmd_path" in (loc if isinstance(loc, dict) else json.loads(loc))
+            ),
+            None
+        )
+        if sqlcmd_path is not None:
             # Get utility location from configuration
-            self.run_script_tool_file_name = deploy_config.sqlcmd_path
+            self.run_script_tool_file_name = sqlcmd_path
         else:
             # Utility not configured --> serach
             missing_object = True
