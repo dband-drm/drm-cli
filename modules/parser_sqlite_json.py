@@ -418,7 +418,7 @@ class PrePostScripts:
         #=================================
         # Get Projects info by Solution ID
         #=================================
-        sql_command = "select pps.id,  pps.project_id, pps.path, pps.script_type_id, pps.is_active from pre_post_deployment_projects_scripts pps  where pps.solution_id = {sol_id} and pps.project_id ={proj_id} order by pps.id ;".format(sol_id = solution_id,proj_id = project_id ) 
+        sql_command = "select pps.id,  pps.project_id, pps.path, pps.script_type_id, pps.is_active from pre_post_deployment_projects_scripts pps  where  pps.project_id ={proj_id} order by pps.id ;".format( proj_id = project_id ) 
         rows = drm_db.select_query(sql_command)
         for row in rows:
             pre_post_script_obj.id = row[0]    
