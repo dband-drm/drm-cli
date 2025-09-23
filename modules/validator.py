@@ -196,6 +196,24 @@ class Project:
                         else:
                             raise Exception ('No targets type defined for project "' + project['name'] + '" in solution "' + str(solution['id']) + '"!!!')
 
+    @drm_logger.log_decorator(logger) 
+    def verify_pre_post_scripts(release):
+        """ 
+        Verify pre post scripts
+        :param release: release json
+        :return:
+        """      
+        for solution in release['solutions']:
+            if solution['is_active'] == True:
+                if "projects" in solution:
+                    for project in solution['projects']:
+                        for pre_post_script in project['pre_post_deployment_projects_scripts']:
+                            if pre_post_script['is_active'] ==1 :
+                                  if "path" in pre_post_script:
+                                    if not (os.path.exists(pre_post_script['path'])):
+                                        raise Exception ('Pre post script path "' + pre_post_script['path'] + '" not found for solution "' + str(solution['name']) + '"!!!')
+ 
+
 #=====================
 # Validator main class
 #=====================

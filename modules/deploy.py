@@ -335,6 +335,53 @@ class Deploy:
         return (deployment_project_js)
 
     @drm_logger.log_decorator(logger) 
+    def update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id):
+        
+        """ 
+        Update script with pre post scripts by Connection Type ID
+        :param upgrade_script:      Upgrade Script
+        :param prepost_scripts:     Pprepost Scripts
+        :param connection_type_id:  Connection Type ID
+        :return: none
+        """ 
+
+        #=============================
+        # Modify upgrade script with pre-post script file
+        #=============================
+        if(prepost_scripts):
+            file = files_and_folders.Files(upgrade_script)
+            for  prepost_script_obj in  prepost_scripts:
+                prepost_script_active = prepost_script_obj['is_active']
+                prepost_script_type_id = prepost_script_obj['script_type_id']
+                prepost_script_path = prepost_script_obj['path']
+                if(prepost_script_active == 1):
+                    prepost_script_file = files_and_folders.Files(prepost_script_path)                
+                    error_exit_prefix = {
+                        1: ":ON ERROR EXIT\n",   # MSSQL
+                        2: "WHENEVER SQLERROR EXIT FAILURE;\n",  # Oracle (sqlpus)
+                        3: "\\set ON_ERROR_STOP on\n",  # PostgreSQL (psql)
+                        4: " \n",  # MySql
+                        5: " \n"  # Google BigQuery
+                    }
+
+                    match connection_type_id:
+                        case 1 | 2 | 3 | 4 | 5:
+                            if prepost_script_type_id == 0:
+                                prefix = error_exit_prefix.get(connection_type_id, "")
+                                text = prefix + prepost_script_file.read_file()
+                        case _:
+                            text = prepost_script_file.read_file()
+
+                    match prepost_script_type_id:
+                        case 0:
+                            file.add_first_line_to_file(text)
+                        case 1:
+                            file.append_file(text)
+                        case 2:
+                            file.add_first_line_to_file(text)
+                            file.append_file(text)
+
+    @drm_logger.log_decorator(logger) 
     def deploy_release(self):
         """ 
         Deploy release
@@ -474,6 +521,8 @@ class Deploy:
                                     project_deployment_properties = js_project['deployment_properties']
                                     project_fail_on_error = js_project['fail_on_error']
 
+                                    prepost_scripts = js_project['pre_post_deployment_projects_scripts']
+
                                     source_file = solution_obj.get_source_file(solution_path, solution_file_name, project_name)                                    
 
                                     #============
@@ -487,6 +536,12 @@ class Deploy:
                                         target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)                                              
                                         upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties,solution_path)
     
+                                        #======================
+                                        # PRE POST SCRIPTS
+                                        #======================
+                                        self.update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id)
+                                       
+
                                         #======================
                                         # Generate Project JSON
                                         #======================
@@ -565,6 +620,13 @@ class Deploy:
                                             #========================
                                             target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)                                              
                                             upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties, solution_path)
+
+                                            #======================
+                                            # PRE POST SCRIPTS
+                                            #======================
+                                            self.update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id)
+
+
                                             try:
                                                 task_statuses[target_db]["start_time"] = datetime.now().isoformat()
                                                 result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
@@ -597,6 +659,11 @@ class Deploy:
                                                 target_connection_string = solution_obj.get_fixed_connection_string(connection_string, project_targets_compare_db)
                                                 upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, project_targets_compare_db, source_file, target_connection_string, project_deployment_properties, solution_path)
 
+                                                #======================
+                                                # PRE POST SCRIPTS
+                                                #======================
+                                                self.update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id)
+
                                             # Queue pending tasks in parallel
                                             task_queue = Queue()
                                             for task in pending_tasks:
@@ -613,6 +680,11 @@ class Deploy:
                                                         if (self.execution_mode == ALIGN_MODE):
                                                             target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)
                                                             upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties, solution_path)
+
+                                                            #======================
+                                                            # PRE POST SCRIPTS
+                                                            #======================
+                                                            self.update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id)
                                             
                                                         result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                                         task_statuses[target_db]["status_id"] = 2
@@ -663,6 +735,11 @@ class Deploy:
                                                     if (self.execution_mode == ALIGN_MODE):
                                                         target_connection_string = solution_obj.get_fixed_connection_string(connection_string, target_db)
                                                         upgrade_script = solution_obj.generate_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, source_file, target_connection_string, project_deployment_properties, solution_path)
+                                                        
+                                                        #======================
+                                                        # PRE POST SCRIPTS
+                                                        #======================
+                                                        self.update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id)
                                                         
                                                     result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                                     task_statuses[target_db]["status_id"] = 2

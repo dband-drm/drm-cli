@@ -400,6 +400,36 @@ class Projects:
             js['projects'].append(project_js)
         return json.dumps(js)
 
+class PrePostScripts:
+
+    logger = drm_logger.configure_logging("parser_sqlite_json.PrePostScripts")
+
+    @drm_logger.log_decorator(logger) 
+    def get_prepost_scripts_by_project_id(db_file_name, release_id,project_id, pre_post_script_obj):
+        """ 
+        Return prepost_scripts projects details  by  project_id
+        :param db_file_name: Database file name
+        :param release_id: Release ID
+        :param project_obj: Project object
+        :return: Projects info (JSON)
+        """
+        js = json.loads('{"pre_post_deployment_projects_scripts":[]}')
+        drm_db = Db(db_file_name)
+        #=================================
+        # Get Projects info by Solution ID
+        #=================================
+        sql_command = "select pps.id,  pps.project_id, pps.path, pps.script_type_id, pps.is_active from pre_post_deployment_projects_scripts pps  where pps.solution_id = {sol_id} and pps.project_id ={proj_id} order by pps.id ;".format(sol_id = solution_id,proj_id = project_id ) 
+        rows = drm_db.select_query(sql_command)
+        for row in rows:
+            pre_post_script_obj.id = row[0]    
+            pre_post_script_obj.project_id = row[1]    
+            pre_post_script_obj.path = row[2]    
+            pre_post_script_obj.script_type_id = row[3]    
+            pre_post_script_obj.is_active = row[4]    
+             
+            pre_post_script_project_js = json.loads(json.dumps(pre_post_script_obj.__dict__))
+            js['pre_post_deployment_projects_scripts'].append(pre_post_script_project_js)
+        return json.dumps(js)
 
 class Deployments:
 
@@ -533,3 +563,4 @@ class ChangePassword:
             sql_command = f"update connections {update_command} where id = {row[0] }"
             drm_db.execute_command(sql_command)
         return True
+    
