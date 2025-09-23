@@ -91,6 +91,22 @@
 					"name": "Already deployed"
 				}
 			]
+		},
+		{
+			"pre_post_script_types": [
+				{
+					"id": "0",
+					"name": "Pre-deploy"
+				},
+				{
+					"id": "1",
+					"name": "Post-deploy"
+				},
+				{
+					"id": "2",
+					"name": "All"
+				}
+			]
 		}
 	],
 	"releases": [
@@ -466,6 +482,52 @@
 							"fail_on_error": true
 						}
 					]
+				}
+			]
+		},
+		{
+			"id": 11,
+			"name": "Demo release: Deploy a project to a single mssql database pre-post-deployment",
+			"is_active": true,
+			"solutions": [
+				{
+					"name": "DRM mssql demo solution pre-post-deployment",
+					"solution_type_id": 1,
+					"path": "../mssql",
+					"connections": [
+						{
+							"name": "dev",
+							"connection_type_id": 1,
+							"connection_string": "Server=127.0.0.1;User Id=drm;Password=drm;Encrypt=False;"
+						},
+						{
+							"name": "test",
+							"connection_type_id": 1,
+							"connection_string": "Server=.;User Id=drm;Password=drm;Encrypt=False;"
+						}
+					],
+					"projects": [
+						{
+							"name": "Project_AAA",
+							"targets_compare_db": "DB_AAA",
+							"targets_type_id": 1,
+							"targets_list": "[\"DB_AAA\"]",
+							"deployment_properties": "[\"CreateNewDatabase=True\", \"ScriptDatabaseOptions=False\"]",
+							"fail_on_error": true,
+							"pre_post_deployment_projects_scripts": [
+										{
+										"path": "../mssql/pre-post-scripts/pre-deployment.sql",
+										"script_type_id": 0,
+										"is_active": true
+										},
+										{
+										"path": "../mssql/pre-post-scripts/post-deployment.sql",
+										"script_type_id": 1,
+										"is_active": true
+										}
+									]
+						}
+					] 
 				}
 			]
 		}

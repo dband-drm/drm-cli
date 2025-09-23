@@ -3,6 +3,7 @@ import json
 import logging
 import glob
 import os
+import uuid
 from modules import files_and_folders, drm_logger
 
 class Generic:
@@ -819,3 +820,44 @@ class ChangePassword:
         elif isinstance(data, list):
             for item in data:
                 self.update_connection_strings(item)
+
+class PrePostScripts:
+
+    logger = drm_logger.configure_logging("parser_json_json.PrePostScripts")
+
+    @drm_logger.log_decorator(logger) 
+    def get_prepost_scripts_by_project_id(db_file_name, release_id, project_id, pre_post_script_obj):
+        """ 
+        Return solution projects details by solution_id
+        :param db_file_name: Database file name
+        :param release_id: Release ID
+        :param project_obj: Project object
+        :return: Projects info (JSON)
+        """
+        _project_id =0
+        _prepost_script_id = 0
+        js = json.loads('{"pre_post_deployment_projects_scripts":[]}')
+        file = files_and_folders.Files(db_file_name)
+        drm_db = file.load_file()
+        for release in drm_db['releases']:
+            if (release['id'] == int(release_id)):
+                verified_release_id = release['id']
+                if ("solutions" in release):
+                    for solution in release['solutions']:
+                        if ("projects" in solution):
+                            for project in solution['projects']:
+                                _project_id += 1
+
+                                if (int(project_id) == _project_id):
+                                        if ("pre_post_deployment_projects_scripts" in project):
+                                            for pre_post_script in project['pre_post_deployment_projects_scripts']:
+                                            
+                                                pre_post_script_obj.id = str(uuid.uuid4())  
+                                                pre_post_script_obj.project_id = _project_id
+                                                pre_post_script_obj.path = pre_post_script['path']     
+                                                pre_post_script_obj.script_type_id =  pre_post_script['script_type_id']
+                                                pre_post_script_obj.is_active =  pre_post_script['is_active'] 
+                                        
+                                                prepost_script_js = json.loads(json.dumps(pre_post_script_obj.__dict__))
+                                                js['pre_post_deployment_projects_scripts'].append(prepost_script_js)
+        return json.dumps(js)

@@ -81,6 +81,18 @@ class Sql_Script:
         self.solution_id = solution_id       
         self.sql_text = sql_text      
 
+class Pre_Post_Scripts:
+
+    logger = drm_logger.configure_logging("builder.Pre_Post_Scripts")
+
+    @drm_logger.log_decorator(logger) 
+    def __init__(self, project_id, id = None, path = None, script_type_id = None, is_active = None): 
+        self.id = id 
+        self.project_id = project_id          
+        self.path = path
+        self.script_type_id = script_type_id       
+        self.is_active = is_active 
+            
 class Project:
 
     logger = drm_logger.configure_logging("builder.Project")
@@ -215,7 +227,15 @@ class Build:
                     project_obj = Project(solution['id'])
                     projects_parser = json.loads(parser.Projects.get_projects_by_solution_id(db_file_name, release_id, solution['id'], project_obj))           
                     for project in projects_parser['projects']:
+                        pre_post_scripts_js = {"pre_post_deployment_projects_scripts":[]}
+                        pre_post_script_obj = Pre_Post_Scripts(project['id'])
+                        pre_post_scripts_parser = json.loads(parser.PrePostScripts.get_prepost_scripts_by_project_id(db_file_name, release_id,  project['id'], pre_post_script_obj))
+                        for pre_post_deployment_projects_script in pre_post_scripts_parser['pre_post_deployment_projects_scripts']:
+                            pre_post_scripts_js['pre_post_deployment_projects_scripts'].append(pre_post_deployment_projects_script)
+                        
+                        project.update(pre_post_scripts_js)
                         projects_js['projects'].append(project)
+
                         solution_js.update(projects_js)
 
                     solutions_js['solutions'].append(solution_js)                    
