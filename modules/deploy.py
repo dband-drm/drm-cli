@@ -365,10 +365,13 @@ class Deploy:
                     }
 
                     match connection_type_id:
+
                         case 1 | 2 | 3 | 4 | 5:
+                            prefix = error_exit_prefix.get(connection_type_id, "")
                             if prepost_script_type_id == 0:
-                                prefix = error_exit_prefix.get(connection_type_id, "")
                                 text = prefix + prepost_script_file.read_file()
+                            else:
+                                text = prepost_script_file.read_file()
                         case _:
                             text = prepost_script_file.read_file()
 
@@ -539,7 +542,7 @@ class Deploy:
                                         #======================
                                         # PRE POST SCRIPTS
                                         #======================
-                                        self.update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id)
+                                        self.update_update_scrip(upgrade_script,prepost_scripts,connection_type_id)
                                        
 
                                         #======================
@@ -624,7 +627,7 @@ class Deploy:
                                             #======================
                                             # PRE POST SCRIPTS
                                             #======================
-                                            self.update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id)
+                                            self.update_update_scrip(upgrade_script,prepost_scripts,connection_type_id)
 
 
                                             try:
@@ -662,7 +665,7 @@ class Deploy:
                                                 #======================
                                                 # PRE POST SCRIPTS
                                                 #======================
-                                                self.update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id)
+                                                self.update_update_scrip(upgrade_script,prepost_scripts,connection_type_id)
 
                                             # Queue pending tasks in parallel
                                             task_queue = Queue()
@@ -684,7 +687,7 @@ class Deploy:
                                                             #======================
                                                             # PRE POST SCRIPTS
                                                             #======================
-                                                            self.update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id)
+                                                            self.update_update_scrip(upgrade_script,prepost_scripts,connection_type_id)
                                             
                                                         result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                                         task_statuses[target_db]["status_id"] = 2
@@ -739,7 +742,7 @@ class Deploy:
                                                         #======================
                                                         # PRE POST SCRIPTS
                                                         #======================
-                                                        self.update_update_scrip(self,upgrade_script,prepost_scripts,connection_type_id)
+                                                        self.update_update_scrip(upgrade_script,prepost_scripts,connection_type_id)
                                                         
                                                     result = solution_obj.run_upgrade_script(deploy_file_base_name, solution_id, project_id, project_name, target_db, upgrade_script, target_connection_string, sql_script_variables_list, project_fail_on_error)
                                                     task_statuses[target_db]["status_id"] = 2
