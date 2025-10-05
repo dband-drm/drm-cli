@@ -182,13 +182,6 @@
 					],
 					"projects": [
 						{
-							"name": "Project_A",
-							"targets_compare_db": "DB_A1",
-							"targets_type_id": 1,
-							"targets_list": "[\"DB_A1\"]",
-							"fail_on_error": true
-						},
-						{
 							"name": "Project_B",
 							"targets_compare_db": "DB_B1",
 							"targets_type_id": 1,
@@ -198,7 +191,19 @@
 							"max_degree_in_parallel": 2,
 							"timeout_in_min": 10,
 							"sleep_time_in_sec": 2,
-							"fail_on_error": false
+							"fail_on_error": false,
+							"pre_post_deployment_projects_scripts": [
+										{
+										"path": "../mssql/Project_A/pre-post-scripts/pre-deployment.sql",
+										"script_type_id": 0,
+										"is_active": true
+										},
+										{
+										"path": "../mssql/Project_A/pre-post-scripts/post-deployment.sql",
+										"script_type_id": 1,
+										"is_active": true
+										}
+									]
 						},
 						{
 							"name": "Project_C",
@@ -224,7 +229,8 @@
 				{
 					"name": "DRM liquibase postgres demo solution",
 					"solution_type_id": 2,
-					"path": "../liquibase",
+					"path": "../postgresql/liquibase/",
+					"file_name": "main-changelog.xml",
 					"connections": [
 						{
 							"name": "dev",
@@ -239,17 +245,17 @@
 					],
 					"projects": [
 						{
-							"name": "Project_P01",
-							"targets_compare_db": "db_p1",
+							"name": "DB_A1",
+							"targets_compare_db": "db_a1",
 							"targets_type_id": 1,
-							"targets_list": "[\"db_p1\"]",
+							"targets_list": "[\"db_a1\"]",
 							"fail_on_error": true
 						},
 						{
-							"name": "Project_P02",
-							"targets_compare_db": "db_p2",
+							"name": "DB_A2",
+							"targets_compare_db": "db_a2",
 							"targets_type_id": 1,
-							"targets_list": "[\"db_p2\"]",
+							"targets_list": "[\"db_a2\"]",
 							"fail_on_error": true
 						}
 					]
