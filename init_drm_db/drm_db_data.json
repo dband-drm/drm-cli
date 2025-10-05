@@ -111,7 +111,7 @@
 	],
 	"releases": [
 		{
-			"id": 1,
+			"id": 11,
 			"name": "Demo release: Deploy a project to a single mssql database",
 			"is_active": true,
 			"solutions": [
@@ -145,7 +145,7 @@
 			]
 		},
 		{
-			"id": 2,
+			"id": 12,
 			"name": "Demo release: Deploy multiple projects to multiple mssql database",
 			"max_retries": 3,
 			"is_active": true,
@@ -182,13 +182,6 @@
 					],
 					"projects": [
 						{
-							"name": "Project_A",
-							"targets_compare_db": "DB_A1",
-							"targets_type_id": 1,
-							"targets_list": "[\"DB_A1\"]",
-							"fail_on_error": true
-						},
-						{
 							"name": "Project_B",
 							"targets_compare_db": "DB_B1",
 							"targets_type_id": 1,
@@ -198,7 +191,19 @@
 							"max_degree_in_parallel": 2,
 							"timeout_in_min": 10,
 							"sleep_time_in_sec": 2,
-							"fail_on_error": false
+							"fail_on_error": false,
+							"pre_post_deployment_projects_scripts": [
+										{
+										"path": "../mssql/Project_A/pre-post-scripts/pre-deployment.sql",
+										"script_type_id": 0,
+										"is_active": true
+										},
+										{
+										"path": "../mssql/Project_A/pre-post-scripts/post-deployment.sql",
+										"script_type_id": 1,
+										"is_active": true
+										}
+									]
 						},
 						{
 							"name": "Project_C",
@@ -217,14 +222,15 @@
 			]
 		},
 		{
-			"id": 3,
+			"id": 31,
 			"name": "Demo release: Deploy a project to a simple postgres database with liquibase",
 			"is_active": true,
 			"solutions": [
 				{
 					"name": "DRM liquibase postgres demo solution",
 					"solution_type_id": 2,
-					"path": "../liquibase",
+					"path": "../postgresql/liquibase/",
+					"file_name": "main-changelog.xml",
 					"connections": [
 						{
 							"name": "dev",
@@ -239,17 +245,17 @@
 					],
 					"projects": [
 						{
-							"name": "Project_P01",
-							"targets_compare_db": "db_p1",
+							"name": "DB_A1",
+							"targets_compare_db": "db_a1",
 							"targets_type_id": 1,
-							"targets_list": "[\"db_p1\"]",
+							"targets_list": "[\"db_a1\"]",
 							"fail_on_error": true
 						},
 						{
-							"name": "Project_P02",
-							"targets_compare_db": "db_p2",
+							"name": "DB_A2",
+							"targets_compare_db": "db_a2",
 							"targets_type_id": 1,
-							"targets_list": "[\"db_p2\"]",
+							"targets_list": "[\"db_a2\"]",
 							"fail_on_error": true
 						}
 					]
@@ -257,80 +263,14 @@
 			]
 		},
 		{
-			"id": 4,
-			"name": "Demo release: Deploy a project to a complex, list postgres database with liquibase",
-			"is_active": true,
-			"solutions": [
-				{
-					"name": "DRM liquibase postgres demo solution",
-					"solution_type_id": 2,
-					"path": "../liquibase",
-					"connections": [
-						{
-							"name": "dev",
-							"connection_type_id": 3,
-							"connection_string": "url=jdbc:postgresql://127.0.0.1:5432/postgres;username=drm;password=drm;"
-						},
-						{
-							"name": "test",
-							"connection_type_id": 3,
-							"connection_string": "url=jdbc:postgresql://127.1.1.1:5432/postgres;username=drm;password=drm;"
-						}
-					],
-					"projects": [
-						{
-							"name": "Project_P03",
-							"targets_compare_db": "db_p3",
-							"targets_type_id": 1,
-							"targets_list": "[\"db_p4\",\"db_p3\",\"db_p5\"]",
-							"fail_on_error": true
-						}
-					]
-				}
-			]
-		},
-		{
-			"id": 5,
-			"name": "Demo release: Deploy a project to a complex, query postgres database with liquibase",
-			"is_active": true,
-			"solutions": [
-				{
-					"name": "DRM liquibase postgres demo solution",
-					"solution_type_id": 2,
-					"path": "../liquibase",
-					"connections": [
-						{
-							"name": "dev",
-							"connection_type_id": 3,
-							"connection_string": "url=jdbc:postgresql://127.0.0.1:5432/postgres;username=drm;password=drm;"
-						},
-						{
-							"name": "test",
-							"connection_type_id": 3,
-							"connection_string": "url=jdbc:postgresql://127.1.1.1:5432/postgres;username=drm;password=drm;"
-						}
-					],
-					"projects": [
-						{
-							"name": "Project_P10",
-							"targets_compare_db": "db_pc3",
-							"targets_type_id": 2,
-							"targets_sql_text": "SELECT datname AS name FROM pg_database WHERE datname LIKE 'db_pc%' ORDER BY datname;",
-							"fail_on_error": true
-						}
-					]
-				}
-			]
-		},
-		{
-			"id": 6,
+			"id": 32,
 			"name": "Demo release: Deploy a project to a simple postgres database with flyway",
 			"is_active": true,
 			"solutions": [
 				{
 					"name": "DRM flyway postgres demo solution",
 					"solution_type_id": 3,
-					"path": "../flyway",
+					"path": "../postgresql/flyway/",
 					"connections": [
 						{
 							"name": "dev",
@@ -345,17 +285,17 @@
 					],
 					"projects": [
 						{
-							"name": "Project_FL_01",
-							"targets_compare_db": "db_pf1",
+							"name": "DB_A1",
+							"targets_compare_db": "db_a1",
 							"targets_type_id": 1,
-							"targets_list": "[\"db_pf1\"]",
+							"targets_list": "[\"db_a1\"]",
 							"fail_on_error": true
 						},
 						{
-							"name": "Project_FL_02",
-							"targets_compare_db": "db_pf2",
+							"name": "DB_A2",
+							"targets_compare_db": "db_a2",
 							"targets_type_id": 1,
-							"targets_list": "[\"db_pf2\"]",
+							"targets_list": "[\"db_a2\"]",
 							"fail_on_error": true
 						}
 					]
@@ -363,73 +303,7 @@
 			]
 		},
 		{
-			"id": 7,
-			"name": "Demo release: Deploy a project to a complex, list postgres database with flyway",
-			"is_active": true,
-			"solutions": [
-				{
-					"name": "DRM flyway postgres demo solution",
-					"solution_type_id": 3,
-					"path": "../flyway",
-					"connections": [
-						{
-							"name": "dev",
-							"connection_type_id": 3,
-							"connection_string": "url=jdbc:postgresql://127.0.0.1:5432/postgres;username=drm;password=drm;"
-						},
-						{
-							"name": "test",
-							"connection_type_id": 3,
-							"connection_string": "url=jdbc:postgresql://127.1.1.1:5432/postgres;username=drm;password=drm;"
-						}
-					],
-					"projects": [
-						{
-							"name": "Project_FL_04",
-							"targets_compare_db": "db_pf3",
-							"targets_type_id": 1,
-							"targets_list": "[\"db_pf4\",\"db_pf3\",\"db_pf5\"]",
-							"fail_on_error": true
-						}
-					]
-				}
-			]
-		},
-		{
-			"id": 8,
-			"name": "Demo release: Deploy a project to a complex, query postgres database with flyway",
-			"is_active": true,
-			"solutions": [
-				{
-					"name": "DRM flyway postgres demo solution",
-					"solution_type_id": 3,
-					"path": "../flyway",
-					"connections": [
-						{
-							"name": "dev",
-							"connection_type_id": 3,
-							"connection_string": "url=jdbc:postgresql://127.0.0.1:5432/postgres;username=drm;password=drm;"
-						},
-						{
-							"name": "test",
-							"connection_type_id": 3,
-							"connection_string": "url=jdbc:postgresql://127.1.1.1:5432/postgres;username=drm;password=drm;"
-						}
-					],
-					"projects": [
-						{
-							"name": "Project_FL_05",
-							"targets_compare_db": "db_pfc3",
-							"targets_type_id": 2,
-							"targets_sql_text": "SELECT datname AS name FROM pg_database WHERE datname LIKE 'db_pf%' ORDER BY datname;",
-							"fail_on_error": true
-						}
-					]
-				}
-			]
-		},
-		{
-			"id": 9,
+			"id": 21,
 			"name": "Demo release: Deploy a project to a simple oracle database with liquibase",
 			"is_active": true,
 			"solutions": [
@@ -442,15 +316,15 @@
 						{
 							"name": "dev",
 							"connection_type_id": 2,
-							"connection_string": "url=jdbc:oracle:thin:@//127.0.0.1:1521/XEPDB1;username=drm;password=drm;"
+							"connection_string": "url=jdbc:oracle:thin:@//127.0.0.1:1521/FREEPDB1;username=drm;password=drm;"
 						}
 					],
 					"projects": [
 						{
-							"name": "Project_P01",
-							"targets_compare_db": "XEPDB1",
+							"name": "DRM",
+							"targets_compare_db": "FREEPDB1",
 							"targets_type_id": 1,
-							"targets_list": "[\"XEPDB1\"]",
+							"targets_list": "[\"FREEPDB1\"]",
 							"fail_on_error": true
 						}
 					]
@@ -458,7 +332,7 @@
 			]
 		},
 		{
-			"id": 10,
+			"id": 22,
 			"name": "Demo release: Deploy a project to a simple oracle database with flyway",
 			"is_active": true,
 			"solutions": [
@@ -470,64 +344,18 @@
 						{
 							"name": "dev",
 							"connection_type_id": 2,
-							"connection_string": "url=jdbc:oracle:thin:@//127.0.0.1:1521/XEPDB1;username=drm;password=drm;"
+							"connection_string": "url=jdbc:oracle:thin:@//127.0.0.1:1521/FREEPDB1;username=drm;password=drm;"
 						}
 					],
 					"projects": [
 						{
-							"name": "drm",
-							"targets_compare_db": "XEPDB1",
+							"name": "DRM",
+							"targets_compare_db": "FREEPDB1",
 							"targets_type_id": 1,
-							"targets_list": "[\"XEPDB1\"]",
+							"targets_list": "[\"FREEPDB1\"]",
 							"fail_on_error": true
 						}
 					]
-				}
-			]
-		},
-		{
-			"id": 11,
-			"name": "Demo release: Deploy a project to a single mssql database pre-post-deployment",
-			"is_active": true,
-			"solutions": [
-				{
-					"name": "DRM mssql demo solution pre-post-deployment",
-					"solution_type_id": 1,
-					"path": "../mssql",
-					"connections": [
-						{
-							"name": "dev",
-							"connection_type_id": 1,
-							"connection_string": "Server=127.0.0.1;User Id=drm;Password=drm;Encrypt=False;"
-						},
-						{
-							"name": "test",
-							"connection_type_id": 1,
-							"connection_string": "Server=.;User Id=drm;Password=drm;Encrypt=False;"
-						}
-					],
-					"projects": [
-						{
-							"name": "Project_AAA",
-							"targets_compare_db": "DB_AAA",
-							"targets_type_id": 1,
-							"targets_list": "[\"DB_AAA\"]",
-							"deployment_properties": "[\"CreateNewDatabase=True\", \"ScriptDatabaseOptions=False\"]",
-							"fail_on_error": true,
-							"pre_post_deployment_projects_scripts": [
-										{
-										"path": "../mssql/pre-post-scripts/pre-deployment.sql",
-										"script_type_id": 0,
-										"is_active": true
-										},
-										{
-										"path": "../mssql/pre-post-scripts/post-deployment.sql",
-										"script_type_id": 1,
-										"is_active": true
-										}
-									]
-						}
-					] 
 				}
 			]
 		}

@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import subprocess
+import re
 from pathlib import Path
 from shutil import which
 from datetime import datetime
@@ -180,7 +181,11 @@ class Liquibase:
         :param project_targets_compare_db: database name to connect into
         :return: fixed conneciton string (String)
         """ 
-        return connection_string
+        pattern = r'(jdbc:[^:]+://[^/]+/)([^;?]+)'
+        replacement = rf'\1{project_targets_compare_db}'
+    
+        new_connection_string = re.sub(pattern, replacement, connection_string, count=1)
+        return new_connection_string
         
 
     @drm_logger.log_decorator(logger) 
