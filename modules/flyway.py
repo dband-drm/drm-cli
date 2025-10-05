@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import subprocess
+import re
 from pathlib import Path
 from shutil import which
 from modules import drm_logger, files_and_folders, postgresql, oracle
@@ -178,7 +179,11 @@ class Flyway:
         :param project_targets_compare_db: database name to connect into
         :return: fixed conneciton string (String)
         """ 
-        return connection_string
+        pattern = r'(jdbc:[^:]+://[^/]+/)([^;?]+)'
+        replacement = rf'\1{project_targets_compare_db}'
+    
+        new_connection_string = re.sub(pattern, replacement, connection_string, count=1)
+        return new_connection_string
 
     @drm_logger.log_decorator(logger) 
     def parse_connection_string(self, connection_string, key):
