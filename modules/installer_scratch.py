@@ -98,6 +98,8 @@ class Install:
                                 shutil.copyfile(source_module_file_name, target_module_file_name,)
                     else:
                         raise Exception (str(e))
+                else:
+                    raise Exception (str(e))
             if (drm_source_path != self.drm_path):
                 self.logger.info('Content copied successfully!!!')
 
