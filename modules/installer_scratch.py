@@ -202,7 +202,12 @@ class Install:
             # Create configuration DRM file in destination
             #=============================================
             drm_config_file = os.path.join(self.drm_path, DEPLOY_CONFIG_FILE_NAME)
-            installer_user = os.getlogin()
+            # Use getpass.getuser() instead of os.getlogin() for WSL2 compatibility
+            try:
+                import getpass
+                installer_user = getpass.getuser()
+            except:
+                installer_user = os.environ.get('USER', os.environ.get('USERNAME', 'unknown'))
             install_timestamp = str(datetime.datetime.now())
             security_text = "This drm cli was developed by d-band and it is amazing!!!"
             encrypted = False
