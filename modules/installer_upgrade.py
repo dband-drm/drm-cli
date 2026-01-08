@@ -569,7 +569,12 @@ class Install:
         try:
             supported_version = False
             upgraded = False
-            installer_user = os.getlogin()
+            # Use getpass.getuser() instead of os.getlogin() for WSL2 compatibility
+            try:
+                import getpass
+                installer_user = getpass.getuser()
+            except:
+                installer_user = os.environ.get('USER', os.environ.get('USERNAME', 'unknown'))
             install_timestamp = str(datetime.datetime.now())
             
 

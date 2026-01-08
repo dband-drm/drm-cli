@@ -8,6 +8,10 @@ from shutil import ignore_patterns
 from pathlib import Path
 from modules import files_and_folders, drm_logger, crypto, init_db
 
+# DEBUG: Verify this module is loaded
+sys.stderr.write("DEBUG: installer_scratch module loaded\n")
+sys.stderr.flush()
+
 current_working_directory = Path(__file__).parent.parent.resolve()
 
 #===========
@@ -173,7 +177,6 @@ class Install:
             raise Exception ("failed to create DRM database, " + str(e))
 
 
-    @drm_logger.log_decorator(logger) 
     def create_drm_config(self, install_type, encryption_key):
         '''
         This function creates a new drm.config file
@@ -181,9 +184,6 @@ class Install:
         :param encryption_key: Encryption key
         '''
         try:
-
-            self.logger.info('Creating drm.config...')
-
             drm_version = self.install_config.full_config['drm_version']
 
             config_js = self.install_config.full_config['config']
@@ -245,16 +245,27 @@ class Install:
                 "trace_flags": []
             }
             json_obj = json.dumps(content, indent=4)
-            file = files_and_folders.Files(drm_config_file)
-            file.write_file(json_obj)
+            
+            # Write config file directly without using Files class or logging
+            with open(drm_config_file, 'w') as f:
+                f.write(json_obj)
 
-            self.logger.info('drm.config created successfully!!!')
+            # Log success if logger is working
+            try:
+                self.logger.info('drm.config created successfully!!!')
+            except:
+                pass  # Ignore logging errors
 
-        except Exception as e:	
+        except Exception as e:
+            import sys
+            import traceback
+            # Print directly to stderr to avoid logger issues
+            sys.stderr.write(f"ERROR in create_drm_config: {e}\n")
+            sys.stderr.write(f"Traceback:\n{traceback.format_exc()}\n")
+            sys.stderr.flush()
             raise Exception ("failed to create drm.config, " + str(e))
 
 
-    @drm_logger.log_decorator(logger) 
     def run_installer(self):
         '''
         This function runs the installer BL
