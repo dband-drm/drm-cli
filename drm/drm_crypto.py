@@ -174,12 +174,12 @@ parser = argparse.ArgumentParser(prog = program, description = description, epil
 group = parser.add_mutually_exclusive_group(required=True)
 
 # Add the flags to the group
-group.add_argument("--encrypt", "--encrypt(Optional operation to encrypt decrypt text)", action='store_true')
+group.add_argument("--encrypt", "--encrypt(Optional operation to encrypt text)", action='store_true')
 group.add_argument("--changepassword", "--changepassword(Optional operation to change encryption_key for configuration)", action='store_true')
 
 parser.add_argument("-p", "-encryption_key(Specify encryption_key, none is not encrypted)", required = False)
 parser.add_argument("-n", "-new_encryption_key(Specify new_encryption_key, none is not encrypted)", required = False)
-parser.add_argument("-t", "-text(Specify text to encrypt decrypt)" , required = False)
+parser.add_argument("-t", "-text(Specify text to encrypt)" , required = False)
 parser.add_argument("--trace", action='store_true', default=False, required = False)
     
 args = parser.parse_args()

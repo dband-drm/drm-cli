@@ -1,5 +1,6 @@
 import sys
 import json
+import re
 import logging
 from modules import sqlite, drm_logger
 
@@ -38,6 +39,123 @@ class Db:
         conn = sqlite.create_connection(self.db_name)
         sqlite.execute_command(conn, command)
         sqlite.close_connection(conn)
+
+    @drm_logger.log_decorator(logger)
+    def get_table_ddl(self, table_name):
+        # Get table DDL from SQLite
+        sql_command = f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table_name}';"
+        rows = self.select_query(sql_command)
+
+        if len(rows) > 0:
+            table_ddl = rows[0][0]
+
+        if not table_ddl:
+            return None
+
+        # Initialize table info structure
+        table_ddl_js = {
+            "name": table_name,
+            "columns": [],
+            "constraints": []
+        }
+
+        # Clean up the DDL: remove the CREATE TABLE and table name part
+        table_ddl = table_ddl.replace('CREATE TABLE', '').replace(f'`{table_name}`', '').strip()
+
+        # Split into columns and constraints manually using the first constraint declaration
+        constraint_start = table_ddl.lower().find('constraint')
+        if constraint_start != -1:
+            columns_part = table_ddl[:constraint_start].strip()
+            constraints_part = table_ddl[constraint_start:].strip()
+        else:
+            columns_part = table_ddl
+            constraints_part = ""
+
+        # Regex pattern for columns: capture column name, data type, nullable status, length, and default values
+        column_pattern = re.compile(r'(\w+)\s+(\w+(\(\d+\))?)(\s+NOT\s+NULL)?(\s+DEFAULT\s+([^\s,]+))?', re.IGNORECASE)
+
+        # Regex pattern for constraints (e.g., PRIMARY KEY, UNIQUE, FOREIGN KEY, etc.)
+        constraint_pattern = re.compile(r'CONSTRAINT\s+`?(\w+)`?\s+(PRIMARY\s+KEY|UNIQUE|FOREIGN\s+KEY|CHECK)\s?\(([^)]+)\)(\s+REFERENCES\s+(\w+)\s?\(([^)]+)\))?', re.IGNORECASE)
+
+        # Process columns (regex to capture columns)
+        column_matches = re.findall(column_pattern, columns_part)
+        for col in column_matches:
+            column_name = col[0]
+            data_type = col[1]
+            length = None
+            default_value = col[5] if col[5] else None
+            is_nullable = True if col[3] == "" else False
+
+            # Extract length for varchar columns
+            if '(' in data_type:
+                data_type, length = data_type.split('(')
+                length = int(length[:-1])  # Remove the closing parenthesis
+
+            # Prepare column info
+            column_info = {
+                "name": column_name,
+                "data_type": "string" if data_type.lower() == "varchar" else data_type.lower()
+            }
+
+            if length:
+                column_info["length"] = length
+
+            column_info["is_nullable"] = is_nullable
+
+            if default_value:
+                column_info["default"] = default_value
+
+            table_ddl_js["columns"].append(column_info)
+        # Process constraints (ensure they are valid and add them)
+        # Constraint type mapping
+        constraint_type_map = {
+            "PRIMARY KEY": "PK",
+            "FOREIGN KEY": "FK",
+            "CHECK": "CK",
+            "UNIQUE": "UQ"
+        }
+
+        constraint_matches = re.findall(constraint_pattern, constraints_part)
+        for constraint in constraint_matches:
+            constraint_name = constraint[0]
+            constraint_type = constraint[1].upper()
+            constraint_columns = constraint[2].strip()
+
+            # Prepare constraint info
+            constraint_info = {
+                "name": constraint_name,
+                "type": constraint_type_map.get(constraint_type, constraint_type),
+                "columns": constraint_columns
+            }
+
+            # For foreign keys, capture the reference table and columns
+            if len(constraint) > 4 and constraint[4]:
+                constraint_info["ref_table"] = constraint[4]
+                constraint_info["ref_columns"] = constraint[5]
+
+            table_ddl_js["constraints"].append(constraint_info)
+
+        return table_ddl_js
+
+    @drm_logger.log_decorator(logger)
+    def get_table_data(self, table_name):
+        
+        # Get table Columns from SQLite
+        sql_command = f"PRAGMA table_info({table_name})"
+        columns_rows = self.select_query(sql_command)
+        columns = [col[1] for col in columns_rows]
+
+        # Get table Data from SQLite
+        sql_command = f"SELECT * FROM {table_name};"
+        rows = self.select_query(sql_command)
+
+        table_data = []
+        for row in rows:
+            row_data = {columns[i]: row[i] for i in range(len(columns))}
+            table_data.append(row_data)
+
+        js = json.loads(json.dumps({table_name: table_data}))  
+        return js
 
 
 class Releases:
@@ -116,7 +234,7 @@ class Solutions:
         #=================================
         # Get Solutions info by Release ID
         #=================================
-        sql_command = "select id, name, release_id, ordinal, solution_type_id, path, is_active from solutions where release_id = {rel_id} order by ordinal, id;".format(rel_id = release_id)
+        sql_command = "select id, name, release_id, ordinal, solution_type_id, path, file_name, is_active from solutions where release_id = {rel_id} order by ordinal, id;".format(rel_id = release_id)
         rows = drm_db.select_query(sql_command)
         for row in rows:
             solution_obj.id = row[0]    
@@ -125,7 +243,8 @@ class Solutions:
             solution_obj.ordinal = row[3]    
             solution_obj.solution_type_id = row[4]    
             solution_obj.path = row[5]    
-            solution_obj.is_active = row[6] 
+            solution_obj.file_name = row[6]    
+            solution_obj.is_active = row[7] 
             solution_js = json.loads(json.dumps(solution_obj.__dict__))
             js['solutions'].append(solution_js)
         return json.dumps(js)
@@ -257,7 +376,7 @@ class Projects:
         #=================================
         # Get Projects info by Solution ID
         #=================================
-        sql_command = "select projects.id, projects.name, projects.solution_id, projects.ordinal, targets_compare_db, targets_type_id, targets_list, targets_sql_script_id, sql_scripts.sql_text as targets_sql_text, max_degree_in_parallel, timeout_in_min, sleep_time_in_sec, deployment_properties, fail_on_error, is_active from projects left join sql_scripts on projects.solution_id = sql_scripts.solution_id and projects.targets_sql_script_id = sql_scripts.id where projects.solution_id = {sol_id} order by projects.ordinal, projects.id;".format(sol_id = solution_id)
+        sql_command = "select projects.id, projects.name, projects.solution_id, projects.ordinal, targets_compare_db, targets_type_id, targets_list, targets_sql_script_id, sql_scripts.sql_text as targets_sql_text, targets_priority, targets_exclude, max_degree_in_parallel, timeout_in_min, sleep_time_in_sec, deployment_properties, fail_on_error, is_active from projects left join sql_scripts on projects.solution_id = sql_scripts.solution_id and projects.targets_sql_script_id = sql_scripts.id where projects.solution_id = {sol_id} order by projects.ordinal, projects.id;".format(sol_id = solution_id)
         rows = drm_db.select_query(sql_command)
         for row in rows:
             project_obj.id = row[0]    
@@ -268,17 +387,49 @@ class Projects:
             project_obj.targets_type_id = row[5]    
             project_obj.targets_list = row[6]    
             project_obj.targets_sql_script_id = row[7]    
-            project_obj.targets_sql_text = row[8]    
-            project_obj.max_degree_in_parallel = row[9]    
-            project_obj.timeout_in_min = row[10]    
-            project_obj.sleep_time_in_sec = row[11]    
-            project_obj.deployment_properties = row[12] 
-            project_obj.fail_on_error = row[13]    
-            project_obj.is_active = row[14]    
+            project_obj.targets_sql_text = row[8]   
+            project_obj.targets_priority = row[9]  
+            project_obj.targets_exclude = row[10]  
+            project_obj.max_degree_in_parallel = row[11]    
+            project_obj.timeout_in_min = row[12]    
+            project_obj.sleep_time_in_sec = row[13]    
+            project_obj.deployment_properties = row[14] 
+            project_obj.fail_on_error = row[15]    
+            project_obj.is_active = row[16]    
             project_js = json.loads(json.dumps(project_obj.__dict__))
             js['projects'].append(project_js)
         return json.dumps(js)
 
+class PrePostScripts:
+
+    logger = drm_logger.configure_logging("parser_sqlite_json.PrePostScripts")
+
+    @drm_logger.log_decorator(logger) 
+    def get_prepost_scripts_by_project_id(db_file_name, release_id,project_id, pre_post_script_obj):
+        """ 
+        Return prepost_scripts projects details  by  project_id
+        :param db_file_name: Database file name
+        :param release_id: Release ID
+        :param project_obj: Project object
+        :return: Projects info (JSON)
+        """
+        js = json.loads('{"pre_post_deployment_projects_scripts":[]}')
+        drm_db = Db(db_file_name)
+        #=================================
+        # Get Projects info by Solution ID
+        #=================================
+        sql_command = "select pps.id,  pps.project_id, pps.path, pps.script_type_id, pps.is_active from pre_post_deployment_projects_scripts pps  where  pps.project_id ={proj_id} order by pps.id ;".format( proj_id = project_id ) 
+        rows = drm_db.select_query(sql_command)
+        for row in rows:
+            pre_post_script_obj.id = row[0]    
+            pre_post_script_obj.project_id = row[1]    
+            pre_post_script_obj.path = row[2]    
+            pre_post_script_obj.script_type_id = row[3]    
+            pre_post_script_obj.is_active = row[4]    
+             
+            pre_post_script_project_js = json.loads(json.dumps(pre_post_script_obj.__dict__))
+            js['pre_post_deployment_projects_scripts'].append(pre_post_script_project_js)
+        return json.dumps(js)
 
 class Deployments:
 
@@ -412,3 +563,4 @@ class ChangePassword:
             sql_command = f"update connections {update_command} where id = {row[0] }"
             drm_db.execute_command(sql_command)
         return True
+    

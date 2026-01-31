@@ -49,7 +49,8 @@ class Files:
         if file_op == 'r' and not Files.check_file_exists(self):
             raise Exception ('File "' + str(self.file_name) + '" not found.' )
         else:
-            file = open(self.file_name, file_op)
+            # Open file without file locking issues on WSL2
+            file = open(self.file_name, file_op, buffering=-1)
             return file
 
     @drm_logger.log_decorator(logger) 

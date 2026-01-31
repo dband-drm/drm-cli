@@ -36,13 +36,14 @@ class Solution:
     logger = drm_logger.configure_logging("builder.Solution")
 
     @drm_logger.log_decorator(logger) 
-    def __init__(self, release_id, id = None, name = None, ordinal = None, solution_type_id = None, path = None, is_active = None): 
+    def __init__(self, release_id, id = None, name = None, ordinal = None, solution_type_id = None, path = None, file_name = None, is_active = None): 
         self.id = id       
         self.name = name       
         self.release_id = release_id       
         self.ordinal = ordinal       
         self.solution_type_id = solution_type_id       
         self.path = path       
+        self.file_name = file_name       
         self.is_active = is_active       
 
 class Connection:
@@ -80,12 +81,24 @@ class Sql_Script:
         self.solution_id = solution_id       
         self.sql_text = sql_text      
 
+class Pre_Post_Scripts:
+
+    logger = drm_logger.configure_logging("builder.Pre_Post_Scripts")
+
+    @drm_logger.log_decorator(logger) 
+    def __init__(self, project_id, id = None, path = None, script_type_id = None, is_active = None): 
+        self.id = id 
+        self.project_id = project_id          
+        self.path = path
+        self.script_type_id = script_type_id       
+        self.is_active = is_active 
+            
 class Project:
 
     logger = drm_logger.configure_logging("builder.Project")
 
     @drm_logger.log_decorator(logger) 
-    def __init__(self, solution_id, id = None, name = None, ordinal = None, targets_compare_db = None, targets_type_id = None, targets_list = None, targets_sql_script_id = None, targets_sql_text = None, max_degree_in_parallel = None, timeout_in_min = None, sleep_time_in_sec = None, deployment_properties = None, fail_on_error = None, is_active = None): 
+    def __init__(self, solution_id, id = None, name = None, ordinal = None, targets_compare_db = None, targets_type_id = None, targets_list = None, targets_sql_script_id = None, targets_sql_text = None, targets_priority = None, targets_exclude = None, max_degree_in_parallel = None, timeout_in_min = None, sleep_time_in_sec = None, deployment_properties = None, fail_on_error = None, is_active = None): 
         self.id = id       
         self.name = name       
         self.solution_id = solution_id       
@@ -94,7 +107,9 @@ class Project:
         self.targets_type_id = targets_type_id      
         self.targets_list = targets_list      
         self.targets_sql_script_id = targets_sql_script_id      
-        self.targets_sql_text = targets_sql_text      
+        self.targets_sql_text = targets_sql_text   
+        self.targets_priority = targets_priority
+        self.targets_exclude = targets_exclude
         self.max_degree_in_parallel = max_degree_in_parallel      
         self.timeout_in_min = timeout_in_min      
         self.sleep_time_in_sec = sleep_time_in_sec      
@@ -212,7 +227,15 @@ class Build:
                     project_obj = Project(solution['id'])
                     projects_parser = json.loads(parser.Projects.get_projects_by_solution_id(db_file_name, release_id, solution['id'], project_obj))           
                     for project in projects_parser['projects']:
+                        pre_post_scripts_js = {"pre_post_deployment_projects_scripts":[]}
+                        pre_post_script_obj = Pre_Post_Scripts(project['id'])
+                        pre_post_scripts_parser = json.loads(parser.PrePostScripts.get_prepost_scripts_by_project_id(db_file_name, release_id,  project['id'], pre_post_script_obj))
+                        for pre_post_deployment_projects_script in pre_post_scripts_parser['pre_post_deployment_projects_scripts']:
+                            pre_post_scripts_js['pre_post_deployment_projects_scripts'].append(pre_post_deployment_projects_script)
+                        
+                        project.update(pre_post_scripts_js)
                         projects_js['projects'].append(project)
+
                         solution_js.update(projects_js)
 
                     solutions_js['solutions'].append(solution_js)                    
