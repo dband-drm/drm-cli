@@ -34,10 +34,15 @@ class UserHostFormatter(logging.Formatter):
     """Custom formatter to convert log records to include user and host name
     """
     def format(self, record):
-        # Get the current user
-        user = getpass.getuser()
-        # Get the host name
-        host = socket.gethostname()
+        # Get the current user - handle WSL2 edge cases
+        try:
+            user = getpass.getuser()
+        except Exception:
+            user = os.environ.get('USER', os.environ.get('USERNAME', 'unknown'))
+        
+        # Get the host name - use environment to avoid socket issues on WSL2
+        host = os.environ.get('HOSTNAME', os.environ.get('COMPUTERNAME', 'unknown'))
+        
         # Extend the log record with user and host
         record.user = user
         record.host = host
@@ -51,6 +56,16 @@ class JSONFormatter(logging.Formatter):
     def format(self, record):
         # Convert the record's creation time to an ISO 8601 formatted string
         timestamp = datetime.fromtimestamp(record.created).isoformat()
+        
+        # Get user - handle WSL2 edge cases
+        try:
+            user = getpass.getuser()
+        except Exception:
+            user = os.environ.get('USER', os.environ.get('USERNAME', 'unknown'))
+        
+        # Get host from environment - avoid socket calls that can fail on WSL2
+        host = os.environ.get('HOSTNAME', os.environ.get('COMPUTERNAME', 'unknown'))
+        
         # Create a dictionary containing log details
         log_record = {
             "timestamp": timestamp,
@@ -62,8 +77,8 @@ class JSONFormatter(logging.Formatter):
             "funcName": record.funcName,
             "threadName": record.threadName,
             "process": record.process,
-            "user": getpass.getuser(),
-            "host": socket.gethostname()
+            "user": user,
+            "host": host
         }
     # Convert the dictionary into a JSON-formatted string
         return json.dumps(log_record)
@@ -173,8 +188,12 @@ def configure_logging(logname):
         file_t_handler.setFormatter(CustomFormatter())
         file_t_handler.setLevel(logging.DEBUG)  # Write all levels to the file
     
-        json_formatter = JSONFormatter()
-        file_t_handler.setFormatter(json_formatter)
+        try:
+            json_formatter = JSONFormatter()
+            file_t_handler.setFormatter(json_formatter)
+        except Exception as fmt_err:
+            # If JSON formatter fails (e.g., on WSL2), keep CustomFormatter
+            pass
 
     # Add the handler to the logger if not already added
     if not logger.hasHandlers():

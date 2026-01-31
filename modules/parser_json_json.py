@@ -3,12 +3,146 @@ import json
 import logging
 import glob
 import os
+import uuid
 from modules import files_and_folders, drm_logger
 
 class Generic:
 
     logger = drm_logger.configure_logging("parser_json_json.Generic")
 
+    @drm_logger.log_decorator(logger) 
+    def create_table(js, path, table_js):
+        """ 
+        Create a table in JSON
+        :param js: JSON file
+        :param path: Path to append the table in
+        :param table_js: Table json
+        :return: New modified file (JSON)
+        """
+        js[path].append(table_js)
+        return js
+
+    @drm_logger.log_decorator(logger) 
+    def drop_table(js, path, table_name):
+        """ 
+        Delete a table in JSON
+        :param js: JSON file
+        :param path: Path to append the table in
+        :param table_js: Table json
+        :return: New modified file (JSON)
+        """
+        js[path] = [table for table in js[path] if table['name'] != table_name]
+        return js
+        
+
+    @drm_logger.log_decorator(logger) 
+    def drop_table_data(js, path, table_name):
+        """ 
+        Delete a table DATA in JSON
+        :param js: JSON file
+        :param path: Path to append the table in
+        :param table_js: Table json
+        :return: New modified file (JSON)
+        """
+        for table_dict in js[path]:
+            # If the table name exists in the dictionary, delete it
+            if table_name in table_dict:
+                del table_dict[table_name] 
+                if not table_dict:
+                    js[path].remove(table_dict)
+                break
+        return js
+        
+
+    @drm_logger.log_decorator(logger) 
+    def delete_column_data(js, path, table_name, column_name):
+        """ 
+        Delete column's DATA in JSON
+        :param js: JSON file
+        :param path: Path to append the table in
+        :param table_js: Table json
+        :return: New modified file (JSON)
+        """
+        for table_dict in js[path]:
+            if table_name in table_dict:
+                for row in table_dict[table_name]:
+                    if column_name in row:
+                        del row[column_name]  # Delete the column data
+                break
+        return js
+        
+
+    @drm_logger.log_decorator(logger) 
+    def alter_table(self, alter_type, js, path, table_name, change):
+        """ 
+        Alter a table in JSON
+        :param alter_type: column/constraint
+        :param js: JSON file
+        :param path: Path to file the table in
+        :param table_name: Table name
+        :param change: Change in table (JSON)
+        :return: New modified file (JSON)
+        """
+        table = next((t for t in js[path] if t['name'] == table_name), None)
+        if (alter_type == "column"):
+            column = next((col for col in table['columns'] if col['name'] == change['name']), None)
+        
+            action = change.get('action')
+            if action == 'upd':  # Update column attributes
+                if 'length' in change:
+                    column['length'] = change['length']
+                if 'data_type' in change:
+                    column['data_type'] = change['data_type']
+                if 'is_nullable' in change:
+                    column['is_nullable'] = change['is_nullable']
+                if 'default' in change:
+                    column['default'] = change['default']
+            
+            elif action == 'add':  # Add a new column
+                new_column = {
+                    'name': change['name']
+                }
+                if 'data_type' in change:
+                    new_column['data_type'] = change['data_type']
+                if 'length' in change:
+                    new_column['length'] = change['length']
+                if 'is_nullable' in change:
+                    new_column['is_nullable'] = change['is_nullable']
+                if 'default' in change:
+                    new_column['default'] = change['default']
+                
+                table['columns'].append(new_column)
+            
+            elif action == 'del':  # Delete a column
+                table['columns'] = [col for col in table['columns'] if col['name'] != change['name']]
+
+        else: # constraint
+            if ("constraints" not in table):
+                table['constraints'] = []
+
+            constraint = next((c for c in table['constraints'] if c['name'] == change['name']), None)
+            
+            action = change.get('action')
+            if action == 'upd':  # Update constraint attributes
+                constraint['type'] = change['type']
+                constraint['columns'] = change['columns']
+            
+            elif action == 'add':  # Add a new column
+                new_constraint = {
+                    'name': change['name'],
+                    'type': change['type'],
+                    'columns': change['columns']
+                }
+
+                table['constraints'].append(new_constraint)
+
+            elif action == 'del':  # Delete a column
+                table['constraints'] = [c for c in table['constraints'] if c['name'] != change['name']]
+                if not table['constraints']:
+                    del table['constraints']
+
+        return js
+    
     @drm_logger.log_decorator(logger) 
     def get_table_columns_list(schema_file_name, table_name):
         """ 
@@ -29,6 +163,185 @@ class Generic:
                     js.append(column["name"])
             
         return json.dumps(js)
+
+    @drm_logger.log_decorator(logger) 
+    def compare_columns(target_columns, source_columns):
+        
+        actions = []
+
+        # Get columns names in source & target tables
+        target_column_names = {col['name'] for col in target_columns}
+        source_column_names = {col['name'] for col in source_columns}
+
+        # Check for updates and additions in columns
+        for source_col in source_columns:
+            if source_col['name'] in target_column_names:
+                # Find the corresponding column in the target to compare
+                target_col = next(col for col in target_columns if col['name'] == source_col['name'])
+                if source_col != target_col:
+                    # If there's a difference, mark as update
+                    source_col['action'] = 'upd'
+                    actions.append(source_col)
+            else:
+                # If column is not in the target, it's an addition
+                source_col['action'] = 'add'
+                actions.append(source_col)
+
+        for target_col in target_columns:
+            if target_col['name'] not in source_column_names:
+                target_col['action'] = 'del'
+                actions.append(target_col)
+
+        return actions
+
+    @drm_logger.log_decorator(logger) 
+    def compare_constraints(target_constraints, source_constraints):
+
+        actions = []
+
+        # Get columns names in source & target tables
+        target_constraint_names = {constraint['name'] for constraint in target_constraints}
+        source_constraint_names = {constraint['name'] for constraint in source_constraints}
+
+        # Check for updates and additions in constraints
+        for source_constraint in source_constraints:
+            if source_constraint['name'] in target_constraint_names:
+                # Find the corresponding constraint in the target to compare
+                target_constraint = next(constraint for constraint in target_constraints if constraint['name'] == source_constraint['name'])
+                if source_constraint != target_constraint:
+                    # If there's a difference, mark as update
+                    source_constraint['action'] = 'upd'
+                    actions.append(source_constraint)
+            else:
+                # If constraint is not in the target, it's an addition
+                source_constraint['action'] = 'add'
+                actions.append(source_constraint)
+
+        for target_constraint in target_constraints:
+            if target_constraint['name'] not in source_constraint_names:
+                target_constraint['action'] = 'del'
+                actions.append(target_constraint)
+
+        return actions
+
+    @drm_logger.log_decorator(logger) 
+    def compare_tables(target_table, source_table):
+        
+        changes_js = {}
+
+        source_constraints_js = []
+        if ('constraints' in source_table):
+            source_constraints_js = source_table['constraints']
+        target_constraints_js = []
+        if ('constraints' in target_table):
+            target_constraints_js = target_table['constraints']
+
+        #================
+        # Compare columns
+        #================
+        change = Generic.compare_columns(target_table['columns'], source_table['columns'])
+        if (change):
+            changes_js['columns'] = change
+        #====================
+        # Compare constraints
+        #====================
+        change = Generic.compare_constraints(target_constraints_js, source_constraints_js)
+        if (change):
+            changes_js['constraints'] = change
+        
+        return changes_js
+
+
+    @drm_logger.log_decorator(logger)
+    def compare_table_data(table_name, target_data, source_data, pk_columns):
+        changes_js = []  # Initialize changes_js as a list, not a dictionary.
+
+        if target_data is None:
+            target_data = {table_name: []}
+
+        pk_columns = pk_columns.split(',')
+
+        # Helper function to convert text values to numeric values (if possible)
+        def convert_to_numeric(value):
+            try:
+                # Attempt to convert to float (handles integers and decimals)
+                return float(value)
+            except ValueError:
+                return value  # If conversion fails, return the original value
+
+        # Modify the pk to handle numeric and string equality consistently
+        def get_pk_value(row):
+            return tuple(convert_to_numeric(row[field]) for field in pk_columns)
+
+        # Create target_dict and source_dict with consistent PK comparison
+        target_dict = {get_pk_value(row): row for row in target_data[table_name]}
+        source_dict = {get_pk_value(row): row for row in source_data[table_name]}
+        
+        #===========
+        # Insert row
+        #===========
+        for pk, row in source_dict.items():
+            if pk not in target_dict:
+                changes_js.append({"row": row, "action": "add"})
+
+        #===========
+        # Update row
+        #===========
+        for pk, row in source_dict.items():
+            if pk in target_dict:
+                target_row = target_dict[pk]
+                # Compare non-PK fields, ignoring type mismatches between text and numbers
+                if any(
+                    convert_to_numeric(target_row[field]) != convert_to_numeric(row[field])
+                    for field in row if field not in pk_columns
+                ):
+                    changes_js.append({"row": row, "action": "upd"})
+
+        #===========
+        # Delete row
+        #===========
+        for pk, row in target_dict.items():
+            if pk not in source_dict:
+                changes_js.append({"row": row, "action": "del"})
+
+        return changes_js
+
+
+    @drm_logger.log_decorator(logger) 
+    def insert_row(table_name, table_data_js, row):
+
+        table_data_js[table_name].append(row)
+
+        return table_data_js
+
+
+    @drm_logger.log_decorator(logger) 
+    def delete_row(table_name, table_data_js, row, pk_columns):
+
+        search_fields = pk_columns.split(',')
+
+        search_value = row[search_fields[0].strip()]
+
+        table_data_js[table_name] = [
+            item for item in table_data_js[table_name]
+            if not any(item[field.strip()] == search_value for field in search_fields)
+        ]
+        return table_data_js
+
+
+    @drm_logger.log_decorator(logger) 
+    def update_row(table_name, table_data_js, row, pk_columns):
+
+        search_fields = pk_columns.split(',')
+
+        for item in table_data_js[table_name]:
+            # Check if all specified fields match
+            if all(item[field.strip()] == row[field.strip()] for field in search_fields):
+                # Update the fields in the matched record
+                for field in row:
+                    item[field] = row[field]
+
+        return table_data_js
 
 
 class Releases:
@@ -136,6 +449,10 @@ class Solutions:
                             solution_obj.ordinal = _solution_id
                         solution_obj.solution_type_id = solution['solution_type_id']    
                         solution_obj.path = solution['path']   
+                        if ("file_name" in solution):
+                            solution_obj.file_name = solution['file_name']  
+                        else:
+                             solution_obj.file_name = None
                         if  ("is_active" in solution):
                             solution_obj.is_active = solution['is_active'] 
                         else:
@@ -313,6 +630,14 @@ class Projects:
                                     else:
                                         project_obj.targets_sql_script_id = None
                                         project_obj.targets_sql_text = None
+                                    if ("targets_priority" in project):    
+                                        project_obj.targets_priority = project['targets_priority'] 
+                                    else:
+                                        project_obj.targets_exclude = None
+                                    if ("targets_exclude" in project):    
+                                        project_obj.targets_exclude = project['targets_exclude'] 
+                                    else:
+                                        project_obj.targets_exclude = None
                                     if ("max_degree_in_parallel" in project):   
                                         project_obj.max_degree_in_parallel = project['max_degree_in_parallel']
                                     else:
@@ -495,3 +820,44 @@ class ChangePassword:
         elif isinstance(data, list):
             for item in data:
                 self.update_connection_strings(item)
+
+class PrePostScripts:
+
+    logger = drm_logger.configure_logging("parser_json_json.PrePostScripts")
+
+    @drm_logger.log_decorator(logger) 
+    def get_prepost_scripts_by_project_id(db_file_name, release_id, project_id, pre_post_script_obj):
+        """ 
+        Return solution projects details by solution_id
+        :param db_file_name: Database file name
+        :param release_id: Release ID
+        :param project_obj: Project object
+        :return: Projects info (JSON)
+        """
+        _project_id =0
+        _prepost_script_id = 0
+        js = json.loads('{"pre_post_deployment_projects_scripts":[]}')
+        file = files_and_folders.Files(db_file_name)
+        drm_db = file.load_file()
+        for release in drm_db['releases']:
+            if (release['id'] == int(release_id)):
+                verified_release_id = release['id']
+                if ("solutions" in release):
+                    for solution in release['solutions']:
+                        if ("projects" in solution):
+                            for project in solution['projects']:
+                                _project_id += 1
+
+                                if (int(project_id) == _project_id):
+                                        if ("pre_post_deployment_projects_scripts" in project):
+                                            for pre_post_script in project['pre_post_deployment_projects_scripts']:
+                                            
+                                                pre_post_script_obj.id = str(uuid.uuid4())  
+                                                pre_post_script_obj.project_id = _project_id
+                                                pre_post_script_obj.path = pre_post_script['path']     
+                                                pre_post_script_obj.script_type_id =  pre_post_script['script_type_id']
+                                                pre_post_script_obj.is_active =  pre_post_script['is_active'] 
+                                        
+                                                prepost_script_js = json.loads(json.dumps(pre_post_script_obj.__dict__))
+                                                js['pre_post_deployment_projects_scripts'].append(prepost_script_js)
+        return json.dumps(js)

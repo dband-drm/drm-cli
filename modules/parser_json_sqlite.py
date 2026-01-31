@@ -124,6 +124,146 @@ class ParserJsonSqlite:
 
 
 	@drm_logger.log_decorator(logger) 
+	def alter_table (self, target_table_js, change_type, change_js):
+		""" 
+        Generate a alter table command including constraints
+        :param table_name: Table name
+        :param js_columns: JSON includes list of columns names, data types & sizes
+        :param js_constraints: JSON includes list of constraints on the table
+        :return: SQL Command (string)
+        """
+		table_name = target_table_js['name']
+
+		#===========================
+		# Handle column modification
+		#===========================
+		if (change_type == "column"):
+
+			action_type = change_js['action']
+
+			#====================
+			# Add / Delete column
+			#====================
+			if (action_type in ["add", "del"]):
+				
+				sql_command = "alter table {table_name} ".format(table_name = table_name)
+
+				#==================
+				# Column definition
+				#==================	
+				# Column name
+				column_name = change_js['name']
+
+				if (action_type == "add"):
+					# Data type
+					data_type = change_js['data_type']
+					if(data_type.lower() == "string"):
+						data_type = "varchar"
+
+					# Length
+					try:
+						length = str(change_js['length'])
+					except:
+						length = None
+
+					# Nullable?
+					try:
+						is_nullable = change_js['is_nullable']
+					except:
+						is_nullable = None
+
+					# Defult value
+					try:
+						default = str(change_js['default'])
+					except:
+						default = None
+
+					# Concatenate column definition into basic table alter & build a command
+					sql_command += "ADD COLUMN " + column_name + " " + data_type
+					if length is not None:
+						sql_command += "(" + length + ")"
+					if (is_nullable):
+						sql_command += " NULL"
+					else:
+						sql_command += " NOT NULL"
+					if	default is not None:
+						if data_type in ("string", "text", "varchar", "char"):
+							sql_command += " DEFAULT '{default}'".format(default = default)
+						else:
+							sql_command += " DEFAULT {default}".format(default = default)
+
+
+				elif (action_type == "del"):
+					sql_command += " DROP  COLUMN " + column_name
+
+			#==============
+			# Modify column
+			#==============
+			else:
+
+				# Column name
+				column_name = change_js['name']
+				
+				for index, column in enumerate(target_table_js['columns']):
+					if (column['name'] == column_name):
+						target_table_js['columns'][index] = change_js
+				target_table_ddl = self.create_table(table_name + "_new", target_table_js['columns'], target_table_js['constraints'])
+				
+				# Disable constraints
+				sql_command = f"PRAGMA foreign_keys=OFF; -- Temporarily disable foreign keys"
+				# Create a new table in target
+				sql_command += f"\n{target_table_ddl}"
+				# Copy data from old table to new in target
+				sql_command += f"\nINSERT INTO {table_name}_new SELECT * FROM {table_name};"
+				# Drop the old table
+				sql_command += f"\nDROP TABLE {table_name};"
+				# Rename the new table to the original table name
+				sql_command += f"\nALTER TABLE {table_name}_new RENAME TO {table_name};"
+				# Re-enable constraints
+				sql_command += f"\nPRAGMA foreign_keys=ON; -- Re-enable foreign keys"
+
+			
+		#===============================
+		# Handle constraint modification
+		#===============================
+		else: 
+			action_type = change_js['action']
+
+			# Constraint name
+			constraint_name = change_js['name']
+			constraint_exists = False
+			
+			for index, constraint in enumerate(target_table_js['constraints']):
+				if (constraint['name'] == constraint_name):
+					constraint_exists = True
+					if (action_type in ["add", "upd"]):
+						# Add or modify constraint
+						target_table_js['constraints'][index] = change_js
+					elif action_type == "del":
+						# Delete the constraint from the target table
+						del target_table_js['constraints'][index]
+						break  # Exit the loop since we've found and removed the constraint
+			if not constraint_exists and action_type == "add":
+				target_table_js['constraints'].append(change_js)
+			target_table_ddl = self.create_table(table_name + "_new", target_table_js['columns'], target_table_js['constraints'])
+			
+			# Disable constraints
+			sql_command = f"PRAGMA foreign_keys=OFF;"
+			# Create a new table in target
+			sql_command += f"\n{target_table_ddl}"
+			# Copy data from old table to new in target
+			sql_command += f"\nINSERT INTO {table_name}_new SELECT * FROM {table_name};"
+			# Drop the old table
+			sql_command += f"\nDROP TABLE {table_name};"
+			# Rename the new table to the original table name
+			sql_command += f"\nALTER TABLE {table_name}_new RENAME TO {table_name};"
+			# Re-enable constraints
+			sql_command += f"\nPRAGMA foreign_keys=ON;"
+		
+		return sql_command
+
+
+	@drm_logger.log_decorator(logger) 
 	def insert_row (self, table_name, columns_names, columns_values):
 		""" 
         Generate an insert record into a table command
@@ -139,23 +279,76 @@ class ParserJsonSqlite:
 		return sql_command
 
 	@drm_logger.log_decorator(logger) 
-	def update_row (self, table_name, columns_names, columns_values, where_query):
+	def delete_row(self, table_name, columns_names, columns_values, pk_columns):
 		""" 
-        Generate an update record in a table command
-        :param table_name: Table name
-        :param columns_names: list of columns
-        :param columns_values: List of values respectively
-        :return: SQL Command (string)
-        """
-		columns_names_list = ", ".join(columns_names)
-		columns_values_list = ", ".join([f"'{value}'" if isinstance(value, str) else str(value) for value in columns_values])
-		update_command = " set "
-		for c in columns_names:
-			for value in columns_values:
-				update_command += f"{c} = '{value if isinstance(value, str) else str(value)}',"
-		#remove last ,
-		if(update_command != " set "):
-			update_command = update_command[:-1]
+		Generate a delete record into a table command using primary key columns in the WHERE clause
+		:param table_name: Table name
+		:param columns_names: List or dict_keys object of column names
+		:param columns_values: List or dict_values object of values respectively
+		:param pk_columns: Comma-delimited string of primary key column names
+		:return: SQL Command (string)
+		"""
+		# Ensure columns_names and columns_values are converted to lists if they are dict_keys or dict_values
+		columns_names = list(columns_names)
+		columns_values = list(columns_values)
+		
+		# Split the pk_columns string into a list
+		pk_columns_list = pk_columns.split(',')
+		
+		# Create a list of conditions for the primary key columns (column = value)
+		where_conditions = [
+			f"{columns_names[i]} = '{columns_values[i]}'" if isinstance(columns_values[i], str)
+			else f"{columns_names[i]} = {columns_values[i]}"
+			for i in range(len(columns_names))
+			if columns_names[i] in pk_columns_list  # Only include primary key columns
+		]
+		
+		# Join the conditions with 'AND' to form the complete WHERE clause
+		where_clause = " and ".join(where_conditions)
+		
+		# Generate the final SQL command
+		sql_command = f"DELETE FROM {table_name} WHERE {where_clause}"
+		
+		return sql_command
 
-		sql_command = f"update {table_name} {update_command} where {where_query}"
+	@drm_logger.log_decorator(logger) 
+	def update_row(self, table_name, columns_names, columns_values, pk_columns):
+		""" 
+		Generate an update record into a table command
+		:param table_name: Table name
+		:param columns_names: List or dict_keys object of column names
+		:param columns_values: List or dict_values object of values respectively
+		:param pk_columns: Comma-delimited string of primary key column names
+		:return: SQL Command (string)
+		"""
+		# Ensure columns_names and columns_values are converted to lists if they are dict_keys or dict_values
+		columns_names = list(columns_names)
+		columns_values = list(columns_values)
+		
+		# Split the pk_columns string into a list
+		pk_columns_list = pk_columns.split(',')
+		
+		# Create the SET clause for non-primary key columns (column = value)
+		set_clauses = [
+			f"{columns_names[i]} = '{columns_values[i]}'" if isinstance(columns_values[i], str)
+			else f"{columns_names[i]} = {columns_values[i]}"
+			for i in range(len(columns_names))
+			if columns_names[i] not in pk_columns_list  # Only include non-primary key columns
+		]
+		
+		# Create the WHERE clause for primary key columns (column = value)
+		where_conditions = [
+			f"{columns_names[i]} = '{columns_values[i]}'" if isinstance(columns_values[i], str)
+			else f"{columns_names[i]} = {columns_values[i]}"
+			for i in range(len(columns_names))
+			if columns_names[i] in pk_columns_list  # Only include primary key columns
+		]
+		
+		# Join the clauses
+		set_clause = ", ".join(set_clauses)
+		where_clause = " and ".join(where_conditions)
+		
+		# Generate the final SQL command
+		sql_command = f"UPDATE {table_name} SET {set_clause} WHERE {where_clause}"
+		
 		return sql_command

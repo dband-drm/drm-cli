@@ -1,74 +1,20 @@
-# drm-cli [![d-band](https://github.com/dband-drm/drm-cli/blob/main/Images/dband_logo.jpg)](https://www.d-band.com)
+# Introduction 
+TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
 
-This [Data Release Manager repository](https://github.com/dband-drm/drm-cli/) was developed by [d-band](https://www.d-band.com).\
-The [repository](https://github.com/dband-drm/drm-cli/) allows you to manage and control your data releases that are held and managed on a variety of source controls.\
-The repository is a python project & supports a variety of operation systems (e.g. Windows. Linux, etc.)
+# Getting Started
+TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
+1.	Installation process
+2.	Software dependencies
+3.	Latest releases
+4.	API references
 
-This `drm-cli` is an open source and freeware. Do make sure you see [licensing policy](#license).\
-Use the [README.md](https://github.com/dband-drm/drm-cli/readme.md) file for a quick project start.
+# Build and Test
+TODO: Describe and show how to build your code and run the tests. 
 
-## Contents
-- [What is drm-cli](#what-is-drm-cli)
-- [License](#license)
-- [Releases versions](#releases-versions)
-- [Basic principals & architecture](#basic-principals--architecture)
-- [Getting started](#getting-started)
-- [Support](#support)
-- [Videos](#videos)
-- [Next steps](#next-steps)
+# Contribute
+TODO: Explain how other users and developers can contribute to make your code better. 
 
-## What is drm-cli
-The `drm-cli` is an open-source, cross-platform Data Release Management (DRM) tool developed by [d-band](https://dbanddrm.wixsite.com/).\
-It integrates seamlessly with existing version control systems, eliminating the need for additional licenses.\
-
-Each version control system typically includes basic tools for specific tasks, such as managing data releases (e.g., schema changes and data updates to your data storage systems).\
-However, these tools are often limited, offering only fundamental operations like releasing data from a source to a specific target.\
-
-`drm-cli` enhances basic release operations by offering:
-- [x] Release History Tracking: Maintain a comprehensive log of all data releases.
-- [x] Detailed Status Monitoring: Gain insights into each step of the release process.
-- [x] Multi-Solution Releases: Manage multiple solutions under a single release.
-- [x] Automated Exception Handling: Automatically detect and handle exceptions during releases.
-- [x] For a quick start, refer to the [README.md](https://github.com/dband-drm/drm-cli/readme.md) 
-
-To get full features list, see features list in [releases versions](#releases-versions).
-
-## License
-[License](https://github.com/dband-drm/drm-cli/wiki/license)
-
-## Releases versions
-[Features list](https://github.com/dband-drm/drm-cli/wiki/features-list)
-- [[#drm-cli v1.0]](https://github.com/dband-drm/drm-cli/wiki/drm%E2%80%90cli-v1.0)(_release date: Sep 2024_)
-- [#drm-cli v1.1](_release date: Sep 2025_)
-- [#drm-cli v1.2](_release date: N/A_)
-
-## Basic principals & architecture
-Learn the basic principals and architecture of the drm-cli. 
-- [Basic principals](https://github.com/dband-drm/drm-cli/wiki/basic-principals)
-- [drm-cli architecture](https://github.com/dband-drm/drm-cli/wiki/architecture)
-
-## Getting started
-Use this quick start guide to master your skills in drm-cli. 
-- [Install drm-cli](https://github.com/dband-drm/drm-cli/wiki/install)
-- [Uninstall drm-cli](https://github.com/dband-drm/drm-cli/wiki/uninstall)
-- [drm-cli architecture](https://github.com/dband-drm/drm-cli/wiki/architecture)
-- [Configure release](https://github.com/dband-drm/drm-cli/wiki/configure)
-- [Deploy release](https://github.com/dband-drm/drm-cli/wiki/deploy)
-- [Securing sensitive data](https://github.com/dband-drm/drm-cli/wiki/secure)
-- [Tracing drm-cli](https://github.com/dband-drm/drm-cli/wiki/trace)
-
-## Support
-Help us improve the `drm-cli` :)\
-Use the [issue tracker](https://github.com/dband-drm/drm-cli/issues) tab to open new issues/suggestions or keep tracking active issues progress.\
-Any suggestion will be investigated & considered by [d-band](https://www.d-band.com).\
-In some cases the support team will request dipper technical information about your issue using the `drm-cli` [tracing](https://github.com/dband-drm/drm-cli/wiki/trace).
-
-## Videos
-- [d-band introduction](https://youtu.be/D8rE5XIIblw)
-- [drm-cli interactive installation](https://youtu.be/kqQnZqfBvxM)
-- [drm-cli inline uninstall](https://youtu.be/HrPpmrDK5GM)
-
-[All videos](https://github.com/dband-drm/drm-cli/wiki/Videos)
-
-## Next steps
-- [Install drm-cli](https://github.com/dband-drm/drm-cli/wiki/install)
+If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
+- [ASP.NET Core](https://github.com/aspnet/Home)
+- [Visual Studio Code](https://github.com/Microsoft/vscode)
+- [Chakra Core](https://github.com/Microsoft/ChakraCore)

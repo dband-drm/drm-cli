@@ -90,8 +90,8 @@ class Solution:
                 # Validate Solution Type
                 #=======================
                 if "solution_type_id" in solution:
-                    if solution['solution_type_id'] not in [1]:
-                        raise Exception ('Solution type "' + str(solution['solution_type_id']) + '" in solution "' + str(solution['name']) + '" is not yet supported!!! (legal values: 1)')
+                    if solution['solution_type_id'] not in [1, 2, 3]:
+                        raise Exception ('Solution type "' + str(solution['solution_type_id']) + '" in solution "' + str(solution['name']) + '" is not yet supported!!! (legal values: 1, 2)')
                 else:
                     raise Exception ('No Solution Type defined for solution "' + str(solution['id']) + '"!!!')
                 #==============
@@ -174,23 +174,45 @@ class Project:
                                 if "targets_list" in project:
                                     if project['targets_list'] == None:
                                         raise Exception ('No targets list defined for project "' + project['name'] + '" in solution "' + str(solution['id']) + '"!!!')
+                                    if len(str(project['targets_list']).split(',')) > 1 and solution['solution_type_id'] in [2,3]:
+                                        raise Exception ('More than one target in  targets list defined for project "' + project['name'] + '" in solution "' + str(solution['id']) + '"!!! Not supported')
                                 else:
                                     raise Exception ('No targets list defined for project "' + project['name'] + '" in solution "' + str(solution['id']) + '"!!!')
                             elif project['targets_type_id'] in [2]:
+                                if solution['solution_type_id'] in [2,3]:
+                                    raise Exception ('Sql script defined for project "' + project['name'] + '" in solution "' + str(solution['id']) + '"!!! Not supported')
                                 if "targets_sql_script_id" not in project:
-                                    raise Exception ('Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
+                                    raise Exception ('No Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
                                 else:
                                     if project['targets_sql_script_id'] == None:
-                                        raise Exception ('Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
+                                        raise Exception ('No Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
                                 if "targets_sql_text" not in project:
-                                    raise Exception ('Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
+                                    raise Exception ('No Sql script ID is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
                                 else:
                                     if project['targets_sql_text'] == None:
-                                        raise Exception ('Sql script text is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
+                                        raise Exception ('No Sql script text is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
                             elif project['targets_type_id'] not in [1,2]:
                                 raise Exception ('Invalid targets type "' + str(project['targets_type_id']) + '" is defined for project "' + project['name'] + '" in solution "' + str(solution['name']) + '"!!! (legal values: 1/2)')                                   
                         else:
                             raise Exception ('No targets type defined for project "' + project['name'] + '" in solution "' + str(solution['id']) + '"!!!')
+
+    @drm_logger.log_decorator(logger) 
+    def verify_pre_post_scripts(release):
+        """ 
+        Verify pre post scripts
+        :param release: release json
+        :return:
+        """      
+        for solution in release['solutions']:
+            if solution['is_active'] == True:
+                if "projects" in solution:
+                    for project in solution['projects']:
+                        for pre_post_script in project['pre_post_deployment_projects_scripts']:
+                            if pre_post_script['is_active'] ==1 :
+                                  if "path" in pre_post_script:
+                                    if not (os.path.exists(pre_post_script['path'])):
+                                        raise Exception ('Pre post script path "' + pre_post_script['path'] + '" not found for solution "' + str(solution['name']) + '"!!!')
+ 
 
 #=====================
 # Validator main class

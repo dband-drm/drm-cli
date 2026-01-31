@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import uuid
 from pathlib import Path
 from modules import crypto, sqlite, parser_json_sqlite, files_and_folders, drm_logger
 
@@ -193,7 +194,7 @@ class InitDB:
 					#=============================
 					# Insert sql_scripts_variables
 					#=============================
-					project_row_without_sons = {key: value for key, value in project_row.items() if key not in ("targets_sql_text")}
+					project_row_without_sons = {key: value for key, value in project_row.items() if key not in ("targets_sql_text","pre_post_deployment_projects_scripts")}
 					columns = list(project_row_without_sons.keys())
 					values = list(project_row_without_sons.values())
 					columns.append("id")
@@ -220,6 +221,28 @@ class InitDB:
 					
 					sql_command = parser.insert_row(table_name, columns, values)
 					sqlite.execute_command(conn, sql_command)
+
+					#==================
+					# Insert pre_post_deployment_projects_scripts
+					#==================
+
+					script_name_name = "pre_post_deployment_projects_scripts"
+					pre_post_sql_script_rows = project_row.get(script_name_name, [])
+					
+					if isinstance(pre_post_sql_script_rows, list) and len(pre_post_sql_script_rows) > 0:
+						for pre_post_sql_script_row in pre_post_sql_script_rows:
+							pre_post_sql_script_columns = list(pre_post_sql_script_row.keys())
+							pre_post_sql_script_values = list(pre_post_sql_script_row.values())
+							pre_post_sql_script_columns.append("project_id")
+							pre_post_sql_script_values.append(project_id)
+							pre_post_sql_script_columns.append("id")
+							pre_post_sql_script_values.append(str(uuid.uuid4()) )
+							sql_command = parser.insert_row(script_name_name, pre_post_sql_script_columns, pre_post_sql_script_values)
+							sqlite.execute_command(conn, sql_command)
+					
+					#==================
+					# Insert pre_post_deployment_projects_scripts
+					#==================
 
 					project_id += 1
 
