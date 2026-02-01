@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![DRM Logo](https://raw.githubusercontent.com/dband-drm/drm-cli/main/Images/DRM_Logo.png)
+![DRM Logo](https://raw.githubusercontent.com/dband-drm/drm-cli/main/Images/dband_logo.jpg)
 
 **A unified CLI tool for managing and controlling data releases across multiple platforms and source controls**
 
@@ -16,32 +16,33 @@
 
 ---
 
-## 🎯 Introduction
+##  Introduction
 
-DRM-CLI is a revolutionary application for managing and controlling data releases across multiple platforms and source controls. Born from 25+ years of database administration experience, DRM-CLI solves the complexity of modern data deployments by providing a single, unified interface for all your deployment needs.
+DRM-CLI is a data release management tool for database deployments across multiple platforms. Born from 25+ years of database administration experience, DRM-CLI provides a unified Python-based CLI for managing database releases, tracking deployment history, and ensuring consistent deployments across environments.
 
 ### Why DRM-CLI?
 
 Traditional data deployment requires juggling multiple tools:
-- 🔧 Source control tools
-- 🔧 Platform-specific deployment scripts
-- 🔧 Custom utilities for each database system
-- 🔧 Monitoring and retry mechanisms
+- Source control systems
+- Platform-specific deployment scripts
+- Custom utilities for each database type
+- Manual tracking of what's deployed where
 
-**DRM-CLI replaces all of that with ONE powerful CLI tool.**
+**DRM-CLI provides a single interface for all database deployments.**
 
 ### Key Benefits
 
-- ⚡ **50% reduction** in deployment time and cost
-- 🔄 **Unified interface** for all platforms and source controls
-- 🛡️ **Built-in intelligent retry mechanism** for resilient deployments
-- ⚙️ **Parallel execution support** for faster operations
-- 🪟 **Cross-platform** support (Windows & Linux)
-- 🗄️ **Multiple database support** (Oracle, PostgreSQL, and more)
+- **Unified interface** for Oracle, PostgreSQL, and SQL Server
+- **Built-in retry mechanism** for resilient deployments
+- **Parallel execution** for deploying to multiple targets
+- **Deployment tracking** with SQLite or JSON database
+- **Secure encryption** for sensitive configuration data
+- **Cross-platform** support (Windows & Linux)
+- **Integration** with Flyway, Liquibase, and sqlpackage
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -53,10 +54,15 @@ Before installing DRM-CLI, ensure you have the following:
 - **Database drivers** (depending on your target platforms):
   - Oracle: `cx_Oracle` or `oracledb`
   - PostgreSQL: `psycopg2`
+  - SQL Server: `pyodbc`
+- **Optional deployment tools**:
+  - Flyway (for database migrations)
+  - Liquibase (for database version control)
+  - sqlpackage (for SQL Server deployments)
 
 ### Installation
 
-#### Option 1: Installation Script (Recommended)
+####  Installation Script (Recommended)
 
 1. **Clone the repository:**
    ```bash
@@ -76,58 +82,22 @@ Before installing DRM-CLI, ensure you have the following:
    python3 install.py
    ```
 
-3. **Follow the interactive prompts** to configure your installation.
+3. **Follow the interactive prompts** to configure your installation:
+   - Choose installation type: JSON or SQLite (default: SQLite)
+   - Set installation path (default: `~/drm`)
+   - Configure encryption key (optional but recommended)
 
-#### Option 2: Manual Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/dband-drm/drm-cli.git
-   cd drm-cli
-   ```
 
-2. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Configure the application:**
-   - Edit `install.config` with your environment settings
-   - Initialize the DRM database using scripts in `init_drm_db/`
-
-4. **Add to PATH** (optional but recommended):
-   - Add the `drm-cli` directory to your system PATH
-
-### Quick Start
-
-After installation, verify DRM-CLI is working:
-
-```bash
-drm --version
-```
-
-Initialize a new DRM project:
-
-```bash
-drm init
-```
-
-Deploy your first release:
-
-```bash
-drm deploy --config myconfig.yml
-```
-
----
-
-## 📦 Software Dependencies
+##  Software Dependencies
 
 ### Core Dependencies
 
 - **Python 3.8+** - Core runtime
-- **GitPython** - Git integration
-- **PyYAML** - Configuration file parsing
-- **Click** or **argparse** - CLI framework
+- **argparse** - CLI argument parsing (built-in)
+- **json** - Configuration file handling (built-in)
+- **logging** - Logging framework (built-in)
+- **pathlib** - File path operations (built-in)
 
 ### Database Drivers (Install as needed)
 
@@ -148,174 +118,201 @@ pip install psycopg2-binary
 pip install pyodbc
 ```
 
-### Optional Dependencies
+### Optional Deployment Tools
 
-- **pytest** - For running tests
-- **black** - Code formatting
-- **flake8** - Linting
-
-Install all development dependencies:
-```bash
-pip install -r requirements-dev.txt
-```
+- **Flyway** - Database migration tool
+- **Liquibase** - Database version control
+- **sqlpackage** - SQL Server deployment tool
+- **sqlcmd** - SQL Server command-line tool
 
 ---
 
-## 🎯 Features & Usage
+##  Features & Usage
 
 ### Core Features
 
 #### 1. Multi-Platform Support
 
-Deploy to multiple database platforms with a single command:
+Deploy to multiple database platforms from your DRM installation directory:
 
 ```bash
-drm deploy --platform oracle --target production
-drm deploy --platform postgresql --target staging
+# Deploy to production Oracle
+python drm_deploy.py -r OracleRelease1 -c production_oracle --deploy
+
+# Deploy to PostgreSQL development environment
+python drm_deploy.py -r PgRelease2 -c dev_postgres --deploy
+
+# Deploy to SQL Server staging
+python drm_deploy.py -r SqlRelease3 -c stage_mssql --deploy
 ```
 
 #### 2. Source Control Integration
 
-Seamlessly integrate with Git, SVN, and other version control systems:
+Configure your solutions in `drm_db` to point to source control repositories:
 
-```bash
-drm deploy --from-git --branch main
-drm deploy --from-commit abc123
+```json
+"solutions": [
+    {
+        "name": "My Database Project",
+        "solution_type_id": 1,
+        "path": "../my-db-repo",
+        ...
+    }
+]
 ```
 
 #### 3. Intelligent Retry Mechanism
 
-Automatic retry with exponential backoff for transient failures:
+Configure automatic retry for transient failures in `drm_db`:
 
-```yaml
-retry:
-  max_attempts: 3
-  backoff: exponential
-  timeout: 300
+```json
+{
+    "max_retries": 3
+}
 ```
 
 #### 4. Parallel Execution
 
-Deploy to multiple environments simultaneously:
+Deploy to multiple targets simultaneously by configuring parallel execution in `drm_db`:
 
-```bash
-drm deploy --parallel --targets prod1,prod2,prod3
+```json
+{
+    "targets_list": "[\"DB_B1\", \"DB_B2\", \"DB_B3\", \"DB_B4\"]",
+    "targets_priority": "[\"DB_B4\", \"DB_B2\"]",
+    "max_degree_in_parallel": 2
+}
 ```
 
-#### 5. Rollback Support
+#### 5. Dry Run Mode
 
-Quickly rollback failed deployments:
+Test deployments without executing them:
 
 ```bash
-drm rollback --deployment-id abc123
+python drm_deploy.py -r MyRelease -c production --dryrun
+```
+
+#### 6. Secure Encryption
+
+Protect sensitive data with encryption:
+
+```bash
+# Encrypt a password or sensitive text
+python drm_crypto.py --encrypt -p MyEncryptionKey -t "my-db-password"
+
+# Change encryption key
+python drm_crypto.py --changepassword -p OldKey -n NewKey
+```
+
+#### 7. Alignment Mode
+
+Align database state with DRM tracking:
+
+```bash
+python drm_deploy.py -r MyRelease -c production --align
 ```
 
 ### Configuration
 
-DRM-CLI uses YAML configuration files for flexible deployment management:
+DRM-CLI uses JSON/SQLite configuration files:
 
-```yaml
-# config.yml
-project_name: "MyProject"
-version: "1.1.0"
+- **`drm_deploy.config`** - Main app configuration  
+- **`install.config`** - Installation settings
+- **DRM Database** - Stores releases, connections, and deployment history (SQLite or JSON)
 
-platforms:
-  - name: production_oracle
-    type: oracle
-    host: oracle.example.com
-    port: 1521
-    service: PROD
-    
-  - name: production_postgres
-    type: postgresql
-    host: postgres.example.com
-    port: 5432
-    database: prod_db
+#### Sample Configuration Structure
 
-deployment:
-  source_control: git
-  repository: https://github.com/myorg/myrepo.git
-  branch: main
-  
-  retry:
-    enabled: true
-    max_attempts: 3
-    
-  parallel: false
+```json
+{
+    "drm_version": "1.1.0",
+    "installation_info": {
+        "installation_type": "sqlite",
+        "db_secured": true,
+        "security_text": "encrypted_validation_string"
+    },
+    "config": {
+        "build_folder_name": "build",
+        "db_folder_name": "db",
+        "db_file_name": "drm_db"
+    },
+    "connections": [
+        {
+            "name": "production_oracle",
+            "type": "oracle",
+            "host": "oracle.example.com",
+            "port": 1521,
+            "service": "PROD"
+        }
+    ],
+    "releases": [
+        {
+            "release_id": "Release1.0",
+            "description": "Initial release"
+        }
+    ]
+}
 ```
 
 ---
 
-## 📖 Latest Releases
+##  Latest Releases
 
 ### v1.1.0 (Latest)
-- ✨ Added PostgreSQL support
-- ✨ Enhanced Oracle integration
-- 🐛 Fixed parallel execution bugs
-- 📚 Improved documentation
+-  Added PostgreSQL support
+-  Enhanced Oracle integration
+-  Fixed parallel execution bugs
+-  Improved documentation
 
 ### v1.0.0
-- 🎉 Initial release
-- ✅ Oracle database support
-- ✅ Git integration
-- ✅ Basic deployment workflows
+-  Initial release
+-  Oracle database support
+-  Git integration
+-  Basic deployment workflows
 
 [View all releases →](https://github.com/dband-drm/drm-cli/releases)
 
 ---
 
-## 🔧 Build and Test
 
-### Running Tests
 
-DRM-CLI includes a comprehensive test suite:
 
-```bash
-# Run all tests
-pytest
+---
 
-# Run specific test module
-pytest tests/test_deployment.py
+##  Project Structure
 
-# Run with coverage
-pytest --cov=drm --cov-report=html
 ```
-
-### Building from Source
-
-```bash
-# Clone and navigate to directory
-git clone https://github.com/dband-drm/drm-cli.git
-cd drm-cli
-
-# Install in development mode
-pip install -e .
-
-# Run tests
-pytest
-
-# Build distribution packages
-python setup.py sdist bdist_wheel
-```
-
-### Code Quality
-
-Ensure code quality before contributing:
-
-```bash
-# Format code
-black drm/
-
-# Run linter
-flake8 drm/
-
-# Type checking (if using mypy)
-mypy drm/
+drm-cli/
+├── drm/                      # Main deployment scripts
+│   ├── drm_deploy.py         # Deployment CLI
+│   ├── drm_crypto.py         # Encryption utilities
+│   └── modules/              # Supporting modules (deprecated)
+├── modules/                  # Core functionality
+│   ├── auth.py               # Authentication & password validation
+│   ├── builder.py            # Build release packages
+│   ├── deploy.py             # Deployment orchestration
+│   ├── validator.py          # Validation logic
+│   ├── oracle.py             # Oracle database support
+│   ├── postgresql.py         # PostgreSQL support
+│   ├── mssql.py              # SQL Server support
+│   ├── flyway.py             # Flyway integration
+│   ├── liquibase.py          # Liquibase integration
+│   ├── sqlpackage.py         # sqlpackage integration
+│   ├── crypto.py             # Encryption/decryption
+│   ├── drm_logger.py         # Logging framework
+│   ├── files_and_folders.py  # File operations
+│   └── init_db.py            # Database initialization
+├── init_drm_db/              # DRM database initialization scripts
+├── upgrade/                  # Upgrade scripts for DRM versions
+├── Images/                   # Logo and images
+├── install.py                # Installation script
+├── uninstall.py              # Uninstallation script
+├── install.config            # Installation configuration template
+├── LICENSE                   # MIT License
+└── README.md                 # This file
 ```
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 We welcome contributions from the community! Whether it's bug fixes, new features, documentation improvements, or examples, your help is appreciated.
 
@@ -351,87 +348,80 @@ We welcome contributions from the community! Whether it's bug fixes, new feature
 
 ### Areas Where We Need Help
 
-- 🗄️ Additional database platform support (MySQL, MongoDB, etc.)
-- 🔌 Integration with more source control systems
-- 📚 Documentation and tutorials
-- 🧪 More comprehensive test coverage
-- 🌐 Internationalization
+-  Additional database platform support (MySQL, MongoDB, etc.)
+-  Internationalization
 
 For detailed guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-## 📚 API Reference
+##  API Reference
 
 ### Command Line Interface
 
-#### Global Options
-```
---version       Show version information
---help          Show help message
---config PATH   Path to configuration file
---verbose       Enable verbose output
---quiet         Suppress non-error output
-```
+#### Installation Commands
 
-#### Commands
-
-**`drm init`** - Initialize a new DRM project
+**`drm_install.py`** - Install or upgrade DRM
 ```bash
-drm init [--template TEMPLATE] [--path PATH]
-```
-
-**`drm deploy`** - Deploy a release
-```bash
-drm deploy [OPTIONS]
+python drm_install.py [OPTIONS]
 
 Options:
-  --config PATH          Configuration file path
-  --platform PLATFORM    Target platform
-  --target TARGET        Target environment
-  --parallel            Enable parallel execution
-  --dry-run             Simulate deployment without executing
-  --from-git            Deploy from Git repository
-  --branch BRANCH       Git branch to deploy
-  --commit COMMIT       Specific commit to deploy
+  -d INSTALL_TYPE     Installation type: json or sqlite (default: sqlite)
+  -f INSTALL_PATH     Installation folder path (default: ~/drm)
+  -p ENCRYPTION_KEY   Encryption key (none for no encryption)
+  --trace             Enable debug logging
 ```
 
-**`drm rollback`** - Rollback a deployment
+#### Deployment Commands
+
+**`drm_deploy.py`** - Deploy a release
 ```bash
-drm rollback --deployment-id ID [--force]
+python drm_deploy.py [OPTIONS]
+
+Required:
+  -c CONNECTION       Connection name from drm_deploy.config
+  -r RELEASE          Release ID from DRM database
+
+Optional:
+  -p ENCRYPTION_KEY   Encryption key (or use DRM_SECRET env var)
+  --dryrun            Generate scripts without executing
+  --deploy            Generate and execute deployment scripts
+  --align             Align database state with DRM tracking
+  --trace             Enable debug logging
+
+Examples:
+  python drm_deploy.py -r Release1.0 -c prod_db --dryrun
+  python drm_deploy.py -r Release1.0 -c prod_db --deploy -p MyKey
+  python drm_deploy.py -r Release1.0 -c prod_db --align
 ```
 
-**`drm status`** - Check deployment status
+**`drm_crypto.py`** - Encryption utilities
 ```bash
-drm status [--deployment-id ID] [--all]
+python drm_crypto.py [OPTIONS]
+
+Required (one of):
+  --encrypt           Encrypt a text string
+  --changepassword    Change DRM encryption key
+
+Optional:
+  -p ENCRYPTION_KEY   Current encryption key
+  -n NEW_KEY          New encryption key (for changepassword)
+  -t TEXT             Text to encrypt (for encrypt mode)
+  --trace             Enable debug logging
+
+Examples:
+  python drm_crypto.py --encrypt -p MyKey -t "password123"
+  python drm_crypto.py --changepassword -p OldKey -n NewKey
 ```
 
-**`drm list`** - List deployments
+**`uninstall.py`** - Uninstall DRM
 ```bash
-drm list [--platform PLATFORM] [--limit N]
+python uninstall.py [OPTIONS]
 ```
+ 
+ 
 
-### Python API
 
-For programmatic access, you can import DRM-CLI as a Python module:
-
-```python
-from drm import Deployment, Config
-
-# Load configuration
-config = Config.from_file('config.yml')
-
-# Create deployment
-deployment = Deployment(config)
-
-# Execute deployment
-result = deployment.deploy()
-
-if result.success:
-    print(f"Deployment {result.id} completed successfully")
-else:
-    print(f"Deployment failed: {result.error}")
-```
 
 ---
 
@@ -439,31 +429,43 @@ else:
 
 ### Common Issues
 
-**Issue: `ModuleNotFoundError: No module named 'drm'`**
-- **Solution**: Ensure DRM-CLI is properly installed and in your PYTHONPATH
+**Issue: `ModuleNotFoundError: No module named 'modules'`**
+- **Solution**: Ensure you're running commands from the DRM installation directory or the repository root
+
+**Issue: "Wrong encryption key!!!"**
+- **Solution**: Use the correct encryption key set during installation, or set `DRM_SECRET` environment variable
 
 **Issue: Connection timeout to database**
-- **Solution**: Check network connectivity, firewall rules, and database credentials
+- **Solution**: Check network connectivity, firewall rules, and database credentials in `drm_deploy.config`
 
 **Issue: Permission denied errors**
 - **Solution**: Ensure your database user has necessary privileges for DDL/DML operations
 
+**Issue: Flyway/Liquibase/sqlpackage not found**
+- **Solution**: Install the required tool and configure its path in `drm_db`
+
+### Environment Variables
+
+- **`DRM_SECRET`** - Set this to avoid entering encryption key for each command
+- **`DRM_LOGGER_LEVEL`** - Set logging level (automatically set by `--trace` flag)
+- **`DRM_LOGGER_MODE`** - Logger mode: 0=install, 1=deploy, 2=crypto, 3=uninstall
+
 ### Getting Help
 
-- 📖 Check the [Wiki](https://github.com/dband-drm/drm-cli/wiki) for detailed documentation
-- 🐛 Report bugs via [GitHub Issues](https://github.com/dband-drm/drm-cli/issues)
-- 💬 Join discussions in [GitHub Discussions](https://github.com/dband-drm/drm-cli/discussions)
-- 🌐 Visit our website: [www.d-band.com](https://www.d-band.com/)
+-  Check the [Wiki](https://github.com/dband-drm/drm-cli/wiki) for detailed documentation
+-  Report bugs via [GitHub Issues](https://github.com/dband-drm/drm-cli/issues)
+-  Join discussions in [GitHub Discussions](https://github.com/dband-drm/drm-cli/discussions)
+-  Visit our website: [www.d-band.com](https://www.d-band.com/)
 
 ---
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 Built with 💙 by experienced DBAs who understand the pain of data deployments.
 
@@ -474,19 +476,20 @@ Special thanks to:
 
 ---
 
-## 🔗 Links
+##  Links
 
-- 🌐 **Website**: [www.d-band.com](https://www.d-band.com/)
-- 📦 **GitHub Repository**: [github.com/dband-drm/drm-cli](https://github.com/dband-drm/drm-cli)
-- 📖 **Documentation**: [GitHub Wiki](https://github.com/dband-drm/drm-cli/wiki)
-- 🐛 **Issue Tracker**: [GitHub Issues](https://github.com/dband-drm/drm-cli/issues)
-- 📢 **LinkedIn**: [D-Band Company Page](https://www.linkedin.com/company/106630725)
+-  **Website**: [www.d-band.com](https://www.d-band.com/)
+-  **GitHub Repository**: [github.com/dband-drm/drm-cli](https://github.com/dband-drm/drm-cli)
+-  **Documentation**: [GitHub Wiki](https://github.com/dband-drm/drm-cli/wiki)
+-  **Issue Tracker**: [GitHub Issues](https://github.com/dband-drm/drm-cli/issues)
+-  **LinkedIn**: [D-Band Company Page](https://www.linkedin.com/company/106630725)
 
 ---
 
-## 🌟 Star Us!
+##  Star Us!
 
-If you find DRM-CLI helpful, please consider giving us a ⭐ on GitHub. It helps others discover the project and motivates us to keep improving!
+If you find DRM-CLI helpful, please consider giving us a ⭐ on GitHub. 
+It helps others discover the project and motivates us to keep improving!
 
 ---
 
@@ -497,3 +500,4 @@ If you find DRM-CLI helpful, please consider giving us a ⭐ on GitHub. It helps
 *Simplifying data release management, one deployment at a time.*
 
 </div>
+
