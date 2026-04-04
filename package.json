@@ -1,0 +1,27 @@
+{
+  "name": "drm-cli",
+  "version": "1.0.0",
+  "description": "Data Release Management: A unified CLI tool for managing and controlling data releases across multiple platforms",
+  "main": "index.js",
+  "bin": {
+    "drm-cli": "./index.js"
+  },
+  "scripts": {
+    "setup": "node setup-env.js",
+    "test-drm": "drm-cli --version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dband-drm/drm-cli.git"
+  },
+  "author": "Dband",
+  "license": "ISC",
+  "dependencies": {
+    "shelljs": "^0.8.5",
+    "yargs": "^17.7.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "python": ">=3.10.0"
+  }
+}
