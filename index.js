@@ -26,7 +26,7 @@ function loadInstallPath() {
 
 function run(cwd, script, args) {
     const result = spawnSync(python, [script, ...args], { cwd, stdio: 'inherit' });
-    process.exit(result.status ?? 1);
+    return result.status ?? 1;
 }
 
 yargs(hideBin(process.argv))
@@ -45,7 +45,7 @@ yargs(hideBin(process.argv))
             if (argv.d) args.push('-d', argv.d);
             if (argv.p) args.push('-p', argv.p);
             if (argv.trace) args.push('--trace');
-            run(SCRIPT_DIR, 'install.py', args);
+            process.exit(run(SCRIPT_DIR, 'install.py', args));
         }
     )
 
@@ -69,7 +69,7 @@ yargs(hideBin(process.argv))
             if (argv.deploy) args.push('--deploy');
             if (argv.align)  args.push('--align');
             if (argv.trace)  args.push('--trace');
-            run(drm_path, 'drm_deploy.py', args);
+            process.exit(run(drm_path, 'drm_deploy.py', args));
         }
     )
 
@@ -93,7 +93,7 @@ yargs(hideBin(process.argv))
             if (argv.n) args.push('-n', argv.n);
             if (argv.t) args.push('-t', argv.t);
             if (argv.trace) args.push('--trace');
-            run(drm_path, 'drm_crypto.py', args);
+            process.exit(run(drm_path, 'drm_crypto.py', args));
         }
     )
 
@@ -111,9 +111,9 @@ yargs(hideBin(process.argv))
             if (argv.p)     args.push('-p', argv.p);
             if (argv.F)     args.push('--F');
             if (argv.trace) args.push('--trace');
-            // Remove saved config after uninstall
-            run(SCRIPT_DIR, 'uninstall.py', args);
-            if (fs.existsSync(CONFIG_FILE)) fs.unlinkSync(CONFIG_FILE);
+            const status = run(SCRIPT_DIR, 'uninstall.py', args);
+            try { fs.unlinkSync(CONFIG_FILE); } catch (_) {}
+            process.exit(status);
         }
     )
 

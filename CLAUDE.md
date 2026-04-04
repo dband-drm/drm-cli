@@ -51,13 +51,26 @@ python3 drm_crypto.py --changepassword -p oldkey -n newkey
 python3 uninstall.py -f /path/to/drm --F
 ```
 
-**Node.js wrapper** (wraps Python, exposes `drm-cli` binary):
+**Node.js wrapper** (wraps Python, exposes `drm-cli` binary after `npm install -g`):
 ```bash
 npm install
-node index.js verify
+node index.js install -f /path/to/install -d sqlite -p mykey
+node index.js deploy  -c <connection_name> -r <release_id> --dryrun
+node index.js deploy  -c <connection_name> -r <release_id> --deploy
+node index.js deploy  -c <connection_name> -r <release_id> --align
+node index.js crypto  --encrypt -t "text to encrypt"
+node index.js crypto  --changepassword -p oldkey -n newkey
+node index.js uninstall
 ```
 
-Add `--trace` to any Python script for DEBUG-level logging.
+`setup-env.js` is an npm `setup` script entry point — it checks Python availability and forwards args directly to `install.py`:
+```bash
+npm run setup -- -f /path/to/install -d sqlite -p mykey
+```
+
+The install path is saved to `~/.drm-cli.json` after `install`; subsequent commands (`deploy`, `crypto`, `uninstall`) load it automatically. Use `-f` to override.
+
+Add `--trace` to any command for DEBUG-level logging.
 
 ## Key Modules
 

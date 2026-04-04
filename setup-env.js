@@ -19,4 +19,4 @@ const args = process.argv.slice(2);
 // Run DRM installer with full stdio inheritance for interactive prompts
 console.log('Running DRM installer...');
 const result = spawnSync(python, ['install.py', ...args], { stdio: 'inherit' });
-process.exit(result.status);
+process.exit(result.status ?? 1);
