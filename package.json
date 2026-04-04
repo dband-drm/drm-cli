@@ -8,16 +8,49 @@
   },
   "scripts": {
     "setup": "node setup-env.js",
-    "test-drm": "drm-cli --version"
+    "test-drm": "drm-cli --version",
+    "agent": "node agent.js",
+    "mcp": "node mcp-server.js"
   },
+  "files": [
+    "index.js",
+    "setup-env.js",
+    "install.py",
+    "uninstall.py",
+    "install.config",
+    "drm/",
+    "modules/",
+    "upgrade/",
+    "init_drm_db/",
+    "mcp-server.js",
+    "agent.js",
+    ".mcp.json",
+    "lib/"
+  ],
+  "keywords": [
+    "drm",
+    "database",
+    "release",
+    "deployment",
+    "mssql",
+    "postgresql",
+    "oracle",
+    "data-release-management"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dband-drm/drm-cli.git"
   },
+  "homepage": "https://github.com/dband-drm/drm-cli#readme",
+  "bugs": {
+    "url": "https://github.com/dband-drm/drm-cli/issues"
+  },
   "author": "Dband",
   "license": "ISC",
   "dependencies": {
-    "yargs": "^17.7.2"
+    "yargs": "^17.7.2",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@anthropic-ai/sdk": "^0.24.0"
   },
   "engines": {
     "node": ">=16.0.0",

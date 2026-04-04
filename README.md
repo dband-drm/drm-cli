@@ -27,6 +27,7 @@ npm install -g .
 drm-cli install -f /path/to/install -d sqlite -p mykey
 ```
 
+
 ### Option B — Python directly
 
 ```bash

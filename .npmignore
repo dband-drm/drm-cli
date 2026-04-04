@@ -1,0 +1,15 @@
+venv/
+log/
+.claude/
+**/__pycache__/
+**/__pycache__/**
+*.pyc
+*.pyo
+.env
+*.log
+node_modules/
+.git/
+.gitignore
+npm-publish.md
+implementAI.md
+

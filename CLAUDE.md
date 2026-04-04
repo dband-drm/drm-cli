@@ -6,9 +6,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 DRM-cli is a **Data Release Management** CLI tool (developed by d-band) for managing and deploying database releases across multiple platforms (MSSQL, PostgreSQL, Oracle). It supports both SQLite and JSON as the internal DRM database backend.
 
-## Two-Tier Architecture
+It also ships an **MCP server**, **AI agent**, and **Claude Code skills** for AI-assisted deployments.
 
-This repo contains two distinct operating contexts:
+## Repository Structure
+
+```
+DRM-cli/
+├── index.js              # Node.js CLI wrapper — exposes drm-cli binary
+├── setup-env.js          # npm setup script — checks Python, delegates to install.py
+├── install.py            # Installer entrypoint
+├── uninstall.py          # Uninstaller
+├── install.config        # Version and config defaults
+├── mcp-server.js         # MCP server — 8 DRM tools via StdioServerTransport
+├── agent.js              # AI agent — natural language → DRM operations
+├── .mcp.json             # MCP auto-discovery for Claude Code
+├── lib/
+│   └── drm-helpers.js    # Shared core: loadDrmPath, executeTool, TOOL_SCHEMAS
+├── drm/                  # Template copied to install target
+│   ├── drm_deploy.py     # Deploy entrypoint (run from installed path)
+│   └── drm_crypto.py     # Crypto entrypoint (run from installed path)
+├── modules/              # Python modules copied to install target
+├── upgrade/              # Version migration configs
+├── init_drm_db/          # DB schema + seed data source of truth
+└── .claude/commands/     # Claude Code slash commands (skills)
+    ├── drm-deploy.md
+    ├── drm-status.md
+    ├── drm-plan.md
+    └── drm-release.md
+```
+
+## Two-Tier Architecture
 
 ### 1. Installer (repo root)
 Scripts that install/upgrade/uninstall DRM onto a target machine:
@@ -27,10 +54,14 @@ The `drm/` folder in this repo is the **template** that gets copied to the insta
 
 ## Running the CLIs
 
-**Install DRM** (from repo root, interactive):
+**Install DRM** (from repo root):
 ```bash
+# Interactive (will prompt for key)
 python3 install.py
-# With args: python3 install.py -f /path/to/install -d sqlite -p mykey
+# With args — SQLite + encrypted
+python3 install.py -f /path/to/install -d sqlite -p mykey
+# JSON + unencrypted (pipe empty key + confirm)
+printf '\nY\n' | python3 install.py -f /path/to/install -d json
 ```
 
 **Deploy a release** (from installed DRM path):
@@ -48,19 +79,19 @@ python3 drm_crypto.py --changepassword -p oldkey -n newkey
 
 **Uninstall**:
 ```bash
-python3 uninstall.py -f /path/to/drm --F
+python3 uninstall.py -f /path/to/drm -p mykey --F
 ```
 
 **Node.js wrapper** (wraps Python, exposes `drm-cli` binary after `npm install -g`):
 ```bash
 npm install
 node index.js install -f /path/to/install -d sqlite -p mykey
-node index.js deploy  -c <connection_name> -r <release_id> --dryrun
-node index.js deploy  -c <connection_name> -r <release_id> --deploy
-node index.js deploy  -c <connection_name> -r <release_id> --align
-node index.js crypto  --encrypt -t "text to encrypt"
+node index.js deploy  -c <connection_name> -r <release_id> --dryrun [-p mykey]
+node index.js deploy  -c <connection_name> -r <release_id> --deploy [-p mykey]
+node index.js deploy  -c <connection_name> -r <release_id> --align  [-p mykey]
+node index.js crypto  --encrypt -t "text to encrypt" -p mykey
 node index.js crypto  --changepassword -p oldkey -n newkey
-node index.js uninstall
+node index.js uninstall [-p mykey]
 ```
 
 `setup-env.js` is an npm `setup` script entry point — it checks Python availability and forwards args directly to `install.py`:
@@ -71,6 +102,58 @@ npm run setup -- -f /path/to/install -d sqlite -p mykey
 The install path is saved to `~/.drm-cli.json` after `install`; subsequent commands (`deploy`, `crypto`, `uninstall`) load it automatically. Use `-f` to override.
 
 Add `--trace` to any command for DEBUG-level logging.
+
+## AI Layer
+
+### MCP Server (`mcp-server.js`)
+Exposes 8 DRM tools to Claude via MCP stdio transport. Auto-discovered by Claude Code via `.mcp.json`.
+
+```bash
+DRM_SECRET=mykey node mcp-server.js          # start manually
+npm run mcp                                   # via npm
+```
+
+Tools: `drm_status`, `drm_list_releases`, `drm_list_connections`, `drm_dryrun`, `drm_deploy`, `drm_align`, `drm_install`, `drm_crypto_encrypt`
+
+Test manually:
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node mcp-server.js
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"drm_status","arguments":{}}}' | node mcp-server.js
+```
+
+### AI Agent (`agent.js`)
+Natural language interface. Requires `ANTHROPIC_API_KEY`.
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... DRM_SECRET=mykey node agent.js "list all releases"
+ANTHROPIC_API_KEY=sk-ant-... DRM_SECRET=mykey node agent.js "run dryrun for connection dev release 11"
+npm run agent -- "deploy release 11 to dev"
+```
+
+Model: `claude-sonnet-4-6`. Max 10 turns. Always runs `drm_dryrun` before `drm_deploy` unless user skips.
+
+### Claude Code Skills (`.claude/commands/`)
+Available as slash commands in any Claude Code session in this repo:
+
+| Skill | Usage | What it does |
+|---|---|---|
+| `/drm-status` | `/drm-status` | Installation health + last 5 deployments |
+| `/drm-release` | `/drm-release [id]` | List releases or detail one |
+| `/drm-plan` | `/drm-plan <conn> <rel>` | Dryrun + structured plan |
+| `/drm-deploy` | `/drm-deploy <conn> <rel>` | Guided: dryrun → confirm → deploy |
+
+### Shared Core (`lib/drm-helpers.js`)
+Both `mcp-server.js` and `agent.js` import from here. Do not duplicate this logic.
+
+Exports: `loadDrmPath()`, `executeTool(name, input, drmPath)`, `TOOL_SCHEMAS`
+
+Internal: `runDrmCli`, `queryDb`, `buildStatus`, `loadJsonDb`, `loadDrmConfig`, `stripAnsi`
+
+**Handles both install types:**
+- SQLite: queries `db/drm_db.sqlite` via inline Python
+- JSON: reads `db/drm_db.json` and flattens nested structure
+
+**Encryption:** The `-p key` flag is forwarded to CLI calls. Set `DRM_SECRET` env var to avoid passing key explicitly.
 
 ## Key Modules
 
@@ -95,10 +178,20 @@ Add `--trace` to any command for DEBUG-level logging.
 ## Configuration File (`drm_deploy.config`)
 
 Created during install; lives at the root of the installed DRM path. Key fields:
-- `installation_type`: `"sqlite"` or `"json"` — determines which parser is used everywhere
-- `db_secured`: boolean — whether the DB and connection strings are encrypted
-- `security_text`: encrypted sentinel string used to validate the encryption key at runtime
-- `locations`: optional paths for `sqlpackage` and `sqlcmd` binaries
+- `drm_version`: e.g. `"1.1.0"`
+- `installation_info.installation_type`: `"sqlite"` or `"json"` — determines which parser is used everywhere
+- `installation_info.db_secured`: boolean — whether the DB and connection strings are encrypted
+- `installation_info.security_text`: encrypted sentinel string used to validate the encryption key at runtime
+- `config.db_file_name` + `config.data_file_ext`: derive the JSON DB filename (e.g. `drm_db.json`)
+- `locations`: optional paths for `sqlpackage`, `sqlcmd`, `flyway`, `psql` binaries
+
+## Install Path Config (`~/.drm-cli.json`)
+
+Written by `index.js install`. Read by `index.js` (deploy/crypto/uninstall) and by `lib/drm-helpers.js` (MCP/agent).
+
+```json
+{ "drm_path": "/home/mumr/drm_installed/drm" }
+```
 
 ## Logging
 
@@ -109,3 +202,14 @@ WSL2 compatibility: `getpass.getuser()` and hostname lookups fall back to enviro
 ## DB Schema Source of Truth
 
 `init_drm_db/drm_db_schema.json` — canonical schema definition. `init_drm_db/drm_db_data.json` — seed data. These are copied to the installed DRM's `db/` folder and kept in sync during upgrades.
+
+## Test Installs
+
+All four combinations verified: install + dryrun + deploy.
+
+| Path | Type | Encrypted | Key |
+|---|---|---|---|
+| `/home/mumr/drm_installed/drm` | sqlite | yes | `P@ssword123!!` |
+| `/home/mumr/drm_installed/drm2` | json | no | — |
+| (sqlite unencrypted) | sqlite | no | — |
+| (json encrypted) | json | yes | `P@ssword123!!` |

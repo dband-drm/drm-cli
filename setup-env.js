@@ -20,3 +20,4 @@ const args = process.argv.slice(2);
 console.log('Running DRM installer...');
 const result = spawnSync(python, ['install.py', ...args], { stdio: 'inherit' });
 process.exit(result.status ?? 1);
+

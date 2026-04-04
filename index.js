@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 const { spawnSync } = require('child_process');
 const os = require('os');
 const path = require('path');
@@ -28,6 +27,7 @@ function run(cwd, script, args) {
     const result = spawnSync(python, [script, ...args], { cwd, stdio: 'inherit' });
     return result.status ?? 1;
 }
+
 
 yargs(hideBin(process.argv))
 
