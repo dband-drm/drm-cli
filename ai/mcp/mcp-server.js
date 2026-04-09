@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-
 'use strict';
 
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
-const { loadDrmPath, executeTool, TOOL_SCHEMAS } = require('./lib/drm-helpers');
+const { loadDrmPath, executeTool, TOOL_SCHEMAS } = require('../lib/drm-helpers');
 
 const TOOLS = TOOL_SCHEMAS.map(({ name, description, schema }) => ({ name, description, inputSchema: schema }));
 

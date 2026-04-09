@@ -6,7 +6,7 @@ const path = require('path');
 const os = require('os');
 
 const CONFIG_FILE = path.join(os.homedir(), '.drm-cli.json');
-const SCRIPT_DIR = path.join(__dirname, '..');
+const SCRIPT_DIR = path.join(__dirname, '../..');
 const python = os.platform() === 'win32' ? 'python' : 'python3';
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 
@@ -19,7 +19,7 @@ const DB_SCRIPT = [
     'conn.close()'
 ].join('\n');
 
-// Combined query for drm_status — single spawn instead of two
+// Single spawn for status — counts + recent deployments together
 const STATUS_SCRIPT = [
     'import sqlite3,json,sys',
     'conn=sqlite3.connect(sys.argv[1])',
@@ -50,6 +50,19 @@ function loadDrmConfig(drmPath) {
     }
 }
 
+function isSqliteInstall(cfg) {
+    return ((cfg.installation_info || {}).installation_type || 'sqlite') === 'sqlite';
+}
+
+function sqliteDbFile(drmPath, cfg) {
+    const c = cfg.config || {};
+    return path.join(drmPath, 'db', `${c.db_file_name || 'drm_db'}.${c.sqlite_file_ext || 'sqlite'}`);
+}
+
+function spawnPython(script, ...args) {
+    return spawnSync(python, ['-c', script, ...args], { stdio: 'pipe', encoding: 'utf-8' });
+}
+
 function runDrmCli(args) {
     const result = spawnSync('node', [path.join(SCRIPT_DIR, 'index.js'), ...args], {
         stdio: 'pipe',
@@ -61,15 +74,8 @@ function runDrmCli(args) {
     };
 }
 
-function queryDb(drmPath, sql) {
-    const cfg = loadDrmConfig(drmPath);
-    const c = cfg.config || {};
-    const dbName = `${c.db_file_name || 'drm_db'}.${c.sqlite_file_ext || 'sqlite'}`;
-    const dbFile = path.join(drmPath, 'db', dbName);
-    const result = spawnSync(python, ['-c', DB_SCRIPT, dbFile, sql], {
-        stdio: 'pipe',
-        encoding: 'utf-8'
-    });
+function queryDb(drmPath, sql, cfg = loadDrmConfig(drmPath)) {
+    const result = spawnPython(DB_SCRIPT, sqliteDbFile(drmPath, cfg), sql);
     const isError = (result.status ?? 1) !== 0;
     return {
         output: isError
@@ -79,7 +85,7 @@ function queryDb(drmPath, sql) {
     };
 }
 
-// Read the JSON DB file for json-type installs
+// Only valid for json-type installs — reads drm_db.json and returns parsed object
 function loadJsonDb(drmPath, cfg) {
     const c = cfg.config || {};
     const fname = `${c.db_file_name || 'drm_db'}.${c.data_file_ext || 'json'}`;
@@ -93,7 +99,6 @@ function loadJsonDb(drmPath, cfg) {
 function buildStatus(drmPath) {
     const cfg = loadDrmConfig(drmPath);
     const info = cfg.installation_info || {};
-    const isSqlite = (info.installation_type || 'sqlite') === 'sqlite';
     const lines = [
         `DRM Path:           ${drmPath}`,
         `Version:            ${cfg.drm_version || 'unknown'}`,
@@ -101,11 +106,8 @@ function buildStatus(drmPath) {
         `DB Secured:         ${info.db_secured ?? 'unknown'}`
     ];
 
-    if (isSqlite) {
-        const result = spawnSync(python, ['-c', STATUS_SCRIPT, path.join(drmPath, 'db', 'drm_db.sqlite')], {
-            stdio: 'pipe',
-            encoding: 'utf-8'
-        });
+    if (isSqliteInstall(cfg)) {
+        const result = spawnPython(STATUS_SCRIPT, sqliteDbFile(drmPath, cfg));
         if ((result.status ?? 1) === 0) {
             try {
                 const { counts, recent } = JSON.parse(stripAnsi((result.stdout || '').trim()));
@@ -158,17 +160,16 @@ function executeTool(name, input, drmPath) {
     if (name === 'drm_status') {
         return buildStatus(drmPath);
     }
-
     if (name === 'drm_list_releases' || name === 'drm_list_connections') {
         const cfg = loadDrmConfig(drmPath);
-        const isSqlite = ((cfg.installation_info || {}).installation_type || 'sqlite') === 'sqlite';
+        const isSqlite = isSqliteInstall(cfg);
         if (name === 'drm_list_releases') {
             return isSqlite
-                ? queryDb(drmPath, 'SELECT id, name, is_active FROM releases ORDER BY id')
+                ? queryDb(drmPath, 'SELECT id, name, is_active FROM releases ORDER BY id', cfg)
                 : listReleasesJson(drmPath, cfg);
         }
         return isSqlite
-            ? queryDb(drmPath, 'SELECT id, name, is_active FROM connections ORDER BY id')
+            ? queryDb(drmPath, 'SELECT id, name, is_active FROM connections ORDER BY id', cfg)
             : listConnectionsJson(drmPath, cfg);
     }
     if (name === 'drm_dryrun' || name === 'drm_deploy' || name === 'drm_align') {
@@ -189,7 +190,6 @@ function executeTool(name, input, drmPath) {
     return { output: `Unknown tool: ${name}`, isError: true };
 }
 
-// Base tool schemas — applied with inputSchema (MCP) or input_schema (Anthropic) by each consumer
 const TOOL_SCHEMAS = [
     {
         name: 'drm_status',
@@ -273,4 +273,3 @@ const TOOL_SCHEMAS = [
 ];
 
 module.exports = { loadDrmPath, executeTool, TOOL_SCHEMAS };
-

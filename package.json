@@ -1,6 +1,6 @@
 {
   "name": "drm-cli",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Data Release Management: A unified CLI tool for managing and controlling data releases across multiple platforms",
   "main": "index.js",
   "bin": {
@@ -9,8 +9,8 @@
   "scripts": {
     "setup": "node setup-env.js",
     "test-drm": "drm-cli --version",
-    "agent": "node agent.js",
-    "mcp": "node mcp-server.js"
+    "agent": "node ai/agent/agent.js",
+    "mcp": "node ai/mcp/mcp-server.js"
   },
   "files": [
     "index.js",
@@ -22,10 +22,8 @@
     "modules/",
     "upgrade/",
     "init_drm_db/",
-    "mcp-server.js",
-    "agent.js",
     ".mcp.json",
-    "lib/"
+    "ai/"
   ],
   "keywords": [
     "drm",

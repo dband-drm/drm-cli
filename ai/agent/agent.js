@@ -2,7 +2,7 @@
 'use strict';
 
 const Anthropic = require('@anthropic-ai/sdk');
-const { loadDrmPath, executeTool, TOOL_SCHEMAS } = require('./lib/drm-helpers');
+const { loadDrmPath, executeTool, TOOL_SCHEMAS } = require('../lib/drm-helpers');
 
 const MAX_TURNS = 10;
 const MODEL = 'claude-sonnet-4-6';
@@ -73,8 +73,8 @@ Guidelines:
 
 const userPrompt = process.argv.slice(2).join(' ').trim();
 if (!userPrompt) {
-    console.error('Usage: node agent.js "<natural language command>"');
-    console.error('Example: node agent.js "list all releases"');
+    console.error('Usage: node ai/agent/agent.js "<natural language command>"');
+    console.error('Example: node ai/agent/agent.js "list all releases"');
     process.exit(1);
 }
 

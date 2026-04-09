@@ -10,6 +10,6 @@ log/
 node_modules/
 .git/
 .gitignore
-npm-publish.md
-implementAI.md
+ai/npm/
+ai/implementAI.md
 

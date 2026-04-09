@@ -28,7 +28,6 @@ function run(cwd, script, args) {
     return result.status ?? 1;
 }
 
-
 yargs(hideBin(process.argv))
 
     .command(

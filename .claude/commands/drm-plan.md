@@ -6,7 +6,7 @@ Steps:
 1. Parse `$ARGUMENTS` to extract connection name (first word) and release ID (remaining). If either is missing, ask the user.
 2. Run the dryrun:
    ```
-   node /home/mumr/mycode/DRM-cli/index.js deploy -c <connection> -r <release> --dryrun
+   node index.js deploy -c <connection> -r <release> --dryrun
    ```
 3. Parse and summarise the output into a structured deployment plan:
    - **Release**: name/ID being deployed

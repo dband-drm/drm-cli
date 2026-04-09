@@ -27,7 +27,6 @@ npm install -g .
 drm-cli install -f /path/to/install -d sqlite -p mykey
 ```
 
-
 ### Option B — Python directly
 
 ```bash
@@ -87,11 +86,52 @@ python3 drm_crypto.py --changepassword -p oldkey -n newkey
 ### Uninstall
 
 ```bash
-node index.js uninstall
-# or: python3 uninstall.py -f /path/to/drm --F
+node index.js uninstall [-p mykey]
+# or: python3 uninstall.py -f /path/to/drm -p mykey --F
 ```
 
 Add `--trace` to any command for DEBUG-level logging.
+
+---
+
+## AI Layer
+
+DRM-CLI ships three AI integration modes, all sharing `ai/lib/drm-helpers.js` as the core.
+
+### MCP Server
+
+Exposes 8 DRM tools to Claude Code via MCP auto-discovery (`.mcp.json`):
+
+```bash
+npm run mcp                  # start via npm
+DRM_SECRET=mykey npm run mcp # with encryption key
+```
+
+Test:
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node ai/mcp/mcp-server.js
+```
+
+### AI Agent
+
+Natural language → DRM operations. Requires `ANTHROPIC_API_KEY`:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... DRM_SECRET=mykey node ai/agent/agent.js "list all releases"
+ANTHROPIC_API_KEY=sk-ant-... DRM_SECRET=mykey node ai/agent/agent.js "run dryrun for connection dev release 11"
+npm run agent -- "deploy release 11 to dev"
+```
+
+### Claude Code Skills
+
+Available as slash commands in any Claude Code session in this repo:
+
+| Skill | What it does |
+|---|---|
+| `/drm-status` | Installation health + last 5 deployments |
+| `/drm-release [id]` | List releases or detail one |
+| `/drm-plan <conn> <rel>` | Dryrun + structured plan |
+| `/drm-deploy <conn> <rel>` | Guided: dryrun → confirm → deploy |
 
 ---
 
@@ -111,6 +151,7 @@ DRM-cli/
 ├── index.js              # Node.js CLI wrapper (drm-cli binary)
 ├── setup-env.js          # npm setup script — checks Python, runs install.py
 ├── package.json
+├── .mcp.json             # MCP auto-discovery for Claude Code
 ├── drm/                  # Template copied to install target
 │   ├── drm_deploy.py     # Deploy entrypoint
 │   └── drm_crypto.py     # Encryption management
@@ -121,7 +162,6 @@ DRM-cli/
 │   ├── crypto.py         # AES encryption/decryption
 │   ├── auth.py           # Password policy validation
 │   ├── drm_logger.py     # Logging + sensitive-param masking
-│   ├── sqlite.py         # SQLite utilities
 │   ├── mssql.py          # MSSQL execution engine
 │   ├── postgresql.py     # PostgreSQL execution engine
 │   ├── oracle.py         # Oracle execution engine
@@ -129,9 +169,14 @@ DRM-cli/
 ├── init_drm_db/
 │   ├── drm_db_schema.json  # Canonical DB schema
 │   └── drm_db_data.json    # Seed data
-└── upgrade/              # Version migration configs
-    ├── main.config       # Lists available upgrade versions
-    └── 1.1.0.config      # Per-version change definitions
+├── upgrade/              # Version migration configs
+│   ├── main.config       # Lists available upgrade versions
+│   └── 1.1.0.config      # Per-version change definitions
+└── ai/                   # AI layer
+    ├── lib/drm-helpers.js    # Shared core (MCP + agent)
+    ├── mcp/mcp-server.js     # MCP server — 8 tools
+    ├── agent/agent.js        # Natural language agent
+    └── npm/npm-publish.md    # npm publish guide
 ```
 
 ---

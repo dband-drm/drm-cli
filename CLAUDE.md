@@ -17,22 +17,28 @@ DRM-cli/
 ├── install.py            # Installer entrypoint
 ├── uninstall.py          # Uninstaller
 ├── install.config        # Version and config defaults
-├── mcp-server.js         # MCP server — 8 DRM tools via StdioServerTransport
-├── agent.js              # AI agent — natural language → DRM operations
 ├── .mcp.json             # MCP auto-discovery for Claude Code
-├── lib/
-│   └── drm-helpers.js    # Shared core: loadDrmPath, executeTool, TOOL_SCHEMAS
 ├── drm/                  # Template copied to install target
 │   ├── drm_deploy.py     # Deploy entrypoint (run from installed path)
 │   └── drm_crypto.py     # Crypto entrypoint (run from installed path)
 ├── modules/              # Python modules copied to install target
 ├── upgrade/              # Version migration configs
 ├── init_drm_db/          # DB schema + seed data source of truth
-└── .claude/commands/     # Claude Code slash commands (skills)
-    ├── drm-deploy.md
-    ├── drm-status.md
-    ├── drm-plan.md
-    └── drm-release.md
+├── .claude/commands/     # Claude Code slash commands (skills)
+│   ├── drm-deploy.md
+│   ├── drm-status.md
+│   ├── drm-plan.md
+│   └── drm-release.md
+└── ai/                   # AI layer — MCP server, agent, shared helpers
+    ├── lib/
+    │   └── drm-helpers.js    # Shared core: loadDrmPath, executeTool, TOOL_SCHEMAS
+    ├── mcp/
+    │   └── mcp-server.js     # MCP server — 8 DRM tools via StdioServerTransport
+    ├── agent/
+    │   └── agent.js          # AI agent — natural language → DRM operations
+    ├── npm/
+    │   └── npm-publish.md    # npm publish guide
+    └── implementAI.md        # Full AI integration guide
 ```
 
 ## Two-Tier Architecture
@@ -105,11 +111,11 @@ Add `--trace` to any command for DEBUG-level logging.
 
 ## AI Layer
 
-### MCP Server (`mcp-server.js`)
+### MCP Server (`ai/mcp/mcp-server.js`)
 Exposes 8 DRM tools to Claude via MCP stdio transport. Auto-discovered by Claude Code via `.mcp.json`.
 
 ```bash
-DRM_SECRET=mykey node mcp-server.js          # start manually
+DRM_SECRET=mykey node ai/mcp/mcp-server.js   # start manually
 npm run mcp                                   # via npm
 ```
 
@@ -117,16 +123,16 @@ Tools: `drm_status`, `drm_list_releases`, `drm_list_connections`, `drm_dryrun`, 
 
 Test manually:
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node mcp-server.js
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"drm_status","arguments":{}}}' | node mcp-server.js
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node ai/mcp/mcp-server.js
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"drm_status","arguments":{}}}' | node ai/mcp/mcp-server.js
 ```
 
-### AI Agent (`agent.js`)
+### AI Agent (`ai/agent/agent.js`)
 Natural language interface. Requires `ANTHROPIC_API_KEY`.
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-... DRM_SECRET=mykey node agent.js "list all releases"
-ANTHROPIC_API_KEY=sk-ant-... DRM_SECRET=mykey node agent.js "run dryrun for connection dev release 11"
+ANTHROPIC_API_KEY=sk-ant-... DRM_SECRET=mykey node ai/agent/agent.js "list all releases"
+ANTHROPIC_API_KEY=sk-ant-... DRM_SECRET=mykey node ai/agent/agent.js "run dryrun for connection dev release 11"
 npm run agent -- "deploy release 11 to dev"
 ```
 
@@ -142,16 +148,16 @@ Available as slash commands in any Claude Code session in this repo:
 | `/drm-plan` | `/drm-plan <conn> <rel>` | Dryrun + structured plan |
 | `/drm-deploy` | `/drm-deploy <conn> <rel>` | Guided: dryrun → confirm → deploy |
 
-### Shared Core (`lib/drm-helpers.js`)
-Both `mcp-server.js` and `agent.js` import from here. Do not duplicate this logic.
+### Shared Core (`ai/lib/drm-helpers.js`)
+Both `ai/mcp/mcp-server.js` and `ai/agent/agent.js` import from here. Do not duplicate this logic.
 
 Exports: `loadDrmPath()`, `executeTool(name, input, drmPath)`, `TOOL_SCHEMAS`
 
-Internal: `runDrmCli`, `queryDb`, `buildStatus`, `loadJsonDb`, `loadDrmConfig`, `stripAnsi`
+Internal: `runDrmCli`, `queryDb`, `buildStatus`, `loadJsonDb`, `loadDrmConfig`, `stripAnsi`, `isSqliteInstall`, `sqliteDbFile`
 
 **Handles both install types:**
-- SQLite: queries `db/drm_db.sqlite` via inline Python
-- JSON: reads `db/drm_db.json` and flattens nested structure
+- SQLite: queries DB via inline Python (`DB_SCRIPT`, `STATUS_SCRIPT`)
+- JSON: reads `drm_db.json` and flattens nested structure
 
 **Encryption:** The `-p key` flag is forwarded to CLI calls. Set `DRM_SECRET` env var to avoid passing key explicitly.
 
@@ -187,7 +193,7 @@ Created during install; lives at the root of the installed DRM path. Key fields:
 
 ## Install Path Config (`~/.drm-cli.json`)
 
-Written by `index.js install`. Read by `index.js` (deploy/crypto/uninstall) and by `lib/drm-helpers.js` (MCP/agent).
+Written by `index.js install`. Read by `index.js` (deploy/crypto/uninstall) and by `ai/lib/drm-helpers.js` (MCP/agent).
 
 ```json
 { "drm_path": "/home/mumr/drm_installed/drm" }
@@ -211,5 +217,5 @@ All four combinations verified: install + dryrun + deploy.
 |---|---|---|---|
 | `/home/mumr/drm_installed/drm` | sqlite | yes | `P@ssword123!!` |
 | `/home/mumr/drm_installed/drm2` | json | no | — |
-| (sqlite unencrypted) | sqlite | no | — |
-| (json encrypted) | json | yes | `P@ssword123!!` |
+| `/home/mumr/drm_installed/drm3` | sqlite | no | — |
+| `/home/mumr/drm_installed/drm4` | json | yes | `P@ssword123!!` |
