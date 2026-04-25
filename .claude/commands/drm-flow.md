@@ -1,6 +1,6 @@
 Review DRM deployment flow history and summarise what happened.
 
-Arguments: `$ARGUMENTS` (optional: install path or `<connection> <release>` filter, e.g. `/home/mumr/drm_installed/drm` or `dev 11`)
+Arguments: `$ARGUMENTS` (optional: install path or `<connection> <release>` filter, e.g. `/path/to/drm` or `dev 11`)
 
 Steps:
 

@@ -48,7 +48,7 @@ Scripts that install/upgrade/uninstall DRM onto a target machine:
 - `install.py` — interactive installer; copies `drm/` content and `modules/` to a target path, creates the DRM DB and `drm_deploy.config`
 - `uninstall.py` — removes the installed DRM directory
 - `install.config` — version and configuration defaults used during installation
-- `upgrade/` — version migration configs (`main.config` lists versions; `1.1.0.config` etc. define per-version changes)
+- `upgrade/` — version migration configs (`main.config` lists versions; `1.2.0.config` etc. define per-version changes)
 
 ### 2. Deployed DRM instance (installed at target path)
 After installation, the deployed instance contains:
@@ -184,7 +184,7 @@ Internal: `runDrmCli`, `queryDb`, `buildStatus`, `loadJsonDb`, `loadDrmConfig`, 
 ## Configuration File (`drm_deploy.config`)
 
 Created during install; lives at the root of the installed DRM path. Key fields:
-- `drm_version`: e.g. `"1.1.0"`
+- `drm_version`: e.g. `"1.2.0"`
 - `installation_info.installation_type`: `"sqlite"` or `"json"` — determines which parser is used everywhere
 - `installation_info.db_secured`: boolean — whether the DB and connection strings are encrypted
 - `installation_info.security_text`: encrypted sentinel string used to validate the encryption key at runtime
@@ -196,7 +196,7 @@ Created during install; lives at the root of the installed DRM path. Key fields:
 Written by `index.js install`. Read by `index.js` (deploy/crypto/uninstall) and by `ai/lib/drm-helpers.js` (MCP/agent).
 
 ```json
-{ "drm_path": "/home/mumr/drm_installed/drm" }
+{ "drm_path": "/path/to/drm" }
 ```
 
 ## Logging
@@ -215,7 +215,7 @@ All four combinations verified: install + dryrun + deploy.
 
 | Path | Type | Encrypted | Key |
 |---|---|---|---|
-| `/home/mumr/drm_installed/drm` | sqlite | yes | `P@ssword123!!` |
-| `/home/mumr/drm_installed/drm2` | json | no | — |
-| `/home/mumr/drm_installed/drm3` | sqlite | no | — |
-| `/home/mumr/drm_installed/drm4` | json | yes | `P@ssword123!!` |
+| `/path/to/drm` | sqlite | yes | `<your-key>` |
+| `/path/to/drm2` | json | no | — |
+| `/path/to/drm3` | sqlite | no | — |
+| `/path/to/drm4` | json | yes | `<your-key>` |

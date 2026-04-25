@@ -1,6 +1,6 @@
 Analyze DRM-generated SQL scripts and deployment JSON for safety, impact, and best practices.
 
-Arguments: `$ARGUMENTS` (optional: install path, uuid, or `<connection> <release>`, e.g. `dev 11` or `/home/mumr/drm_installed/drm`)
+Arguments: `$ARGUMENTS` (optional: install path, uuid, or `<connection> <release>`, e.g. `dev 11` or `/path/to/drm`)
 
 Steps:
 

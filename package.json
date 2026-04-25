@@ -1,6 +1,6 @@
 {
   "name": "drm-cli",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Data Release Management: A unified CLI tool for managing and controlling data releases across multiple platforms",
   "main": "index.js",
   "bin": {
@@ -19,11 +19,13 @@
     "uninstall.py",
     "install.config",
     "drm/",
-    "modules/",
+    "modules/*.py",
     "upgrade/",
     "init_drm_db/",
     ".mcp.json",
-    "ai/"
+    "ai/lib/",
+    "ai/mcp/",
+    "ai/agent/"
   ],
   "keywords": [
     "drm",

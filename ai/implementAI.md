@@ -4,8 +4,8 @@
 Data Release Management CLI — manages and deploys database releases across MSSQL, PostgreSQL, Oracle.
 This guide covers all five ways to interact with DRM-CLI, from raw CLI to AI agents.
 
-- DRM installed at: `/home/mumr/drm_installed/drm`
-- Repo: `/home/mumr/mycode/DRM-cli`
+- DRM installed at: `/path/to/drm`
+- Repo: `/path/to/DRM-cli`
 - Encryption key: stored in `DRM_SECRET` env var
 - DB: 6 demo releases, 10 connections (SQLite, secured)
 
@@ -68,7 +68,7 @@ Direct terminal control of DRM. Best for:
 npm install -g drm-cli
 
 # Or run from repo
-node /home/mumr/mycode/DRM-cli/index.js <command> [args]
+node /path/to/DRM-cli/index.js <command> [args]
 ```
 
 Commands: `install` | `deploy` | `crypto` | `uninstall`
@@ -77,7 +77,7 @@ Commands: `install` | `deploy` | `crypto` | `uninstall`
 
 **Install DRM**
 ```bash
-drm-cli install -f /home/mumr/drm_installed/drm -d sqlite -p 'P@ssword123!!'
+drm-cli install -f /path/to/drm -d sqlite -p '<your-key>'
 # Copies drm/ + modules/ to target path
 # Creates drm_db.sqlite, writes drm_deploy.config
 # Saves path to ~/.drm-cli.json for subsequent commands
@@ -85,7 +85,7 @@ drm-cli install -f /home/mumr/drm_installed/drm -d sqlite -p 'P@ssword123!!'
 
 **Dryrun (generate SQL scripts, no execution)**
 ```bash
-drm-cli deploy -c dev -r 11 --dryrun -p 'P@ssword123!!'
+drm-cli deploy -c dev -r 11 --dryrun -p '<your-key>'
 # Output:
 # INFO - Starting DRM DryRun (Release ID: "11", Connection name: "dev")
 # INFO - Building release...
@@ -97,32 +97,32 @@ drm-cli deploy -c dev -r 11 --dryrun -p 'P@ssword123!!'
 
 **Deploy**
 ```bash
-drm-cli deploy -c dev -r 11 --deploy -p 'P@ssword123!!'
+drm-cli deploy -c dev -r 11 --deploy -p '<your-key>'
 ```
 
 **Align (sync DB state without deploying)**
 ```bash
-drm-cli deploy -c dev -r 11 --align -p 'P@ssword123!!'
+drm-cli deploy -c dev -r 11 --align -p '<your-key>'
 ```
 
 **Encrypt a connection string**
 ```bash
-drm-cli crypto --encrypt -t "Server=myserver;Database=mydb;User=sa;Password=pass" -p 'P@ssword123!!'
+drm-cli crypto --encrypt -t "Server=myserver;Database=mydb;User=sa;Password=pass" -p '<your-key>'
 ```
 
 **Change encryption key**
 ```bash
-drm-cli crypto --changepassword -p 'P@ssword123!!' -n 'NewKey456!!'
+drm-cli crypto --changepassword -p '<your-key>' -n '<new-key>'
 ```
 
 **Debug mode**
 ```bash
-drm-cli deploy -c dev -r 11 --dryrun -p 'P@ssword123!!' --trace
+drm-cli deploy -c dev -r 11 --dryrun -p '<your-key>' --trace
 ```
 
 **Uninstall**
 ```bash
-drm-cli uninstall -f /home/mumr/drm_installed/drm -p 'P@ssword123!!' --F
+drm-cli uninstall -f /path/to/drm -p '<your-key>' --F
 ```
 
 ### Tested output (2026-04-05)
@@ -159,7 +159,7 @@ npm publish          # publish to npm registry
 
 **Install DRM via npm setup script**
 ```bash
-npm run setup -- -f /home/mumr/drm_installed/drm -d sqlite -p 'P@ssword123!!'
+npm run setup -- -f /path/to/drm -d sqlite -p '<your-key>'
 # Equivalent to: node setup-env.js -f ... -d ... -p ...
 # setup-env.js checks Python availability, then delegates to install.py
 ```
@@ -167,14 +167,14 @@ npm run setup -- -f /home/mumr/drm_installed/drm -d sqlite -p 'P@ssword123!!'
 **Run agent via npm**
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-export DRM_SECRET='P@ssword123!!'
+export DRM_SECRET='<your-key>'
 npm run agent -- "list all releases"
 npm run agent -- "run dryrun for connection dev release 11"
 ```
 
 **Run MCP server via npm**
 ```bash
-DRM_SECRET='P@ssword123!!' npm run mcp
+DRM_SECRET='<your-key>' npm run mcp
 # Starts the MCP stdio server — Claude Code connects to it automatically
 ```
 
@@ -223,7 +223,7 @@ Exposes DRM as Claude tools via the Model Context Protocol. Best for:
   "mcpServers": {
     "drm-cli": {
       "command": "node",
-      "args": ["/home/mumr/mycode/DRM-cli/mcp-server.js"]
+      "args": ["/path/to/DRM-cli/mcp-server.js"]
     }
   }
 }
@@ -231,7 +231,7 @@ Exposes DRM as Claude tools via the Model Context Protocol. Best for:
 
 **Start manually**
 ```bash
-DRM_SECRET='P@ssword123!!' node mcp-server.js
+DRM_SECRET='<your-key>' node mcp-server.js
 # Listens on stdin for JSON-RPC 2.0 messages
 ```
 
@@ -259,7 +259,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node mcp-ser
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"drm_status","arguments":{}}}' | node mcp-server.js
 # Output:
-# DRM Path:           /home/mumr/drm_installed/drm
+# DRM Path:           /path/to/drm
 # Version:            1.1.0
 # Install Type:       sqlite
 # DB Secured:         true
@@ -283,7 +283,7 @@ echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"drm_list_r
 
 **Test drm_dryrun (SQL solution, dev, release 11)**
 ```bash
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"drm_dryrun","arguments":{"connection":"dev","release":"11","key":"P@ssword123!!"}}}' | node mcp-server.js
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"drm_dryrun","arguments":{"connection":"dev","release":"11","key":"<your-key>"}}}' | node mcp-server.js
 # Output (ANSI stripped):
 # INFO - Starting DRM DryRun (Release ID: "11", Connection name: "dev")
 # INFO - Build finished successfully!!!
@@ -321,7 +321,7 @@ Natural language interface to DRM. Claude interprets your request, picks the rig
 ```bash
 # Prerequisites
 export ANTHROPIC_API_KEY=sk-ant-...    # from console.anthropic.com
-export DRM_SECRET='P@ssword123!!'      # DRM encryption key
+export DRM_SECRET='<your-key>'      # DRM encryption key
 
 node agent.js "<natural language prompt>"
 # or
@@ -390,7 +390,7 @@ node agent.js "what is the DRM status"
 
 **Encrypt text**
 ```bash
-node agent.js "encrypt 'Server=myserver;Password=abc' using key P@ssword123!!"
+node agent.js "encrypt 'Server=myserver;Password=abc' using key <your-key>"
 # Claude calls: drm_crypto_encrypt({text: "...", key: "..."})
 ```
 
@@ -440,7 +440,7 @@ Skills are in `.claude/commands/` — auto-loaded in any Claude Code session in 
 
 → Claude reads ~/.drm-cli.json, drm_deploy.config, queries SQLite
 → Output:
-   DRM Path:           /home/mumr/drm_installed/drm
+   DRM Path:           /path/to/drm
    Version:            1.1.0
    Install Type:       sqlite
    DB Secured:         true
@@ -513,14 +513,14 @@ All four combinations tested: install + deploy + dryrun for each.
 
 | Install type | Encrypted | install | dryrun | deploy |
 |---|---|---|---|---|
-| sqlite | yes (`P@ssword123!!`) | PASS | PASS | PASS |
+| sqlite | yes (`<your-key>`) | PASS | PASS | PASS |
 | sqlite | no | PASS | PASS | PASS |
 | json | yes | PASS | PASS | PASS |
 | json | no | PASS | PASS | PASS |
 
 ---
 
-### SQLite + Encrypted (`/home/mumr/drm_installed/drm`, key `P@ssword123!!`)
+### SQLite + Encrypted (`/path/to/drm`, key `<your-key>`)
 
 | # | Component | Test | Result |
 |---|---|---|---|
@@ -538,7 +538,7 @@ All four combinations tested: install + deploy + dryrun for each.
 | 12 | Skill | `/drm-release` | PASS — all 6 releases |
 | 13 | Skill | `/drm-plan dev 11` | PASS — plan presented, no warnings |
 
-### Install: JSON + Unencrypted (`/home/mumr/drm_installed/drm2`)
+### Install: JSON + Unencrypted (`/path/to/drm2`)
 
 | # | Component | Test | Result |
 |---|---|---|---|

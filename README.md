@@ -147,7 +147,7 @@ Running `drm-cli install -f /path` saves the path to `~/.drm-cli.json`. Subseque
 DRM-cli/
 ├── install.py            # Interactive installer
 ├── uninstall.py          # Uninstaller
-├── install.config        # Version + config defaults (current: 1.1.0)
+├── install.config        # Version + config defaults (current: 1.2.0)
 ├── index.js              # Node.js CLI wrapper (drm-cli binary)
 ├── setup-env.js          # npm setup script — checks Python, runs install.py
 ├── package.json
@@ -171,7 +171,7 @@ DRM-cli/
 │   └── drm_db_data.json    # Seed data
 ├── upgrade/              # Version migration configs
 │   ├── main.config       # Lists available upgrade versions
-│   └── 1.1.0.config      # Per-version change definitions
+│   └── 1.2.0.config      # Per-version change definitions
 └── ai/                   # AI layer
     ├── lib/drm-helpers.js    # Shared core (MCP + agent)
     ├── mcp/mcp-server.js     # MCP server — 8 tools
