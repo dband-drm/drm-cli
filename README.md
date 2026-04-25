@@ -175,8 +175,7 @@ DRM-cli/
 └── ai/                   # AI layer
     ├── lib/drm-helpers.js    # Shared core (MCP + agent)
     ├── mcp/mcp-server.js     # MCP server — 8 tools
-    ├── agent/agent.js        # Natural language agent
-    └── npm/npm-publish.md    # npm publish guide
+    └── agent/agent.js        # Natural language agent
 ```
 
 ---
