@@ -23,7 +23,7 @@ npm run setup -- -f /path/to/install -d sqlite -p mykey
 Or install globally to get the `drm-cli` binary:
 
 ```bash
-npm install -g .
+npm install -g @d-band-drm/drm-cli
 drm-cli install -f /path/to/install -d sqlite -p mykey
 ```
 
