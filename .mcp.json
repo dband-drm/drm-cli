@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "drm-cli": {
+      "command": "node",
+      "args": ["ai/mcp/mcp-server.js"],
+      "description": "DRM-CLI MCP server: exposes DRM deploy, dryrun, align, crypto and list operations as Claude tools"
+    }
+  }
+}
+

@@ -1,0 +1,17 @@
+venv/
+log/
+bin/
+.claude/
+.github/
+**/__pycache__/
+**/__pycache__/**
+*.pyc
+*.pyo
+.env
+*.log
+node_modules/
+.git/
+.gitignore
+CLAUDE.md
+ai/npm/
+ai/implementAI.md

@@ -14,8 +14,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -138,3 +136,16 @@ dmypy.json
 cython_debug/
 
 .vscode/*
+
+# Node.js
+node_modules/
+package-lock.json
+
+# DRM runtime output
+log/
+bin/
+
+# Private dev files — tracked in Azure DevOps, excluded from GitHub via push-github.sh
+# Do NOT add these to .gitignore — they must stay in Azure DevOps
+
+
