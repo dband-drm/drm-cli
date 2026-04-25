@@ -9,7 +9,7 @@ GitHub (source of truth)
     ↓  create GitHub Release  →  tag v1.x.x
 GitHub Actions (.github/workflows/publish.yml)
     ↓  npm publish automatically
-npmjs.com  →  drm-cli@1.x.x
+npmjs.com  →  @d-band-drm/drm-cli@1.x.x
 ```
 
 ---
@@ -170,7 +170,7 @@ gh run list --workflow=publish.yml --limit 5
 npm info drm-cli
 
 # Install and test
-npm install -g drm-cli
+npm install -g @d-band-drm/drm-cli
 drm-cli --version
 drm-cli --help
 ```
