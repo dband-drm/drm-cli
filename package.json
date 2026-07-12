@@ -35,7 +35,17 @@
     "mssql",
     "postgresql",
     "oracle",
-    "data-release-management"
+    "data-release-management",
+    "devops",
+    "dba",
+    "cli",
+    "release-management",
+    "ci-cd",
+    "deployment-automation",
+    "db-migration",
+    "database-deployment",
+    "release-manager",
+    "sql-deployment"
   ],
   "repository": {
     "type": "git",
