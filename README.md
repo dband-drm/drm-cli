@@ -206,3 +206,11 @@ The installer detects the installed version and applies incremental migrations d
 ## Contribute
 
 Open issues and pull requests on the project repository. Follow existing module patterns — all functions should use the `@drm_logger.log_decorator(logger)` decorator and avoid hardcoding platform-specific paths.
+
+## Good First Issue
+
+If this is your first contribution to this project, look for issues labeled
+`good first issue` on the GitHub issue tracker. These are small, well‑scoped
+tasks that are perfect for newcomers. You can discover them directly on
+GitHub or via the curated list at https://goodfirstissue.dev/ (filter by the
+`dband-drm/drm-cli` repository).
